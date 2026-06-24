@@ -3,6 +3,8 @@ workflows:
     name: CosmicCore iOS App Store Build & Deploy
     max_build_duration: 120
     instance_type: mac_mini_m1
+    integrations:
+      app_store_connect: "Codemagic API"
     environment:
       node: latest
       xcode: latest
@@ -35,9 +37,6 @@ workflows:
         script: |
           # Automatically retrieve distribution certificates and provisioning profiles from Apple
           app-store-connect fetch-signing-files "com.stellium.app" \
-            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
-            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
             --type IOS_APP_STORE \
             --create
       - name: Initialize Keychain
@@ -59,9 +58,7 @@ workflows:
       - ios/build/ipa/*.ipa
     publishing:
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        auth: integration
         submit_to_testflight: true
         beta_groups:
           - Internal-Testers
