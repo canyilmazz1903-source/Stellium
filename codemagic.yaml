@@ -33,7 +33,12 @@ workflows:
         script: |
           # Generate native iOS project folder
           npx expo prebuild --platform ios
-
+      - name: Fetch signing files
+        script: |
+          # Automatically retrieve distribution certificates and provisioning profiles from Apple
+          app-store-connect fetch-signing-files "com.stellium.app" \
+            --type IOS_APP_STORE \
+            --create
       - name: Initialize Keychain
         script: |
           keychain initialize
