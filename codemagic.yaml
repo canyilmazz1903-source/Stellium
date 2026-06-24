@@ -35,7 +35,6 @@ workflows:
         script: |
           # Automatically retrieve distribution certificates and provisioning profiles from Apple
           app-store-connect fetch-signing-files "com.stellium.app" \
-            --project-id "$CODEMAGIC_PROJECT_ID" \
             --type IOS_APP_STORE \
             --create
       - name: Initialize Keychain
