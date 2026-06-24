@@ -18,11 +18,6 @@ workflows:
         APP_STORE_ID: 1234567890 # Replace with your Apple App ID
       groups:
         - app-env
-      xcode_code_signing:
-        provisioning_profiles:
-          - com.stellium.app
-        certificates:
-          - com.stellium.app
     triggering:
       events:
         - push
@@ -39,6 +34,15 @@ workflows:
           # Generate native iOS project folder
           npx expo prebuild --platform ios
 
+      - name: Initialize Keychain
+        script: |
+          keychain initialize
+      - name: Add certificates to Keychain
+        script: |
+          keychain add-certificates
+      - name: Set up code signing settings in Xcode project
+        script: |
+          xcode-project use-profiles
       - name: Build IPA for App Store Connect
         script: |
           xcode-project build-ipa \
