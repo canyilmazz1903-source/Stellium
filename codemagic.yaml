@@ -2,7 +2,7 @@ workflows:
   ios-app-store:
     name: CosmicCore iOS App Store Build & Deploy
     max_build_duration: 120
-    instance_type: mac_mini_co2
+    instance_type: mac_mini_m1
     environment:
       node: latest
       xcode: latest
@@ -34,7 +34,7 @@ workflows:
       - name: Fetch signing files
         script: |
           # Automatically retrieve distribution certificates and provisioning profiles from Apple
-          app-store-connect fetch-signing-files "com.cosmiccore.app" \
+          app-store-connect fetch-signing-files "com.stellium.app" \
             --project-id "$CODEMAGIC_PROJECT_ID" \
             --type IOS_APP_STORE \
             --create
@@ -57,7 +57,9 @@ workflows:
       - ios/build/ipa/*.ipa
     publishing:
       app_store_connect:
-        auth: integration
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
         beta_groups:
           - Internal-Testers
