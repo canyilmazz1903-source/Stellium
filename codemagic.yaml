@@ -30,7 +30,7 @@ workflows:
       - name: Configure Expo Config Plugins & Prebuild
         script: |
           # Generate native iOS project folder
-          npx expo prebuild --platform ios --no-interactive
+          npx expo prebuild --platform ios
       - name: Fetch signing files
         script: |
           # Automatically retrieve distribution certificates and provisioning profiles from Apple
