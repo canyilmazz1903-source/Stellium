@@ -1,53 +1,46 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
-import '@/global.css';
-
+import '../global.css';
 import { Platform } from 'react-native';
 
 export const Colors = {
+  // We keep a single dark-academia oriented palette for both light/dark,
+  // or define a premium dark mode as the default experience
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    text: '#0D1117',
+    background: '#F0F2F5',
+    backgroundElement: '#FFFFFF',
+    backgroundSelected: '#E2E8F0',
+    textSecondary: '#4A5568',
+    gold: '#AA7C11',
+    goldLight: '#D4AF37',
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    text: '#F0F6FC',               // Light text for dark bg
+    background: '#0D1117',         // Deep night blue
+    backgroundElement: '#161B22',  // Obsidian / dark grey
+    backgroundSelected: '#21262D', // Light accent
+    textSecondary: '#8B949E',      // Stardust grey
+    gold: '#D4AF37',               // Antique gold
+    goldLight: '#F3E5AB',          // Warm gold highlight
+    goldDark: '#8C6D12',           // Brass shadow
   },
 } as const;
 
-export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
+export type ThemeColor = keyof typeof Colors.dark;
 
 export const Fonts = Platform.select({
   ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+    sans: 'Inter',
+    serif: 'Cinzel', // Main header font
+    serifSub: 'CormorantGaramond',
+    rounded: 'System',
+    mono: 'Courier',
   },
   default: {
-    sans: 'normal',
+    sans: 'System',
     serif: 'serif',
-    rounded: 'normal',
+    serifSub: 'serif',
+    rounded: 'System',
     mono: 'monospace',
-  },
-  web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
   },
 });
 
@@ -63,3 +56,17 @@ export const Spacing = {
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
+
+// Glassmorphism styling tokens for custom UI components
+export const Glass = {
+  border: 'rgba(212, 175, 55, 0.15)', // Antique gold subtle border
+  bg: 'rgba(22, 27, 34, 0.65)',        // Semi-transparent obsidian
+  blur: 20,                            // Blur intensity
+  shadow: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
+  }
+};

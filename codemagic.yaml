@@ -1,0 +1,63 @@
+workflows:
+  ios-app-store:
+    name: CosmicCore iOS App Store Build & Deploy
+    max_build_duration: 120
+    instance_type: mac_mini_co2
+    environment:
+      node: latest
+      xcode: latest
+      cocoapods: default
+      vars:
+        # Set these variables in Codemagic environment group "app-store"
+        # APP_STORE_CONNECT_KEY_IDENTIFIER: App Store Connect API Key ID
+        # APP_STORE_CONNECT_ISSUER_ID: App Store Connect API Issuer ID
+        # APP_STORE_CONNECT_PRIVATE_KEY: Content of the .p8 private key file
+        # CERTIFICATE_PRIVATE_KEY: Certificate private key password
+        APP_STORE_ID: 1234567890 # Replace with your Apple App ID
+      groups:
+        - app-store
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+          source: true
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm ci
+      - name: Configure Expo Config Plugins & Prebuild
+        script: |
+          # Generate native iOS project folder
+          npx expo prebuild --platform ios --no-interactive
+      - name: Fetch signing files
+        script: |
+          # Automatically retrieve distribution certificates and provisioning profiles from Apple
+          app-store-connect fetch-signing-files "com.cosmiccore.app" \
+            --project-id "$CODEMAGIC_PROJECT_ID" \
+            --type IOS_APP_STORE \
+            --create
+      - name: Initialize Keychain
+        script: |
+          keychain initialize
+      - name: Add certificates to Keychain
+        script: |
+          keychain add-certificates
+      - name: Set up code signing settings in Xcode project
+        script: |
+          xcode-project use-profiles
+      - name: Build IPA for App Store Connect
+        script: |
+          xcode-project build-ipa \
+            --workspace ios/astrologic.xcworkspace \
+            --scheme astrologic \
+            --archive-flags "-allowProvisioningUpdates"
+    artifacts:
+      - ios/build/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - Internal-Testers
