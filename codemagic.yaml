@@ -15,7 +15,8 @@ workflows:
         # CERTIFICATE_PRIVATE_KEY: Certificate private key password
         APP_STORE_ID: 1234567890 # Replace with your Apple App ID
       groups:
-        - app-store
+        - ios-credentials
+        - app-env
     triggering:
       events:
         - push
