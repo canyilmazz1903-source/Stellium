@@ -18,6 +18,11 @@ workflows:
         APP_STORE_ID: 1234567890 # Replace with your Apple App ID
       groups:
         - app-env
+      xcode_code_signing:
+        provisioning_profiles:
+          - com.stellium.app
+        certificates:
+          - com.stellium.app
     triggering:
       events:
         - push
