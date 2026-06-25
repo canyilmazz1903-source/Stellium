@@ -55,10 +55,11 @@ workflows:
             --scheme Astrologic \
             --archive-flags="-destination 'generic/platform=iOS'" \
             --disable-xcpretty \
+            --ipa-directory build/ios/ipa \
             --log-stream stdout \
             -v || (find $HOME/Library/Developer/Xcode/DerivedData -name "*.xcactivitylog" -exec echo "=== LOG FILE: {} ===" \; -exec gunzip -c {} \; | grep -A 5 -B 2 -i "error:" | tail -n 100; exit 65)
     artifacts:
-      - ios/build/ipa/*.ipa
+      - build/ios/ipa/*.ipa
     publishing:
       app_store_connect:
         auth: integration
