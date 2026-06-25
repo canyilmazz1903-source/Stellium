@@ -76,11 +76,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   inputFocused: {
-    borderColor: '#D4AF37', // Bright gold glow on focus
-    shadowColor: '#D4AF37',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    borderColor: '#D4AF37', // Bright gold border on focus (safe, no layer-shifting recalculations)
   },
   inputError: {
     borderColor: '#FF7B72', // Warning red
