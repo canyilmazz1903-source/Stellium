@@ -53,6 +53,7 @@ workflows:
           xcode-project build-ipa \
             --workspace ios/Astrologic.xcworkspace \
             --scheme Astrologic \
+            --log-stream stdout \
             -v
     artifacts:
       - ios/build/ipa/*.ipa
