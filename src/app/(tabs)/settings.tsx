@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, SafeAreaView, Alert, ActivityIndicator, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, SafeAreaView, Alert, ActivityIndicator, Pressable, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
@@ -33,15 +33,42 @@ export default function SettingsScreen() {
   const [searchingLocation, setSearchingLocation] = useState(false);
   const [updateError, setUpdateError] = useState('');
 
+  const formatBirthDate = (dateStr?: string) => {
+    if (!dateStr) return '-';
+    try {
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        const [year, month, day] = parts;
+        return `${day}.${month}.${year}`;
+      }
+      return dateStr;
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
   const startEditing = () => {
     setName(profile?.name || '');
-    setBirthDate(profile?.birth_date ? new Date(profile.birth_date) : new Date(1995, 9, 25));
+    
+    let dateObj = new Date(1995, 9, 25);
+    if (profile?.birth_date) {
+      const parts = profile.birth_date.split('-');
+      if (parts.length === 3) {
+        const [year, month, day] = parts.map(Number);
+        dateObj = new Date(year, month - 1, day);
+      }
+    }
+    setBirthDate(dateObj);
     
     let timeObj = new Date(1995, 9, 25, 12, 0);
     if (profile?.birth_time) {
-      const [h, m] = profile.birth_time.split(':');
-      timeObj.setHours(parseInt(h, 10));
-      timeObj.setMinutes(parseInt(m, 10));
+      const parts = profile.birth_time.split(':');
+      if (parts.length >= 2) {
+        const [h, m] = parts.map(Number);
+        timeObj.setHours(h);
+        timeObj.setMinutes(m);
+        timeObj.setSeconds(0);
+      }
     }
     setBirthTime(timeObj);
     
@@ -262,7 +289,7 @@ export default function SettingsScreen() {
                     <View style={styles.infoRow}>
                       <Text style={styles.infoLabel}>Doğum Zamanı:</Text>
                       <Text style={styles.infoValue}>
-                        {profile?.birth_date ? new Date(profile.birth_date).toLocaleDateString('tr-TR') : '-'} | {profile?.birth_time || '-'}
+                        {formatBirthDate(profile?.birth_date)} | {profile?.birth_time || '-'}
                       </Text>
                     </View>
                   </>

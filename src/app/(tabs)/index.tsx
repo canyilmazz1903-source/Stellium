@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { StyleSheet, Text, View, ScrollView, ActivityIndicator, SafeAreaView, Pressable, Alert } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, ActivityIndicator, SafeAreaView, Pressable, Alert, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
@@ -29,6 +29,15 @@ export default function HomeScreen() {
   const [loadingHoroscope, setLoadingHoroscope] = useState(false);
   const router = useRouter();
 
+  // Interactive Modal State
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedModalContent, setSelectedModalContent] = useState<{
+    title: string;
+    subtitle: string;
+    content: string;
+    advice?: string;
+  } | null>(null);
+
   const moonPhaseInfo = useMemo(() => {
     const today = new Date();
     const jd = getJulianDaysSinceJ2000(today);
@@ -46,10 +55,57 @@ export default function HomeScreen() {
         'Bu özellik yalnızca Cosmic Elite üyelerine özeldir. Detaylı analizleri açmak için üye olabilirsiniz.',
         [
           { text: 'Vazgeç', style: 'cancel' },
-          { text: 'Üyeliği İncele', onPress: () => router.navigate('/settings') }
+          { text: 'Üyeliği İncele', onPress: () => router.push('/settings') }
         ]
       );
     }
+  };
+
+  const openDetailModal = (type: 'moon' | 'identity' | 'general' | 'love' | 'career' | 'shadow') => {
+    if (type === 'moon') {
+      setSelectedModalContent({
+        title: `Güncel Ay Evresi: ${moonPhaseInfo.name} ${moonPhaseInfo.symbol}`,
+        subtitle: 'Kolektif Ritimler ve Anima',
+        content: `Bugün gökyüzünde Ay "${moonPhaseInfo.name}" evresindedir. Carl Jung psikolojisinde Ay, bilinçdışı dünyamız, rüyalar, duygusal ihtiyaçlar ve anima (içsel dişil enerji) ile sembolize edilir.\n\nAy evreleri, kolektif ruh halimizin dalgalanmalarını yansıtır. Doğal döngüleri fark etmek, egonun (Güneş) bilinçdışının derinliklerinden yükselen mesajları doğru entegre etmesine yardımcı olur.`,
+        advice: 'Bugün duygusal ihtiyaçlarınızı bastırmak yerine onları gözlemleyin. İçe dönmek ve sakinleşmek için kendinize alan tanıyın. Rüyalarınıza ekstra dikkat edin.'
+      });
+    } else if (type === 'identity') {
+      setSelectedModalContent({
+        title: `Güneş Konumu: ${userSunSign} Burcu`,
+        subtitle: 'Bireyleşme (Individuation) ve Ego Işığı',
+        content: `Güneş, astrolojide benliğin ve bilincin özünü temsil eder. Carl Jung psikolojisinde bilinçli Ego'ya ve bireyselleşme (Individuation) sürecinin merkezine karşılık gelir.\n\nGüneş burcunuz olan ${userSunSign}, bu dünyada kendinizi gerçekleştirirken kuşanacağınız kahraman arketipidir. Bu yerleşim, iradenizi, yaratıcılığınızı ve ruhsal merkezinizi nerede aradığınızı gösterir.`,
+        advice: 'Persona\'nızın (toplumsal maskelerinizin) sizi tanımlamasına izin vermeyin. Bugün Güneş burcunuzun en yaratıcı ve yapıcı özelliklerini sergileyen özgün bir eylem gerçekleştirin.'
+      });
+    } else if (type === 'general' && horoscope) {
+      setSelectedModalContent({
+        title: '☀️ Bireysel Yolculuk',
+        subtitle: 'Ego ve Kahramanın Yolu',
+        content: horoscope.general,
+        advice: 'Günün Sorusu: Bugün aldığınız kararlarda kendi özgün iradeniz mi yoksa dış dünyanın sizden beklediği rol (Persona) mü baskındı?'
+      });
+    } else if (type === 'love' && horoscope) {
+      setSelectedModalContent({
+        title: '💞 Yansımalar & İlişki',
+        subtitle: 'İlişkiler ve Anima/Animus Projeksiyonları',
+        content: horoscope.love,
+        advice: 'Günün Pratiği: Partnerinizde veya çevrenizde sizi aşırı kızdıran/hayran bırakan özellikleri düşünün. Bunlar kendi içinizdeki bastırılmış dişil (Anima) ya da eril (Animus) potansiyellerin yansıması (projeksiyonu) olabilir.'
+      });
+    } else if (type === 'career' && horoscope) {
+      setSelectedModalContent({
+        title: '💼 Kariyer & İrade',
+        subtitle: 'Dış Dünya Rolleri ve Toplumsal Maske',
+        content: horoscope.career,
+        advice: 'Günün Dengesi: Toplumsal statünüzü ve sorumluluklarınızı (Persona) yönetirken, içsel benliğinizin özgürlüğünden ödün vermemeye özen gösterin.'
+      });
+    } else if (type === 'shadow' && horoscope) {
+      setSelectedModalContent({
+        title: '🌑 Gölge Entegrasyonu',
+        subtitle: 'Kişisel Bilinçdışının Keşfi',
+        content: horoscope.shadowSelf,
+        advice: 'Günün Gölge Çalışması: Bugün kaçındığınız, yargıladığınız ya da kendinize yakıştıramadığınız bir duygunuzu (kıskançlık, öfke vb.) dürüstçe kabul edip onunla diyalog kurmayı deneyin.'
+      });
+    }
+    setModalVisible(true);
   };
 
   // 1. Calculate birth chart dynamically from profile
@@ -115,25 +171,29 @@ export default function HomeScreen() {
         </View>
 
         {/* Current Moon Phase widget */}
-        <GlassCard style={styles.moonWidget}>
-          <Text style={styles.moonSymbol}>{moonPhaseInfo.symbol}</Text>
-          <View style={styles.moonDetails}>
-            <Text style={styles.moonTitle}>Güncel Ay Evresi</Text>
-            <Text style={styles.moonName}>{moonPhaseInfo.name}</Text>
-          </View>
-        </GlassCard>
+        <Pressable onPress={() => openDetailModal('moon')}>
+          <GlassCard style={styles.moonWidget}>
+            <Text style={styles.moonSymbol}>{moonPhaseInfo.symbol}</Text>
+            <View style={styles.moonDetails}>
+              <Text style={styles.moonTitle}>Güncel Ay Evresi (Detay için dokunun)</Text>
+              <Text style={styles.moonName}>{moonPhaseInfo.name}</Text>
+            </View>
+          </GlassCard>
+        </Pressable>
 
         {/* User Sun Sign card */}
-        <GlassCard style={styles.signCard}>
-          <View style={styles.row}>
-            <Text style={styles.signTitle}>Kozmik Kimlik</Text>
-            {isPremium && <Text style={styles.premiumBadge}>Elite</Text>}
-          </View>
-          <Text style={styles.signName}>{userSunSign} Burcu</Text>
-          <Text style={styles.signDetails}>
-            Haritanızdaki Güneş yerleşimi, bilinçli kimliğinizi ve ruhsal merkezlenme amacınızı (Jungian self) temsil eder.
-          </Text>
-        </GlassCard>
+        <Pressable onPress={() => openDetailModal('identity')}>
+          <GlassCard style={styles.signCard}>
+            <View style={styles.row}>
+              <Text style={styles.signTitle}>Kozmik Kimlik (Detay için dokunun)</Text>
+              {isPremium && <Text style={styles.premiumBadge}>Elite</Text>}
+            </View>
+            <Text style={styles.signName}>{userSunSign} Burcu</Text>
+            <Text style={styles.signDetails}>
+              Haritanızdaki Güneş yerleşimi, bilinçli kimliğinizi ve ruhsal merkezlenme amacınızı (Jungian self) temsil eder.
+            </Text>
+          </GlassCard>
+        </Pressable>
 
         {/* Elite Services Section */}
         <Text style={styles.sectionTitle}>Elite Kozmik Servisler</Text>
@@ -188,32 +248,77 @@ export default function HomeScreen() {
           <ActivityIndicator size="large" color="#D4AF37" style={styles.loader} />
         ) : horoscope ? (
           <View style={styles.horoscopeGrid}>
-            <GlassCard style={styles.forecastCard}>
-              <Text style={styles.forecastHeader}>☀️ Bireysel Yolculuk</Text>
-              <Text style={styles.forecastText}>{horoscope.general}</Text>
-            </GlassCard>
+            <Pressable onPress={() => openDetailModal('general')}>
+              <GlassCard style={styles.forecastCard}>
+                <Text style={styles.forecastHeader}>☀️ Bireysel Yolculuk</Text>
+                <Text style={styles.forecastText} numberOfLines={4}>{horoscope.general}</Text>
+                <Text style={styles.detailLink}>Detaylı Analiz & Tavsiyeler için Dokunun →</Text>
+              </GlassCard>
+            </Pressable>
 
-            <GlassCard style={styles.forecastCard}>
-              <Text style={styles.forecastHeader}>💞 Yansımalar & İlişki</Text>
-              <Text style={styles.forecastText}>{horoscope.love}</Text>
-            </GlassCard>
+            <Pressable onPress={() => openDetailModal('love')}>
+              <GlassCard style={styles.forecastCard}>
+                <Text style={styles.forecastHeader}>💞 Yansımalar & İlişki</Text>
+                <Text style={styles.forecastText} numberOfLines={4}>{horoscope.love}</Text>
+                <Text style={styles.detailLink}>Detaylı Analiz & Tavsiyeler için Dokunun →</Text>
+              </GlassCard>
+            </Pressable>
 
-            <GlassCard style={styles.forecastCard}>
-              <Text style={styles.forecastHeader}>💼 Kariyer & İrade</Text>
-              <Text style={styles.forecastText}>{horoscope.career}</Text>
-            </GlassCard>
+            <Pressable onPress={() => openDetailModal('career')}>
+              <GlassCard style={styles.forecastCard}>
+                <Text style={styles.forecastHeader}>💼 Kariyer & İrade</Text>
+                <Text style={styles.forecastText} numberOfLines={4}>{horoscope.career}</Text>
+                <Text style={styles.detailLink}>Detaylı Analiz & Tavsiyeler için Dokunun →</Text>
+              </GlassCard>
+            </Pressable>
 
-            <GlassCard style={styles.forecastCard}>
-              <Text style={styles.forecastHeader}>🌑 Gölge Entegrasyonu</Text>
-              <Text style={styles.forecastText}>{horoscope.shadowSelf}</Text>
-            </GlassCard>
+            <Pressable onPress={() => openDetailModal('shadow')}>
+              <GlassCard style={styles.forecastCard}>
+                <Text style={styles.forecastHeader}>🌑 Gölge Entegrasyonu</Text>
+                <Text style={styles.forecastText} numberOfLines={4}>{horoscope.shadowSelf}</Text>
+                <Text style={styles.detailLink}>Detaylı Analiz & Tavsiyeler için Dokunun →</Text>
+              </GlassCard>
+            </Pressable>
           </View>
         ) : (
           <Text style={styles.errorText}>Yorumlar yüklenirken bir sorun oluştu.</Text>
         )}
       </ScrollView>
+
+      {/* Details Modal overlay */}
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <ScrollView contentContainerStyle={styles.modalScroll} showsVerticalScrollIndicator={false}>
+              <Text style={styles.modalTitle}>{selectedModalContent?.title}</Text>
+              <Text style={styles.modalSubtitle}>{selectedModalContent?.subtitle}</Text>
+              
+              <View style={styles.modalDivider} />
+              
+              <Text style={styles.modalText}>{selectedModalContent?.content}</Text>
+              
+              {selectedModalContent?.advice && (
+                <View style={styles.adviceContainer}>
+                  <Text style={styles.adviceTitle}>💡 Jungcu Kozmik Öneri</Text>
+                  <Text style={styles.adviceText}>{selectedModalContent.advice}</Text>
+                </View>
+              )}
+            </ScrollView>
+            
+            <Pressable style={styles.closeButton} onPress={() => setModalVisible(false)}>
+              <Text style={styles.closeButtonText}>Kapat</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
+}
 }
 
 const styles = StyleSheet.create({
@@ -378,5 +483,99 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#8B949E',
     lineHeight: 18,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#161B22',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.3)',
+    width: '100%',
+    maxHeight: '85%',
+    padding: 24,
+    shadowColor: '#D4AF37',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  modalScroll: {
+    paddingBottom: 20,
+  },
+  modalTitle: {
+    fontFamily: 'Cinzel',
+    fontSize: 18,
+    color: '#D4AF37',
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    color: '#8B949E',
+    textAlign: 'center',
+    marginTop: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  modalDivider: {
+    height: 1,
+    backgroundColor: 'rgba(212, 175, 55, 0.15)',
+    marginVertical: 16,
+  },
+  modalText: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: '#F0F6FC',
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  adviceContainer: {
+    backgroundColor: 'rgba(212, 175, 55, 0.08)',
+    borderLeftWidth: 3,
+    borderLeftColor: '#D4AF37',
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  adviceTitle: {
+    fontFamily: 'Cinzel',
+    fontSize: 13,
+    color: '#D4AF37',
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  adviceText: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: '#E6EDF0',
+    lineHeight: 18,
+  },
+  closeButton: {
+    backgroundColor: '#D4AF37',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  closeButtonText: {
+    fontFamily: 'Inter',
+    fontSize: 15,
+    color: '#0D1117',
+    fontWeight: '700',
+  },
+  detailLink: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    color: '#D4AF37',
+    marginTop: 12,
+    fontWeight: '600',
+    textAlign: 'right',
   },
 });
