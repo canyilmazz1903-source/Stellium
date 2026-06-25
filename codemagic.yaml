@@ -52,8 +52,7 @@ workflows:
         script: |
           xcode-project build-ipa \
             --workspace ios/Astrologic.xcworkspace \
-            --scheme Astrologic \
-            --archive-flags "-allowProvisioningUpdates"
+            --scheme Astrologic
     artifacts:
       - ios/build/ipa/*.ipa
     publishing:
