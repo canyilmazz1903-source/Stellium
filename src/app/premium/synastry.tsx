@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { StyleSheet, Text, View, ScrollView, ActivityIndicator, SafeAreaView, Pressable, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, ActivityIndicator, SafeAreaView, Pressable, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
@@ -75,12 +75,16 @@ export default function SynastryScreen() {
   };
 
   const handleDatePickerChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    setShowDatePicker(false);
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
     if (selectedDate) setBirthDate(selectedDate);
   };
 
   const handleTimePickerChange = (event: DateTimePickerEvent, selectedTime?: Date) => {
-    setShowTimePicker(false);
+    if (Platform.OS === 'android') {
+      setShowTimePicker(false);
+    }
     if (selectedTime) setBirthTime(selectedTime);
   };
 
@@ -368,26 +372,86 @@ export default function SynastryScreen() {
             </View>
           )}
 
-          {/* Date Picker (Modal) */}
-          {showDatePicker && (
-            <DateTimePicker
-              value={birthDate}
-              mode="date"
-              display="default"
-              onChange={handleDatePickerChange}
-              maximumDate={new Date()}
-            />
-          )}
+          {/* Picker components (wrapped in clean slide-up Modals on iOS) */}
+          {Platform.OS === 'ios' ? (
+            <>
+              <Modal
+                visible={showDatePicker}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setShowDatePicker(false)}
+              >
+                <View style={styles.modalOverlay}>
+                  <View style={styles.modalContent}>
+                    <View style={styles.modalHeader}>
+                      <Pressable onPress={() => setShowDatePicker(false)}>
+                        <Text style={styles.modalCloseText}>İptal</Text>
+                      </Pressable>
+                      <Pressable onPress={() => setShowDatePicker(false)}>
+                        <Text style={styles.modalDoneText}>Tamam</Text>
+                      </Pressable>
+                    </View>
+                    <DateTimePicker
+                      value={birthDate}
+                      mode="date"
+                      display="spinner"
+                      onChange={handleDatePickerChange}
+                      maximumDate={new Date()}
+                      textColor="#F0F6FC"
+                    />
+                  </View>
+                </View>
+              </Modal>
 
-          {/* Time Picker (Modal) */}
-          {showTimePicker && (
-            <DateTimePicker
-              value={birthTime}
-              mode="time"
-              is24Hour={true}
-              display="default"
-              onChange={handleTimePickerChange}
-            />
+              <Modal
+                visible={showTimePicker}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setShowTimePicker(false)}
+              >
+                <View style={styles.modalOverlay}>
+                  <View style={styles.modalContent}>
+                    <View style={styles.modalHeader}>
+                      <Pressable onPress={() => setShowTimePicker(false)}>
+                        <Text style={styles.modalCloseText}>İptal</Text>
+                      </Pressable>
+                      <Pressable onPress={() => setShowTimePicker(false)}>
+                        <Text style={styles.modalDoneText}>Tamam</Text>
+                      </Pressable>
+                    </View>
+                    <DateTimePicker
+                      value={birthTime}
+                      mode="time"
+                      is24Hour={true}
+                      display="spinner"
+                      onChange={handleTimePickerChange}
+                      textColor="#F0F6FC"
+                    />
+                  </View>
+                </View>
+              </Modal>
+            </>
+          ) : (
+            <>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={birthDate}
+                  mode="date"
+                  display="default"
+                  onChange={handleDatePickerChange}
+                  maximumDate={new Date()}
+                />
+              )}
+              {showTimePicker && (
+                <DateTimePicker
+                  value={birthTime}
+                  mode="time"
+                  is24Hour={true}
+                  display="default"
+                  onChange={handleTimePickerChange}
+                />
+              )}
+            </>
           )}
 
         </ScrollView>
@@ -609,5 +673,36 @@ const styles = StyleSheet.create({
   },
   resetButton: {
     marginTop: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#161B22',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(212, 175, 55, 0.2)',
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#21262D',
+  },
+  modalCloseText: {
+    color: '#8B949E',
+    fontFamily: 'Inter',
+    fontSize: 16,
+  },
+  modalDoneText: {
+    color: '#D4AF37',
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });
