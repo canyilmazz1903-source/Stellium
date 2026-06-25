@@ -8,7 +8,7 @@ import { CormorantGaramond_400Regular, CormorantGaramond_600SemiBold } from '@ex
 import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 
 export default function RootLayout() {
-  const { session, isLoading, setSession, setUser, initialize } = useAuthStore();
+  const { session, isLoading, profile, setSession, setUser, initialize } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
 
@@ -50,15 +50,29 @@ export default function RootLayout() {
     if (isLoading || !fontsLoaded) return;
 
     const inAuthGroup = segments[0] === '(auth)';
+    const isCompleteProfileScreen = segments[1] === 'complete-profile';
 
-    if (!session && !inAuthGroup) {
-      // Redirect to login if user session is inactive
-      router.replace('/(auth)/login');
-    } else if (session && inAuthGroup) {
-      // Redirect to dashboard tabs if user session is active
-      router.replace('/(tabs)');
+    if (!session) {
+      if (!inAuthGroup) {
+        // Redirect to login if user session is inactive
+        router.replace('/(auth)/login');
+      }
+    } else {
+      const isProfileComplete = profile && profile.name && profile.birth_date && profile.birth_place;
+      
+      if (!isProfileComplete) {
+        if (!isCompleteProfileScreen) {
+          // Redirect to complete profile screen if details are missing
+          router.replace('/(auth)/complete-profile');
+        }
+      } else {
+        if (inAuthGroup) {
+          // Redirect to dashboard tabs if user session is active and profile complete
+          router.replace('/(tabs)');
+        }
+      }
     }
-  }, [session, isLoading, segments, fontsLoaded, router]);
+  }, [session, profile, isLoading, segments, fontsLoaded, router]);
 
   if (isLoading || !fontsLoaded) {
     return (

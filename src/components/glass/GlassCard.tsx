@@ -1,6 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, ViewStyle, Platform } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { StyleSheet, View, ViewStyle } from 'react-native';
 
 interface GlassCardProps {
   children: React.ReactNode;
@@ -13,29 +12,15 @@ interface GlassCardProps {
 export default function GlassCard({
   children,
   style,
-  intensity = 30,
-  tint = 'dark',
   borderColor = 'rgba(212, 175, 55, 0.18)', // Antique Gold / Brass transparent border
 }: GlassCardProps) {
-  const isAndroid = Platform.OS === 'android';
-
   const cardStyle = [
     styles.card,
-    { borderColor },
-    // On Android, blur is simulated using a darker solid semi-transparent obsidian color
-    isAndroid && { backgroundColor: 'rgba(22, 27, 34, 0.88)' }, 
+    { borderColor, backgroundColor: 'rgba(22, 27, 34, 0.88)' }, 
     style,
   ];
 
-  if (isAndroid) {
-    return <View style={cardStyle}>{children}</View>;
-  }
-
-  return (
-    <BlurView intensity={intensity} tint={tint} style={cardStyle}>
-      {children}
-    </BlurView>
-  );
+  return <View style={cardStyle}>{children}</View>;
 }
 
 const styles = StyleSheet.create({
@@ -52,3 +37,4 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
 });
+

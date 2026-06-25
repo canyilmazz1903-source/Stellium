@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, KeyboardAvoidingView, Platform, ScrollView, Pressable } from 'react-native';
+import { StyleSheet, Text, View, KeyboardAvoidingView, Platform, ScrollView, Pressable, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { supabase } from '@/api/supabase';
+import { useAuthStore } from '@/store/authStore';
 import { searchLocation, getTimezoneForCoordinates, LocationSuggestion } from '@/api/location';
 import CosmicInput from '@/components/ui/CosmicInput';
 import CosmicButton from '@/components/ui/CosmicButton';
 import GlassCard from '@/components/glass/GlassCard';
 
-export default function RegisterScreen() {
+export default function CompleteProfileScreen() {
+  const { user, initialize } = useAuthStore();
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -83,53 +83,52 @@ export default function RegisterScreen() {
     }
   };
 
-  const handleRegister = async () => {
-    // Validations
+  const handleSaveProfile = async () => {
     if (!name.trim()) return setError('Lütfen isminizi girin.');
-    if (!email.trim()) return setError('Lütfen e-posta adresinizi girin.');
-    if (password.length < 6) return setError('Şifreniz en az 6 karakter olmalıdır.');
     if (!birthPlace || latitude === null || longitude === null) return setError('Lütfen doğum yerinizi arayıp listeden seçin.');
+    if (!user) return setError('Oturum bulunamadı. Lütfen tekrar giriş yapın.');
 
     setError('');
     setLoading(true);
 
     try {
-      // 1. Sign up User in Supabase Auth
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
+      // Format birth parameters
+      const dateString = birthDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      const timeString = `${String(birthTime.getHours()).padStart(2, '0')}:${String(birthTime.getMinutes()).padStart(2, '0')}:00`; // HH:MM:SS
+      
+      // Upsert profile data into profiles table
+      const { error: profileError } = await supabase.from('profiles').upsert({
+        id: user.id,
+        name: name.trim(),
+        birth_date: dateString,
+        birth_time: timeString,
+        birth_place: birthPlace,
+        latitude,
+        longitude,
+        timezone: timezone || 'Europe/Istanbul'
       });
 
-      if (signUpError) {
-        throw new Error(signUpError.message);
+      if (profileError) {
+        throw new Error(`Profil oluşturulurken hata: ${profileError.message}`);
       }
 
-      if (data.user) {
-        // Format birth parameters
-        const dateString = birthDate.toISOString().split('T')[0]; // YYYY-MM-DD
-        const timeString = `${String(birthTime.getHours()).padStart(2, '0')}:${String(birthTime.getMinutes()).padStart(2, '0')}:00`; // HH:MM:SS
-        
-        // 2. Insert Profile Data into profiles table
-        const { error: profileError } = await supabase.from('profiles').insert({
-          id: data.user.id,
-          name: name.trim(),
-          birth_date: dateString,
-          birth_time: timeString,
-          birth_place: birthPlace,
-          latitude,
-          longitude,
-          timezone: timezone || 'Europe/Istanbul'
-        });
-
-        if (profileError) {
-          throw new Error(`Profil kaydı oluşturulurken hata: ${profileError.message}`);
-        }
-      } else {
-        throw new Error('Kayıt başarısız oldu, kullanıcı oluşturulamadı.');
-      }
+      // Re-initialize state in store (loads the new profile details)
+      await initialize();
+      
+      // Let root layout navigate to tabs automatically
     } catch (err: any) {
-      setError(err.message || 'Kayıt sırasında bir hata oluştu.');
+      setError(err.message || 'Profil oluşturulurken bir hata oluştu.');
+    } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await useAuthStore.getState().signOut();
+      router.replace('/(auth)/login');
+    } catch (e) {
+      console.warn(e);
     }
   };
 
@@ -146,33 +145,19 @@ export default function RegisterScreen() {
       >
         <View style={styles.headerContainer}>
           <Text style={styles.title}>CosmicCore</Text>
-          <Text style={styles.subtitle}>Yıldız Haritanızı Çıkarın</Text>
+          <Text style={styles.subtitle}>Doğum Haritası Bilgileri</Text>
         </View>
 
         <GlassCard style={styles.card}>
-          <Text style={styles.cardTitle}>Doğum Detayları</Text>
+          <Text style={styles.cardDesc}>
+            Haritanızın ve mistik yorumlarınızın doğru hesaplanabilmesi için doğum tarihinizi, saatinizi ve yerinizi belirtmeniz gerekmektedir.
+          </Text>
 
           <CosmicInput
             label="Tam İsim"
-            placeholder="Kozmik İsim"
+            placeholder="İsim girin"
             value={name}
             onChangeText={setName}
-          />
-
-          <CosmicInput
-            label="E-Posta Adresi"
-            placeholder="isim@kozmik.com"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-          />
-
-          <CosmicInput
-            label="Şifre (Min 6 Karakter)"
-            placeholder="••••••"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
           />
 
           {/* Birth Date Picker Trigger */}
@@ -199,7 +184,7 @@ export default function RegisterScreen() {
           <View style={styles.searchContainer}>
             <CosmicInput
               label="Doğum Yeri (Şehir)"
-              placeholder="İstanbul, İzmir vb. arayın..."
+              placeholder="Şehir arayın..."
               value={birthPlace}
               onChangeText={handleLocationSearch}
             />
@@ -230,17 +215,17 @@ export default function RegisterScreen() {
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
           <CosmicButton
-            title={loading ? 'Haritanız Çiziliyor...' : 'Kaydol & Harita Çıkar'}
-            onPress={handleRegister}
+            title={loading ? 'Haritanız Çiziliyor...' : 'Doğum Detaylarını Kaydet'}
+            onPress={handleSaveProfile}
             disabled={loading}
             style={styles.button}
           />
 
           <CosmicButton
-            title="Zaten Üyeyim (Giriş Yap)"
-            onPress={() => router.back()}
+            title="Geri Dön (Çıkış Yap)"
+            onPress={handleSignOut}
             variant="ghost"
-            style={styles.loginLink}
+            style={styles.signOutButton}
           />
         </GlassCard>
 
@@ -302,14 +287,13 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
   },
-  cardTitle: {
-    fontFamily: 'Cinzel',
-    fontSize: 20,
-    color: '#F0F6FC',
-    fontWeight: '600',
+  cardDesc: {
+    fontFamily: 'Inter',
+    color: '#8B949E',
+    fontSize: 13,
+    lineHeight: 20,
     marginBottom: 20,
     textAlign: 'center',
-    letterSpacing: 0.5,
   },
   label: {
     color: '#D4AF37',
@@ -378,7 +362,7 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 12,
   },
-  loginLink: {
+  signOutButton: {
     marginTop: 12,
   },
   errorText: {
