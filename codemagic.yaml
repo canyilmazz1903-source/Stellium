@@ -54,7 +54,7 @@ workflows:
             --workspace ios/Astrologic.xcworkspace \
             --scheme Astrologic \
             --log-stream stdout \
-            -v
+            -v || (find $HOME/Library/Logs -name "*.log" -exec grep -A 3 -B 3 -i "error:" {} \; | tail -n 100; exit 65)
     artifacts:
       - ios/build/ipa/*.ipa
     publishing:
