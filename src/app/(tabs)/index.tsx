@@ -319,7 +319,6 @@ export default function HomeScreen() {
     </SafeAreaView>
   );
 }
-}
 
 const styles = StyleSheet.create({
   container: {

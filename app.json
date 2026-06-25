@@ -10,14 +10,14 @@
     "ios": {
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.stellium.app",
-      "buildNumber": "7",
+      "buildNumber": "8",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.stellium.app",
-      "versionCode": 7,
+      "versionCode": 8,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
