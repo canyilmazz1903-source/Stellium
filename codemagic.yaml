@@ -53,8 +53,9 @@ workflows:
           xcode-project build-ipa \
             --workspace ios/Astrologic.xcworkspace \
             --scheme Astrologic \
+            --archive-flags="-destination 'generic/platform=iOS'" \
             --log-stream stdout \
-            -v || (find . -name "*.log" -not -path "*/node_modules/*" -exec echo "=== LOG FILE: {} ===" \; -exec grep -A 3 -B 3 -i "error:" {} \; | tail -n 100; exit 65)
+            -v || (find $HOME/Library/Logs -name "*Astrologic*.log" -exec echo "=== LOG FILE: {} ===" \; -exec grep -A 5 -B 2 -i "error:" {} \; | tail -n 100; exit 65)
     artifacts:
       - ios/build/ipa/*.ipa
     publishing:
