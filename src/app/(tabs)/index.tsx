@@ -259,7 +259,7 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
       
       {/* BlurView to make the aura soft and ethereal */}
       {Platform.OS === 'ios' && (
-        <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFillObject} />
+        <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} />
       )}
 
       <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>

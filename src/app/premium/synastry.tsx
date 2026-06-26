@@ -311,7 +311,7 @@ export default function SynastryScreen() {
                     <Text style={styles.barVal}>%{synastryResults?.scores.attraction}</Text>
                   </View>
                   <View style={styles.barBackground}>
-                    <View style={[styles.barFill, { width: `${synastryResults?.scores.attraction}%` }]} />
+                    <View style={[styles.barFill, { width: `${synastryResults?.scores.attraction ?? 0}%` }]} />
                   </View>
                 </View>
 
@@ -321,7 +321,7 @@ export default function SynastryScreen() {
                     <Text style={styles.barVal}>%{synastryResults?.scores.communication}</Text>
                   </View>
                   <View style={styles.barBackground}>
-                    <View style={[styles.barFill, { width: `${synastryResults?.scores.communication}%` }]} />
+                    <View style={[styles.barFill, { width: `${synastryResults?.scores.communication ?? 0}%` }]} />
                   </View>
                 </View>
 
@@ -331,7 +331,7 @@ export default function SynastryScreen() {
                     <Text style={styles.barVal}>%{synastryResults?.scores.karma}</Text>
                   </View>
                   <View style={styles.barBackground}>
-                    <View style={[styles.barFill, { width: `${synastryResults?.scores.karma}%` }]} />
+                    <View style={[styles.barFill, { width: `${synastryResults?.scores.karma ?? 0}%` }]} />
                   </View>
                 </View>
               </GlassCard>

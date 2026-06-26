@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, ViewStyle, TextStyle } from 'react-native';
+import { Pressable, StyleSheet, Text, ViewStyle, TextStyle, StyleProp } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
@@ -9,7 +9,7 @@ interface CosmicButtonProps {
   title: string;
   onPress: () => void;
   variant?: 'gold' | 'outline' | 'ghost';
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   textStyle?: TextStyle;
   disabled?: boolean;
 }

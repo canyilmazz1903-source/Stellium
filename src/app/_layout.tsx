@@ -48,8 +48,8 @@ export default function RootLayout() {
   useEffect(() => {
     if (isLoading || !fontsLoaded) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
-    const isCompleteProfileScreen = segments[1] === 'complete-profile';
+    const inAuthGroup = (segments as string[])[0] === '(auth)';
+    const isCompleteProfileScreen = (segments as string[])[1] === 'complete-profile';
 
     if (!session) {
       if (!inAuthGroup) {
@@ -99,7 +99,7 @@ export default function RootLayout() {
             headerBackTitle: 'Geri',
             headerBackTitleStyle: { fontFamily: 'Inter', fontSize: 14 },
             gestureEnabled: true,
-            gestureResponseDistance: 120,
+            gestureResponseDistance: { start: 120 },
           }} 
         />
         <Stack.Screen 
@@ -114,7 +114,7 @@ export default function RootLayout() {
             headerBackTitle: 'Geri',
             headerBackTitleStyle: { fontFamily: 'Inter', fontSize: 14 },
             gestureEnabled: true,
-            gestureResponseDistance: 120,
+            gestureResponseDistance: { start: 120 },
           }} 
         />
         <Stack.Screen 
@@ -129,7 +129,7 @@ export default function RootLayout() {
             headerBackTitle: 'Geri',
             headerBackTitleStyle: { fontFamily: 'Inter', fontSize: 14 },
             gestureEnabled: true,
-            gestureResponseDistance: 120,
+            gestureResponseDistance: { start: 120 },
           }} 
         />
       </Stack>

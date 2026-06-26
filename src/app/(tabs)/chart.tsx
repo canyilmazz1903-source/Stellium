@@ -628,7 +628,7 @@ export default function ChartScreen() {
       />
 
       {Platform.OS === 'ios' && (
-        <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFillObject} />
+        <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
       )}
 
       <SafeAreaView style={styles.container}>
@@ -844,7 +844,7 @@ export default function ChartScreen() {
           onRequestClose={() => setAiModalVisible(false)}
         >
           <View style={styles.modalBg}>
-            <BlurView intensity={95} tint="dark" style={StyleSheet.absoluteFillObject} />
+            <BlurView intensity={95} tint="dark" style={StyleSheet.absoluteFill} />
             <SafeAreaView style={styles.modalSafeArea}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Kapsamlı Harita Analizi</Text>

@@ -720,4 +720,35 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#161B22',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 40,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.15)',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#21262D',
+  },
+  modalCloseText: {
+    color: '#8B949E',
+    fontFamily: 'Inter',
+    fontSize: 16,
+  },
+  modalDoneText: {
+    color: '#D4AF37',
+    fontFamily: 'Inter',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });

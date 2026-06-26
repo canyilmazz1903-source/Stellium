@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { getJulianDaysSinceJ2000, getPlanetLongitude, getZodiacSign, ComputedChart } from '@/utils/astronomy';
+import { getJulianDaysSinceJ2000, getPlanetLongitude, getZodiacSign } from '@/utils/astronomy';
+import { ComputedChart } from '@/store/appStore';
 import { getLunarAlmanacAdvice } from '@/utils/lunarAlmanacHelper';
 import { fetchDailyShadows } from '@/api/gemini';
 

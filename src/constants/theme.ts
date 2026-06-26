@@ -12,6 +12,7 @@ export const Colors = {
     textSecondary: '#4A5568',
     gold: '#AA7C11',
     goldLight: '#D4AF37',
+    goldDark: '#8C6D12',
   },
   dark: {
     text: '#F0F6FC',               // Light text for dark bg

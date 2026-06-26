@@ -1,18 +1,20 @@
 import React from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
+import { StyleSheet, View, ViewStyle, StyleProp } from 'react-native';
 
 interface GlassCardProps {
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   intensity?: number;
   tint?: 'dark' | 'light' | 'default';
   borderColor?: string;
+  className?: string;
 }
 
 export default function GlassCard({
   children,
   style,
   borderColor = 'rgba(255, 255, 255, 0.1)', // Ethereal white border
+  className,
 }: GlassCardProps) {
   const cardStyle = [
     styles.card,
@@ -20,7 +22,7 @@ export default function GlassCard({
     style,
   ];
 
-  return <View style={cardStyle}>{children}</View>;
+  return <View style={cardStyle} className={className}>{children}</View>;
 }
 
 const styles = StyleSheet.create({
