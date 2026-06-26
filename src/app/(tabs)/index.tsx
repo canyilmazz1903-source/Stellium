@@ -515,7 +515,8 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
           Alert.alert("Başarılı", "Günlük gölge analizi kilidi açıldı!");
         }}
       />
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
