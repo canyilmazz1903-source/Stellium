@@ -1,11 +1,9 @@
 import React, { useEffect } from 'react';
-import { ThemeProvider, DarkTheme, Slot, useRouter, useSegments } from 'expo-router';
+import { ThemeProvider, DarkTheme, Stack, useRouter, useSegments } from 'expo-router';
 import { ActivityIndicator, View, StyleSheet, StatusBar } from 'react-native';
 import { useAuthStore } from '@/store/authStore';
 import { supabase } from '@/api/supabase';
-import { useFonts, Cinzel_400Regular, Cinzel_700Bold } from '@expo-google-fonts/cinzel';
-import { CormorantGaramond_400Regular, CormorantGaramond_600SemiBold } from '@expo-google-fonts/cormorant-garamond';
-import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 
 export default function RootLayout() {
   const { session, isLoading, profile, setSession, setUser, initialize } = useAuthStore();
@@ -14,13 +12,14 @@ export default function RootLayout() {
 
   // Load design fonts
   const [fontsLoaded] = useFonts({
-    Cinzel: Cinzel_400Regular,
-    CinzelBold: Cinzel_700Bold,
-    CormorantGaramond: CormorantGaramond_400Regular,
-    CormorantGaramondSemiBold: CormorantGaramond_600SemiBold,
     Inter: Inter_400Regular,
     InterSemiBold: Inter_600SemiBold,
     InterBold: Inter_700Bold,
+    // Map old fonts to Inter to prevent layout crashes
+    Cinzel: Inter_700Bold,
+    CinzelBold: Inter_700Bold,
+    CormorantGaramond: Inter_400Regular,
+    CormorantGaramondSemiBold: Inter_600SemiBold,
   });
 
   // 1. Initialize Supabase session on startup
@@ -84,8 +83,56 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={DarkTheme}>
-      <StatusBar barStyle="light-content" backgroundColor="#0D1117" />
-      <Slot />
+      <StatusBar barStyle="light-content" backgroundColor="#000000" />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen 
+          name="premium/transit" 
+          options={{ 
+            headerShown: true, 
+            title: 'TRANSİT ANALİZİ', 
+            headerStyle: { backgroundColor: '#000000' },
+            headerTintColor: '#D4AF37',
+            headerTitleStyle: { fontFamily: 'Inter', fontSize: 16, fontWeight: '700' },
+            headerShadowVisible: false,
+            headerBackTitle: 'Geri',
+            headerBackTitleStyle: { fontFamily: 'Inter', fontSize: 14 },
+            gestureEnabled: true,
+            gestureResponseDistance: 120,
+          }} 
+        />
+        <Stack.Screen 
+          name="premium/synastry" 
+          options={{ 
+            headerShown: true, 
+            title: 'SİNASTRİ UYUMU', 
+            headerStyle: { backgroundColor: '#000000' },
+            headerTintColor: '#D4AF37',
+            headerTitleStyle: { fontFamily: 'Inter', fontSize: 16, fontWeight: '700' },
+            headerShadowVisible: false,
+            headerBackTitle: 'Geri',
+            headerBackTitleStyle: { fontFamily: 'Inter', fontSize: 14 },
+            gestureEnabled: true,
+            gestureResponseDistance: 120,
+          }} 
+        />
+        <Stack.Screen 
+          name="premium/yildizname" 
+          options={{ 
+            headerShown: true, 
+            title: 'YILDIZNAME RAPORU', 
+            headerStyle: { backgroundColor: '#000000' },
+            headerTintColor: '#D4AF37',
+            headerTitleStyle: { fontFamily: 'Inter', fontSize: 16, fontWeight: '700' },
+            headerShadowVisible: false,
+            headerBackTitle: 'Geri',
+            headerBackTitleStyle: { fontFamily: 'Inter', fontSize: 14 },
+            gestureEnabled: true,
+            gestureResponseDistance: 120,
+          }} 
+        />
+      </Stack>
     </ThemeProvider>
   );
 }
@@ -93,7 +140,7 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#0D1117',
+    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -376,3 +376,134 @@ export function computeNatalChart(
     midheaven
   };
 }
+
+export interface PlanetaryHour {
+  hourIndex: number;
+  label: string;
+  planetName: string;
+  planetSymbol: string;
+  meaning: string;
+  isNight: boolean;
+  isActive: boolean;
+  startTime: Date;
+  endTime: Date;
+}
+
+const PLANET_DETAILS: Record<string, { turkish: string; symbol: string; meaning: string }> = {
+  Sun: { turkish: 'Güneş', symbol: '☀️', meaning: 'Öz güven, liderlik, kariyer ve benlik ifadesi.' },
+  Moon: { turkish: 'Ay', symbol: '🌙', meaning: 'Duygular, sezgiler, aile ve içsel arınma.' },
+  Mercury: { turkish: 'Merkür', symbol: '☿', meaning: 'Zihinsel faaliyetler, iletişim, yazışma ve ticaret.' },
+  Venus: { turkish: 'Venüs', symbol: '♀', meaning: 'Aşk, ilişkiler, sevgi frekansı, bakım ve para.' },
+  Mars: { turkish: 'Mars', symbol: '♂', meaning: 'Eyleme geçme, cesaret, spor ve fiziksel işler.' },
+  Jupiter: { turkish: 'Jüpiter', symbol: '♃', meaning: 'Bolluk, bereket, şans kapıları ve yüksek bilgelik.' },
+  Saturn: { turkish: 'Satürn', symbol: '♄', meaning: 'Disiplin, sınırlar, koruma ve sabır gerektiren işler.' }
+};
+
+export function calculatePlanetaryHours(
+  latitude: number,
+  longitude: number,
+  date: Date
+): PlanetaryHour[] {
+  // 1. Calculate Day of the Year
+  const start = new Date(Date.UTC(date.getFullYear(), 0, 0));
+  const diff = date.getTime() - start.getTime() + (start.getTimezoneOffset() - date.getTimezoneOffset()) * 60 * 1000;
+  const oneDay = 1000 * 60 * 60 * 24;
+  const dayOfYear = Math.floor(diff / oneDay);
+
+  // 2. Solar declination
+  const latRad = latitude * (Math.PI / 180);
+  const solarDecl = 23.45 * Math.sin((360 / 365) * (284 + dayOfYear) * (Math.PI / 180)) * (Math.PI / 180);
+
+  // 3. Hour angle (clamped to prevent acos domain error in extreme latitudes)
+  let cosH = -Math.tan(latRad) * Math.tan(solarDecl);
+  cosH = Math.max(-1, Math.min(1, cosH));
+  const H_rad = Math.acos(cosH);
+  const H_hours = H_rad * (12 / Math.PI); // Half day length in hours
+
+  // 4. Local solar transit (approx noon in UTC)
+  // Local Mean Time of sunrise and sunset
+  let sunriseDecimal = 12 - H_hours;
+  let sunsetDecimal = 12 + H_hours;
+
+  const localDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  
+  const sunriseDate = new Date(`${localDateStr}T00:00:00`);
+  const sunsetDate = new Date(`${localDateStr}T00:00:00`);
+  const nextSunriseDate = new Date(sunriseDate.getTime() + 24 * 60 * 60 * 1000);
+
+  const sunriseHour = Math.floor(sunriseDecimal);
+  const sunriseMin = Math.floor((sunriseDecimal - sunriseHour) * 60);
+  sunriseDate.setHours(sunriseHour, sunriseMin, 0, 0);
+
+  const sunsetHour = Math.floor(sunsetDecimal);
+  const sunsetMin = Math.floor((sunsetDecimal - sunsetHour) * 60);
+  sunsetDate.setHours(sunsetHour, sunsetMin, 0, 0);
+
+  nextSunriseDate.setHours(sunriseHour, sunriseMin, 0, 0);
+
+  // 5. Calculate day hour duration and night hour duration
+  const dayDurationMs = sunsetDate.getTime() - sunriseDate.getTime();
+  const nightDurationMs = nextSunriseDate.getTime() - sunsetDate.getTime();
+
+  const dayHourMs = dayDurationMs / 12;
+  const nightHourMs = nightDurationMs / 12;
+
+  // 6. Day Rulers sequence (Chaldean Order reversed / descending)
+  const CHALDEAN_DESCENDING = ['Saturn', 'Jupiter', 'Mars', 'Sun', 'Venus', 'Mercury', 'Moon'];
+  const DAY_RULERS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']; // Sunday=0, Monday=1, ...
+  
+  const dayOfWeek = date.getDay();
+  const dayRuler = DAY_RULERS[dayOfWeek];
+  const startIndex = CHALDEAN_DESCENDING.indexOf(dayRuler);
+
+  const hoursList: PlanetaryHour[] = [];
+  const now = new Date();
+
+  // Generate 12 Day Hours
+  for (let i = 0; i < 12; i++) {
+    const start = new Date(sunriseDate.getTime() + i * dayHourMs);
+    const end = new Date(sunriseDate.getTime() + (i + 1) * dayHourMs);
+    const planet = CHALDEAN_DESCENDING[(startIndex + i) % 7];
+    const details = PLANET_DETAILS[planet] || PLANET_DETAILS['Sun'];
+    const isActive = now >= start && now < end;
+
+    hoursList.push({
+      hourIndex: i,
+      label: `${formatTime(start)} - ${formatTime(end)}`,
+      planetName: details.turkish,
+      planetSymbol: details.symbol,
+      meaning: details.meaning,
+      isNight: false,
+      isActive,
+      startTime: start,
+      endTime: end
+    });
+  }
+
+  // Generate 12 Night Hours
+  for (let i = 0; i < 12; i++) {
+    const start = new Date(sunsetDate.getTime() + i * nightHourMs);
+    const end = new Date(sunsetDate.getTime() + (i + 1) * nightHourMs);
+    const planet = CHALDEAN_DESCENDING[(startIndex + 12 + i) % 7];
+    const details = PLANET_DETAILS[planet] || PLANET_DETAILS['Sun'];
+    const isActive = now >= start && now < end;
+
+    hoursList.push({
+      hourIndex: 12 + i,
+      label: `${formatTime(start)} - ${formatTime(end)}`,
+      planetName: details.turkish,
+      planetSymbol: details.symbol,
+      meaning: details.meaning,
+      isNight: true,
+      isActive,
+      startTime: start,
+      endTime: end
+    });
+  }
+
+  return hoursList;
+}
+
+function formatTime(d: Date): string {
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}

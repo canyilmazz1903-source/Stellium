@@ -12,11 +12,11 @@ interface GlassCardProps {
 export default function GlassCard({
   children,
   style,
-  borderColor = 'rgba(212, 175, 55, 0.18)', // Antique Gold / Brass transparent border
+  borderColor = 'rgba(255, 255, 255, 0.1)', // Ethereal white border
 }: GlassCardProps) {
   const cardStyle = [
     styles.card,
-    { borderColor, backgroundColor: 'rgba(22, 27, 34, 0.88)' }, 
+    { borderColor, backgroundColor: 'rgba(15, 20, 30, 0.88)' }, 
     style,
   ];
 

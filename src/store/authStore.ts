@@ -18,9 +18,13 @@ interface AuthState {
   user: User | null;
   profile: Profile | null;
   isLoading: boolean;
+  isPremium: boolean;
+  hasUnlockedDailyShadow: boolean;
   setSession: (session: Session | null) => void;
   setUser: (user: User | null) => void;
   setProfile: (profile: Profile | null) => void;
+  setPremium: (isPremium: boolean) => void;
+  unlockDailyShadow: () => void;
   initialize: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -30,9 +34,23 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   profile: null,
   isLoading: true,
+  isPremium: false,
+  hasUnlockedDailyShadow: false,
   setSession: (session) => set({ session }),
   setUser: (user) => set({ user }),
   setProfile: (profile) => set({ profile }),
+  setPremium: (isPremium) => {
+    set({ isPremium });
+    try {
+      const appStore = require('./appStore').useAppStore;
+      if (appStore.getState().isPremium !== isPremium) {
+        appStore.getState().setPremium(isPremium);
+      }
+    } catch (e) {
+      console.warn('Syncing premium state warning:', e);
+    }
+  },
+  unlockDailyShadow: () => set({ hasUnlockedDailyShadow: true }),
   initialize: async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();

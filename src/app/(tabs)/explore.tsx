@@ -13,11 +13,11 @@ interface LibrarySectionProps {
 
 function LibrarySection({ title, emoji, isOpen, onToggle, children }: LibrarySectionProps) {
   return (
-    <GlassCard style={styles.sectionCard}>
-      <Pressable onPress={onToggle} style={styles.sectionHeader}>
-        <View style={styles.headerTitleRow}>
-          <Text style={styles.sectionEmoji}>{emoji}</Text>
-          <Text style={styles.sectionTitle}>{title}</Text>
+    <GlassCard style={styles.sectionCard} className="border border-white/10 bg-white/5 mb-4">
+      <Pressable onPress={onToggle} style={styles.sectionHeader} className="flex-row justify-between items-center">
+        <View style={styles.headerTitleRow} className="flex-row items-center">
+          <Text style={styles.sectionEmoji} className="text-xl mr-3">{emoji}</Text>
+          <Text style={styles.sectionTitle} className="text-white font-bold text-base font-sans">{title}</Text>
         </View>
         <Ionicons 
           name={isOpen ? "chevron-up" : "chevron-down"} 
@@ -26,8 +26,8 @@ function LibrarySection({ title, emoji, isOpen, onToggle, children }: LibrarySec
         />
       </Pressable>
       {isOpen && (
-        <View style={styles.sectionContent}>
-          <View style={styles.divider} />
+        <View style={styles.sectionContent} className="mt-4">
+          <View style={styles.divider} className="h-[1px] bg-white/10 mb-4" />
           {children}
         </View>
       )}
@@ -45,207 +45,192 @@ export default function ExploreScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Kozmik Kütüphane</Text>
-          <Text style={styles.subtitle}>Astroloji ve Analitik Psikoloji Sözlüğü</Text>
+        <View style={styles.header} className="mb-6 mt-4 items-center">
+          <Text style={styles.title} className="text-white text-3xl font-extrabold tracking-tight">Kozmik Kütüphane</Text>
+          <Text style={styles.subtitle} className="text-white/50 text-xs font-semibold uppercase tracking-wider mt-1">Astroloji, Ebced ve Mistik Ritüeller Sözlüğü</Text>
         </View>
 
         <View style={styles.content}>
           {/* Section 1: Zodiac Signs */}
           <LibrarySection
-            title="Zodyak Arketipleri (12 Burç)"
+            title="Zodyak Rehberi (12 Burç)"
             emoji="✨"
             isOpen={openSection === 0}
             onToggle={() => toggleSection(0)}
           >
-            <Text style={styles.introText}>
-              Burçlar, insan psişesindeki evrensel kalıpları (arketipleri) temsil eden sembolik enerjilerdir:
+            <Text style={styles.introText} className="text-white/70 text-sm leading-relaxed mb-4">
+              Zodyak'taki 12 burç, dört element (Ateş, Toprak, Hava, Su) ve üç nitelik (Öncü, Sabit, Değişken) kombinasyonundan oluşan özgün göksel enerjileri temsil eder:
             </Text>
             
-            <View style={styles.signList}>
-              <View style={styles.signItem}>
-                <Text style={styles.signTitleText}>♈ Koç (Savaşçı / The Warrior):</Text>
-                <Text style={styles.signBodyText}>Ego inisiyatifi, saf irade, bağımsızlık ve öncülük dürtüsü. Bireyleşme yolunda cesurca adım atma enerjisi.</Text>
+            <View style={styles.signList} className="space-y-3">
+              <View style={styles.signItem} className="bg-white/5 p-3 rounded-xl border-l-2 border-l-rose-400 mb-3">
+                <Text style={styles.signTitleText} className="text-rose-300 font-bold text-sm font-sans">♈ Koç (Ateş / Öncü / Mars):</Text>
+                <Text style={styles.signBodyText} className="text-white/60 text-xs leading-relaxed mt-1">İnisiyatif alma, cesaret, liderlik ve saf yaşam enerjisi. Yeni başlangıçlar yapma dürtüsünü yönetir.</Text>
               </View>
               
-              <View style={styles.signItem}>
-                <Text style={styles.signTitleText}>♉ Boğa (Muhafız / The Builder):</Text>
-                <Text style={styles.signBodyText}>Maddi ve manevi köklenme, üretkenlik, doğayla uyum ve kalıcı değer yaratma isteği. İstikrar arayışı.</Text>
+              <View style={styles.signItem} className="bg-white/5 p-3 rounded-xl border-l-2 border-l-emerald-400 mb-3">
+                <Text style={styles.signTitleText} className="text-emerald-300 font-bold text-sm font-sans">♉ Boğa (Toprak / Sabit / Venüs):</Text>
+                <Text style={styles.signBodyText} className="text-white/60 text-xs leading-relaxed mt-1">Maddi ve manevi köklenme, üretkenlik, istikrar arayışı ve estetik değer yaratma yeteneği.</Text>
               </View>
 
-              <View style={styles.signItem}>
-                <Text style={styles.signTitleText}>♊ İkizler (Haberci / The Messenger):</Text>
-                <Text style={styles.signBodyText}>Entelektüel merak, bilgi toplama ve yayma, zihinsel esneklik, zıtlıklar arasında köprü kurma gücü.</Text>
+              <View style={styles.signItem} className="bg-white/5 p-3 rounded-xl border-l-2 border-l-sky-400 mb-3">
+                <Text style={styles.signTitleText} className="text-sky-300 font-bold text-sm font-sans">♊ İkizler (Hava / Değişken / Merkür):</Text>
+                <Text style={styles.signBodyText} className="text-white/60 text-xs leading-relaxed mt-1">Zihinsel merak, iletişim hızı, bilgi toplama ve yayma gücü. Çift karakterli ve esnek mizaç.</Text>
               </View>
 
-              <View style={styles.signItem}>
-                <Text style={styles.signTitleText}>♋ Yengeç (Besleyici / The Nurturer):</Text>
-                <Text style={styles.signBodyText}>Duygusal kökler, aile bağı, şefkat, empati yeteneği. Hassas iç dünyayı koruma ve büyütme enerjisi.</Text>
+              <View style={styles.signItem} className="bg-white/5 p-3 rounded-xl border-l-2 border-l-indigo-400 mb-3">
+                <Text style={styles.signTitleText} className="text-indigo-300 font-bold text-sm font-sans">♋ Yengeç (Su / Öncü / Ay):</Text>
+                <Text style={styles.signBodyText} className="text-white/60 text-xs leading-relaxed mt-1">Duygusal derinlik, empati, şefkat, yuva ve aile bağları. Koruyucu ve besleyici enerji.</Text>
               </View>
 
-              <View style={styles.signItem}>
-                <Text style={styles.signTitleText}>♌ Aslan (Hükümdar / The Sovereign):</Text>
-                <Text style={styles.signBodyText}>Yaratıcı cömertlik, parıldama, kendini cesurca sahneleme, içsel bütünlüğü ve krallığı gururla sergileme.</Text>
+              <View style={styles.signItem} className="bg-white/5 p-3 rounded-xl border-l-2 border-l-amber-400 mb-3">
+                <Text style={styles.signTitleText} className="text-amber-300 font-bold text-sm font-sans">♌ Aslan (Ateş / Sabit / Güneş):</Text>
+                <Text style={styles.signBodyText} className="text-white/60 text-xs leading-relaxed mt-1">Yaratıcılık, cömertlik, kendini gururla ifade etme gücü ve liderlik karizması.</Text>
               </View>
 
-              <View style={styles.signItem}>
-                <Text style={styles.signTitleText}>♍ Başak (Şifacı / The Analyst):</Text>
-                <Text style={styles.signBodyText}>Analitik saflaştırma, faydalı olma, ustalık ve zanaat. Kusursuz bir düzen ararken esnekliği öğrenme.</Text>
+              <View style={styles.signItem} className="bg-white/5 p-3 rounded-xl border-l-2 border-l-green-400 mb-3">
+                <Text style={styles.signTitleText} className="text-green-300 font-bold text-sm font-sans">♍ Başak (Toprak / Değişken / Merkür):</Text>
+                <Text style={styles.signBodyText} className="text-white/60 text-xs leading-relaxed mt-1">Analitik zeka, titizlik, pratik çözümler üretme, hizmet etme sevgisi ve bedensel şifa enerjisi.</Text>
               </View>
 
-              <View style={styles.signItem}>
-                <Text style={styles.signTitleText}>♎ Terazi (Dengeleyici / The Peacemaker):</Text>
-                <Text style={styles.signBodyText}>Uyum, adalet, estetik algı, ilişkilerdeki denge. "Ben" ve "Biz" arasındaki diplomatik köprü.</Text>
+              <View style={styles.signItem} className="bg-white/5 p-3 rounded-xl border-l-2 border-l-pink-400 mb-3">
+                <Text style={styles.signTitleText} className="text-pink-300 font-bold text-sm font-sans">♎ Terazi (Hava / Öncü / Venüs):</Text>
+                <Text style={styles.signBodyText} className="text-white/60 text-xs leading-relaxed mt-1">Uyum, adalet, estetik algı, ikili ilişkilerde denge kurma arzusu ve diplomatik zeka.</Text>
               </View>
 
-              <View style={styles.signItem}>
-                <Text style={styles.signTitleText}>♏ Akrep (Dönüştürücü / The Alchemist):</Text>
-                <Text style={styles.signBodyText}>Kişisel gölgelerle yüzleşme, ölüm-yeniden doğum krizleri, derin sezgiler ve ruhsal simya (transformation).</Text>
+              <View style={styles.signItem} className="bg-white/5 p-3 rounded-xl border-l-2 border-l-purple-400 mb-3">
+                <Text style={styles.signTitleText} className="text-purple-300 font-bold text-sm font-sans">♏ Akrep (Su / Sabit / Mars & Plüton):</Text>
+                <Text style={styles.signBodyText} className="text-white/60 text-xs leading-relaxed mt-1">Krizleri dönüştürme gücü, derin sezgiler, tutku, gizem ve manevi yenilenme kapasitesi.</Text>
               </View>
 
-              <View style={styles.signItem}>
-                <Text style={styles.signTitleText}>♐ Yay (Kaşif / The Seeker):</Text>
-                <Text style={styles.signBodyText}>Yüksek anlam, felsefi arayış, inançlar, vizyonerlik ve özgürlük tutkusu. Yaşamın bilgeliğine seyahat.</Text>
+              <View style={styles.signItem} className="bg-white/5 p-3 rounded-xl border-l-2 border-l-yellow-400 mb-3">
+                <Text style={styles.signTitleText} className="text-yellow-300 font-bold text-sm font-sans">♐ Yay (Ateş / Değişken / Jüpiter):</Text>
+                <Text style={styles.signBodyText} className="text-white/60 text-xs leading-relaxed mt-1">İnançlar, yüksek felsefe, keşif arzusu, vizyonerlik ve sınırları aşan özgürlük tutkusu.</Text>
               </View>
 
-              <View style={styles.signItem}>
-                <Text style={styles.signTitleText}>♑ Oğlak (Yönetici / The Architect):</Text>
-                <Text style={styles.signBodyText}>Toplumsal inşa, sorumluluk, disiplin, zamanın sınırlarını kabul ederek kalıcı ve saygın yapılar kurma.</Text>
+              <View style={styles.signItem} className="bg-white/5 p-3 rounded-xl border-l-2 border-l-teal-400 mb-3">
+                <Text style={styles.signTitleText} className="text-teal-300 font-bold text-sm font-sans">♑ Oğlak (Toprak / Öncü / Satürn):</Text>
+                <Text style={styles.signBodyText} className="text-white/60 text-xs leading-relaxed mt-1">Disiplin, sorumluluk, zamanın getirdiği olgunluk, kariyer hedefleri ve kalıcı yapılar kurma azmi.</Text>
               </View>
 
-              <View style={styles.signItem}>
-                <Text style={styles.signTitleText}>♒ Kova (Devrimci / The Reformer):</Text>
-                <Text style={styles.signBodyText}>Kolektif bilinç, özgünlük, bağımsız zihin, hümanist idealler ve sınırları aşan devrimci vizyonlar.</Text>
+              <View style={styles.signItem} className="bg-white/5 p-3 rounded-xl border-l-2 border-l-cyan-400 mb-3">
+                <Text style={styles.signTitleText} className="text-cyan-300 font-bold text-sm font-sans">♒ Kova (Hava / Sabit / Satürn & Uranüs):</Text>
+                <Text style={styles.signBodyText} className="text-white/60 text-xs leading-relaxed mt-1">Özgün zeka, kolektif vizyonlar, bağımsızlık, yenilikçi ve reformcu bakış açısı.</Text>
               </View>
 
-              <View style={styles.signItem}>
-                <Text style={styles.signTitleText}>♓ Balık (Mistik / The Dreamer):</Text>
-                <Text style={styles.signBodyText}>Sonsuz teslimiyet, evrensel şefkat, kolektif bilinçdışı okyanusunda kaybolmadan birliği ve şifayı deneyimleme.</Text>
+              <View style={styles.signItem} className="bg-white/5 p-3 rounded-xl border-l-2 border-l-blue-400">
+                <Text style={styles.signTitleText} className="text-blue-300 font-bold text-sm font-sans">♓ Balık (Su / Değişken / Jüpiter & Neptün):</Text>
+                <Text style={styles.signBodyText} className="text-white/60 text-xs leading-relaxed mt-1">Sonsuz empati, evrensel şefkat, mistik derinlik, ilahi teslimiyet ve güçlü hayal gücü.</Text>
               </View>
             </View>
           </LibrarySection>
 
-          {/* Section 2: Four Elements */}
+          {/* Section 2: Celestial Bodies */}
           <LibrarySection
-            title="Dört Element ve Psikolojik Fonksiyonlar"
-            emoji="🔥"
+            title="Astrolojide Gezegenler"
+            emoji="🪐"
             isOpen={openSection === 1}
             onToggle={() => toggleSection(1)}
           >
-            <Text style={styles.introText}>
-              Astrolojideki dört temel element, Carl Jung'un tanımladığı dört temel psikolojik fonksiyonla (algı kapısıyla) kusursuz bir uyum içindedir:
+            <Text style={styles.introText} className="text-white/70 text-sm leading-relaxed mb-4">
+              Gezegenler, ruhumuzun farklı dinamiklerini, yeteneklerini ve yaşam alanlarındaki motivasyonlarını simgeler:
             </Text>
 
-            <View style={styles.elementList}>
-              <View style={styles.elementItem}>
-                <Text style={styles.elementTitleText}>🔥 Ateş Elementi - SEZGİ (Intuition):</Text>
-                <Text style={styles.signBodyText}>
-                  Koç, Aslan, Yay. Gelecek olasılıklarını anında yakalama, ilham, eyleme geçme dürtüsü ve içgüdüsel bilme yeteneğidir. Mantıksal çıkarımlarla değil, vizyonlarla hareket eder.
-                </Text>
+            <View className="space-y-3">
+              <View className="mb-3">
+                <Text className="text-amber-300 font-bold text-sm font-sans">☀️ Güneş (Güneş):</Text>
+                <Text className="text-white/60 text-xs leading-relaxed mt-1">Öz kimlik, irade, yaşam enerjisi ve bilinçli benlik hedeflerini temsil eder.</Text>
               </View>
-
-              <View style={styles.elementItem}>
-                <Text style={styles.elementTitleText}>🌳 Toprak Elementi - DUYUM (Sensation):</Text>
-                <Text style={styles.signBodyText}>
-                  Boğa, Başak, Oğlak. Beş duyu organıyla algılanabilen somut gerçekliği, şimdiki anı ve pratik yaşamı temsil eder. Ayakları yere basan, rasyonel ve gerçekçi algıdır.
-                </Text>
+              <View className="mb-3">
+                <Text className="text-indigo-300 font-bold text-sm font-sans">🌙 Ay (Ay):</Text>
+                <Text className="text-white/60 text-xs leading-relaxed mt-1">Duygusal ihtiyaçlar, sezgiler, bilinçaltı ve günün enerjisel ritimlerini yönetir.</Text>
               </View>
-
-              <View style={styles.elementItem}>
-                <Text style={styles.elementTitleText}>💨 Hava Elementi - DÜŞÜNME (Thinking):</Text>
-                <Text style={styles.signBodyText}>
-                  İkizler, Terazi, Kova. Olayları objektif analiz etme, kavramlaştırma, mantık süzgecinden geçirme ve dilsel iletişim kurma fonksiyonudur. Tarafsız kararlar verir.
-                </Text>
+              <View className="mb-3">
+                <Text className="text-sky-300 font-bold text-sm font-sans">💬 Merkür (Utarit):</Text>
+                <Text className="text-white/60 text-xs leading-relaxed mt-1">Zeka, mantık, iletişim, eğitim yetenekleri ve geleneksel Ebced kodlamalarıyla ilişkilidir.</Text>
               </View>
-
-              <View style={styles.elementItem}>
-                <Text style={styles.elementTitleText}>💧 Su Elementi - HİSSETME (Feeling):</Text>
-                <Text style={styles.signBodyText}>
-                  Yengeç, Akrep, Balık. Durumların veya insanların manevi ve sübjektif değerini ölçer. Empati, duygusal rezonans, şefkat ve içsel derinlik vasıtasıyla hayatı anlamlandırır.
-                </Text>
+              <View className="mb-3">
+                <Text className="text-pink-300 font-bold text-sm font-sans">💞 Venüs (Zühre):</Text>
+                <Text className="text-white/60 text-xs leading-relaxed mt-1">Aşk, ikili ilişkiler, değerler, güzellik algısı, finansal bereket ve cazibeyi simgeler.</Text>
+              </View>
+              <View className="mb-3">
+                <Text className="text-rose-300 font-bold text-sm font-sans">🔥 Mars (Merih):</Text>
+                <Text className="text-white/60 text-xs leading-relaxed mt-1">Eyleme geçme gücü, hırs, cesaret, fiziksel dayanıklılık ve mücadele enerjisi.</Text>
+              </View>
+              <View className="mb-3">
+                <Text className="text-yellow-300 font-bold text-sm font-sans">🌟 Jüpiter (Müşteri):</Text>
+                <Text className="text-white/60 text-xs leading-relaxed mt-1">Bolluk, şans, büyüme, bilgelik arayışı ve maddi/manevi genişleme fırsatları.</Text>
+              </View>
+              <View className="mb-3">
+                <Text className="text-teal-300 font-bold text-sm font-sans">🪐 Satürn (Zühal):</Text>
+                <Text className="text-white/60 text-xs leading-relaxed mt-1">Disiplin, sınırlar, karma, sorumluluklar, zamanın getirdiği sınavlar ve sabır.</Text>
               </View>
             </View>
           </LibrarySection>
 
-          {/* Section 3: Twelve Houses */}
+          {/* Section 3: Astrological Houses */}
           <LibrarySection
             title="Yaşam Alanları (12 Ev)"
             emoji="🏠"
             isOpen={openSection === 2}
             onToggle={() => toggleSection(2)}
           >
-            <Text style={styles.introText}>
-              Haritadaki 12 Ev, psikolojik potansiyellerimizin hayatın hangi somut sahnelerinde (ilişki, kariyer, iç dünya vb.) deneyimleneceğini gösterir:
+            <Text style={styles.introText} className="text-white/70 text-sm leading-relaxed mb-4">
+              Haritadaki 12 ev, doğum anındaki gökyüzünün yerel ufkuna göre bölünmesidir ve hayatın hangi sahnelerinde enerjimizi harcayacağımızı belirler:
             </Text>
 
-            <View style={styles.houseGrid}>
-              <View style={styles.houseItem}>
-                <Text style={styles.houseTitleText}>1. Ev (Persona / Yükselen):</Text>
-                <Text style={styles.houseBodyText}>Dış dünyaya yansıttığımız maske, ilk intiba ve fiziksel duruş.</Text>
-              </View>
-              <View style={styles.houseItem}>
-                <Text style={styles.houseTitleText}>2. Ev (Maddi ve Öz-Değerler):</Text>
-                <Text style={styles.houseBodyText}>Finansal kaynaklarımız ve kendimize atfettiğimiz içsel değer.</Text>
-              </View>
-              <View style={styles.houseItem}>
-                <Text style={styles.houseTitleText}>3. Ev (Gündelik Zihin & İletişim):</Text>
-                <Text style={styles.houseBodyText}>Kısa seyahatler, kardeşler, mantıksal zihin ve temel iletişim.</Text>
-              </View>
-              <View style={styles.houseItem}>
-                <Text style={styles.houseTitleText}>4. Ev (Bilinçdışı Kökler / Yuva):</Text>
-                <Text style={styles.houseBodyText}>Aile geçmişi, childluk temelleri ve bilinçdışının en derin tabanı.</Text>
-              </View>
-              <View style={styles.houseItem}>
-                <Text style={styles.houseTitleText}>5. Ev (Yaratıcılık & İçsel Çocuk):</Text>
-                <Text style={styles.houseBodyText}>Aşk, sahne, hobiler, oyunlar ve egonun saf neşeyle kendini ifadesi.</Text>
-              </View>
-              <View style={styles.houseItem}>
-                <Text style={styles.houseTitleText}>6. Ev (Hizmet, Sağlık & Rutinler):</Text>
-                <Text style={styles.houseBodyText}>Günlük çalışma, fiziksel beden sağlığı ve pratik iş bitiricilik.</Text>
-              </View>
-              <View style={styles.houseItem}>
-                <Text style={styles.houseTitleText}>7. Ev (Gölge Yansıtmaları / İlişkiler):</Text>
-                <Text style={styles.houseBodyText}>Evlilik, ortaklıklar ve kendi içimizde fark etmediğimiz ötekiler.</Text>
-              </View>
-              <View style={styles.houseItem}>
-                <Text style={styles.houseTitleText}>8. Ev (Krizler & Kolektif Dönüşüm):</Text>
-                <Text style={styles.houseBodyText}>Miras, krizler, ölüm, cinsellik ve derin psikolojik dönüşüm.</Text>
-              </View>
-              <View style={styles.houseItem}>
-                <Text style={styles.houseTitleText}>9. Ev (Felsefe, Yüksek Bilgi & İnanç):</Text>
-                <Text style={styles.houseBodyText}>Uzak seyahatler, üniversite eğitimi, yaşam inançları ve ahlak.</Text>
-              </View>
-              <View style={styles.houseItem}>
-                <Text style={styles.houseTitleText}>10. Ev (Toplumsal Rol / MC):</Text>
-                <Text style={styles.houseBodyText}>Kariyer, saygınlık, toplumsal zirve ve bireyleşme meyvesi.</Text>
-              </View>
-              <View style={styles.houseItem}>
-                <Text style={styles.houseTitleText}>11. Ev (Ortak Vizyonlar & Dostluk):</Text>
-                <Text style={styles.houseBodyText}>Sosyal gruplar, dernekler, insanlık idealleri ve ümitlerimiz.</Text>
-              </View>
-              <View style={styles.houseItem}>
-                <Text style={styles.houseTitleText}>12. Ev (İnziva & Bilinçdışı Okyanusu):</Text>
-                <Text style={styles.houseBodyText}>Rüyalar, bastırılmış korkular, kolektif hafıza ve ilahi teslimiyet.</Text>
-              </View>
+            <View className="space-y-2">
+              <Text className="text-white/80 text-xs leading-relaxed mb-1"><Text className="text-amber-300 font-bold font-sans">1. Ev (Yükselen / ASC): </Text>Karakter yapısı, dış dünyaya sunulan maske, ilk intiba ve fiziksel mizaç.</Text>
+              <Text className="text-white/80 text-xs leading-relaxed mb-1"><Text className="text-amber-300 font-bold font-sans">2. Ev: </Text>Finansal kaynaklar, kazançlar, maddi güvence ve kişisel öz-değer duygusu.</Text>
+              <Text className="text-white/80 text-xs leading-relaxed mb-1"><Text className="text-amber-300 font-bold font-sans">3. Ev: </Text>Yakın çevre, kardeşler, mantıksal zihin, ilk eğitim süreçleri ve kısa seyahatler.</Text>
+              <Text className="text-white/80 text-xs leading-relaxed mb-1"><Text className="text-amber-300 font-bold font-sans">4. Ev: </Text>Aile, kökler, çocukluk temelleri, ev ve iç dünyadaki en gizli sığınak alanı.</Text>
+              <Text className="text-white/80 text-xs leading-relaxed mb-1"><Text className="text-amber-300 font-bold font-sans">5. Ev: </Text>Yaratıcılık, aşk ilişkileri, çocuklar, hobiler, oyunlar ve yaşamdan alınan zevk.</Text>
+              <Text className="text-white/80 text-xs leading-relaxed mb-1"><Text className="text-amber-300 font-bold font-sans">6. Ev: </Text>Günlük çalışma rutinleri, iş ortamı, evcil hayvanlar ve fiziksel beden sağlığı.</Text>
+              <Text className="text-white/80 text-xs leading-relaxed mb-1"><Text className="text-amber-300 font-bold font-sans">7. Ev (Alçalan / DSC): </Text>Evlilik, ciddi ortaklıklar, açık düşmanlar ve ikili ilişkilerde denge.</Text>
+              <Text className="text-white/80 text-xs leading-relaxed mb-1"><Text className="text-amber-300 font-bold font-sans">8. Ev: </Text>Miras, eşin parası, krizler, ölüm, manevi dönüşüm, cinsellik ve okült ilimler.</Text>
+              <Text className="text-white/80 text-xs leading-relaxed mb-1"><Text className="text-amber-300 font-bold font-sans">9. Ev: </Text>Uzak seyahatler, yabancı kültürler, yüksek eğitim, felsefe, din ve vizyonlar.</Text>
+              <Text className="text-white/80 text-xs leading-relaxed mb-1"><Text className="text-amber-300 font-bold font-sans">10. Ev (Başucu Noktası / MC): </Text>Kariyer, toplumsal statü, başarı, otorite ve hayattaki nihai zirve noktası.</Text>
+              <Text className="text-white/80 text-xs leading-relaxed mb-1"><Text className="text-amber-300 font-bold font-sans">11. Ev: </Text>Sosyal gruplar, dernekler, dostluklar, insanlığa faydalı hedefler ve dilekler.</Text>
+              <Text className="text-white/80 text-xs leading-relaxed"><Text className="text-amber-300 font-bold font-sans">12. Ev: </Text>Bilinçaltı okyanusu, rüyalar, gizli düşmanlar, inziva, manevi arınma ve teslimiyet.</Text>
             </View>
           </LibrarySection>
 
-          {/* Section 4: Jungian Astrology */}
+          {/* Section 4: Ebced, Yildizname & Rituals */}
           <LibrarySection
-            title="Bireyleşme ve Astroloji Manifestosu"
+            title="Ebced, Yıldızname ve Ritüel İlimleri"
             emoji="📜"
             isOpen={openSection === 3}
             onToggle={() => toggleSection(3)}
           >
-            <Text style={styles.manifestoTitle}>Gökyüzündeki Aynanın Psikolojisi</Text>
-            <Text style={styles.manifestoParagraph}>
-              Carl Gustav Jung, hastalarının rüyalarını ve psikolojik krizlerini anlamak için astroloji haritalarından sıklıkla faydalanmıştır. Ona göre astroloji, insanlığın kolektif bilinçdışındaki arketipleri (evrensel psikolojik dinamikleri) gökyüzüne yansıttığı binlerce yıllık eşsiz bir yansıtma (projeksiyon) alanıdır.
+            <Text className="text-amber-300 font-bold text-sm mb-2 font-sans">Ebced Hesabı Nedir?</Text>
+            <Text className="text-white/60 text-xs leading-relaxed mb-4">
+              Ebced, Arap alfabesindeki harflerin sayısal değerlerini temel alan kadim bir matematik sistemidir. İsimlerin sayısal titreşimi hesaplanarak kişinin kader kodları, uyumlu zikir sayıları ve karakter mizaçları üzerinde incelemeler yapılır. Her ismin evrende bir sayısal rezonansı bulunur.
             </Text>
-            <Text style={styles.manifestoParagraph}>
-              Bir doğum haritası (Natal Chart), ruhumuzun parçalanmış durumunu simgeleyen bir mandaladır. Haritadaki gezegenler (Güneş, Ay, Mars vb.) iç dünyamızdaki farklı alt kişilikleri ve enerjileri temsil eder. Bireyleşme (Individuation) süreci, bu farklı gezegenlerin fısıldadığı arketipsel ihtiyaçları bilince çıkarıp birbirleriyle savaştırmadan tek bir merkezde (Self / Öz-Benlik) bütünleştirmektir.
+
+            <Text className="text-amber-300 font-bold text-sm mb-2 font-sans">Yıldızname Nedir?</Text>
+            <Text className="text-white/60 text-xs leading-relaxed mb-4">
+              Yıldızname, kişinin adı ve anne adının Ebced değerlerinin toplanıp 12'ye bölünmesiyle hesaplanan geleneksel bir Doğu analizidir. Çıkan kalan sayıya göre kişinin yıldız burcu, yönetici yıldızı (gezegeni), uğurlu günü, rengi ve manevi koruma esmaları belirlenir. Fal değildir; isim enerjileriyle gezegen saatlerinin uyumlandırılması ilmidir.
             </Text>
-            <Text style={styles.manifestoParagraph}>
-              Astrologic uygulamasının amacı, göksel sembolleri fal veya kehanet olarak değil, kendi içinizdeki gölge (Shadow), anima, animus ve persona dengesini gözlemleyebileceğiniz psikolojik bir ayna olarak kullanmanızı sağlamaktır. Ritimleri fark ettiğinizde, gökyüzünün dışsal bir güç olmadığını, kendi içinizin bir yansıması olduğunu keşfedeceksiniz.
+
+            <Text className="text-amber-300 font-bold text-sm mb-2 font-sans">Gezegen Günleri ve Zikir Bağlantısı</Text>
+            <Text className="text-white/60 text-xs leading-relaxed mb-4">
+              Kadim ilimlere göre haftanın her günü bir gezegenin enerjisiyle rezonanstadır:
+              {"\n"}• Pazar: Güneş (Saygınlık, liderlik - Ya Cami)
+              {"\n"}• Pazartesi: Ay (Sezgi, aile, arınma - Ya Kuddüs)
+              {"\n"}• Salı: Mars (Cesaret, eylem - Ya Fettah)
+              {"\n"}• Çarşamba: Merkür (Zihin, ticaret - Ya Alim)
+              {"\n"}• Perşembe: Jüpiter (Bolluk, şans - Ya Rezzak)
+              {"\n"}• Cuma: Venüs (Sevgi, muhabbet - Ya Vedud)
+              {"\n"}• Cumartesi: Satürn (Disiplin, koruma - Ya Selam)
+            </Text>
+
+            <Text className="text-amber-300 font-bold text-sm mb-2 font-sans">Ay Döngüsü ve Kozmik Biyohacking Ritüelleri</Text>
+            <Text className="text-white/60 text-xs leading-relaxed">
+              Ay'ın evrelerine göre hayatınızı optimize edebilirsiniz:
+              {"\n"}• **Yeni Ay (Niyet):** Adaçayı veya üzerlik otu yakarak mekansal arınma yapın. Yeni kararlar ve niyetler belirleyin.
+              {"\n"}• **Büyüyen Ay (Gelişim):** Vücudu besleyin, saç kesimi yaptırın (saçı gürleştirir), vitamin takviyeleri alın.
+              {"\n"}• **Dolunay (Zirve & Arınma):** Vücutta ödem birikebileceğinden bol su tüketin. Akşam ellerinizi kaya tuzlu suyla yıkayarak negatif enerjileri boşaltın.
+              {"\n"}• **Küçülen Ay (Temizlik & Detoks):** Evde derin temizlik yapın, epilasyon yaptırın (etkisi daha kalıcı olur) ve toksin atmak için bitki çayları için.
             </Text>
           </LibrarySection>
         </View>
@@ -257,7 +242,7 @@ export default function ExploreScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0D1117',
+    backgroundColor: '#000000', // Saf OLED Siyahı
   },
   scrollContainer: {
     padding: 20,
@@ -269,7 +254,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontFamily: 'Cinzel',
+    fontFamily: 'Inter',
     fontSize: 26,
     color: '#D4AF37',
     fontWeight: '700',
@@ -301,7 +286,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   sectionTitle: {
-    fontFamily: 'Cinzel',
+    fontFamily: 'Inter',
     fontSize: 15,
     color: '#F0F6FC',
     fontWeight: '600',
@@ -311,7 +296,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(212, 175, 55, 0.12)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     marginBottom: 14,
   },
   introText: {
@@ -329,12 +314,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     borderLeftWidth: 2,
-    borderLeftColor: 'rgba(212, 175, 55, 0.4)',
   },
   signTitleText: {
-    fontFamily: 'Cinzel',
+    fontFamily: 'Inter',
     fontSize: 13,
-    color: '#D4AF37',
     fontWeight: '700',
     marginBottom: 4,
   },
@@ -343,58 +326,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#8B949E',
     lineHeight: 18,
-  },
-  elementList: {
-    gap: 14,
-  },
-  elementItem: {
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderRadius: 8,
-    padding: 12,
-    borderLeftWidth: 2,
-    borderLeftColor: '#D4AF37',
-  },
-  elementTitleText: {
-    fontFamily: 'Cinzel',
-    fontSize: 13.5,
-    color: '#D4AF37',
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-  houseGrid: {
-    gap: 12,
-  },
-  houseItem: {
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderRadius: 8,
-    padding: 10,
-  },
-  houseTitleText: {
-    fontFamily: 'Cinzel',
-    fontSize: 13,
-    color: '#D4AF37',
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  houseBodyText: {
-    fontFamily: 'Inter',
-    fontSize: 13,
-    color: '#8B949E',
-    lineHeight: 18,
-  },
-  manifestoTitle: {
-    fontFamily: 'Cinzel',
-    fontSize: 15,
-    color: '#D4AF37',
-    fontWeight: '700',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  manifestoParagraph: {
-    fontFamily: 'Inter',
-    fontSize: 13.5,
-    color: '#8B949E',
-    lineHeight: 21,
-    marginBottom: 14,
   },
 });

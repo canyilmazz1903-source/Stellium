@@ -15,10 +15,10 @@ export const Colors = {
   },
   dark: {
     text: '#F0F6FC',               // Light text for dark bg
-    background: '#0D1117',         // Deep night blue
-    backgroundElement: '#161B22',  // Obsidian / dark grey
-    backgroundSelected: '#21262D', // Light accent
-    textSecondary: '#8B949E',      // Stardust grey
+    background: '#000000',         // Pure OLED Black
+    backgroundElement: '#121212',  // Very dark grey
+    backgroundSelected: '#1C1C1E', // Dark accent
+    textSecondary: '#8E8E93',      // Slate grey
     gold: '#D4AF37',               // Antique gold
     goldLight: '#F3E5AB',          // Warm gold highlight
     goldDark: '#8C6D12',           // Brass shadow
@@ -30,15 +30,15 @@ export type ThemeColor = keyof typeof Colors.dark;
 export const Fonts = Platform.select({
   ios: {
     sans: 'Inter',
-    serif: 'Cinzel', // Main header font
-    serifSub: 'CormorantGaramond',
+    serif: 'Inter', // Sans-Serif only for Ethereal Aura
+    serifSub: 'Inter',
     rounded: 'System',
     mono: 'Courier',
   },
   default: {
     sans: 'System',
-    serif: 'serif',
-    serifSub: 'serif',
+    serif: 'System',
+    serifSub: 'System',
     rounded: 'System',
     mono: 'monospace',
   },
@@ -59,8 +59,8 @@ export const MaxContentWidth = 800;
 
 // Glassmorphism styling tokens for custom UI components
 export const Glass = {
-  border: 'rgba(212, 175, 55, 0.15)', // Antique gold subtle border
-  bg: 'rgba(22, 27, 34, 0.65)',        // Semi-transparent obsidian
+  border: 'rgba(255, 255, 255, 0.1)', // Subtle white transparent border
+  bg: 'rgba(15, 20, 30, 0.7)',        // Ethereal dark blue-grey tint
   blur: 20,                            // Blur intensity
   shadow: {
     shadowColor: '#000000',

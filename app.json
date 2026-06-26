@@ -2,7 +2,7 @@
   "expo": {
     "name": "Astrologic",
     "slug": "Astrologic",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "astrologic",
@@ -10,14 +10,14 @@
     "ios": {
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.stellium.app",
-      "buildNumber": "8",
+      "buildNumber": "11",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.stellium.app",
-      "versionCode": 8,
+      "versionCode": 11,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -43,7 +43,14 @@
         }
       ],
       "expo-secure-store",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

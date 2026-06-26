@@ -1,9 +1,16 @@
-import React, { useMemo } from 'react';
-import { StyleSheet, Text, View, ScrollView, SafeAreaView, Dimensions } from 'react-native';
+import React, { useMemo, useState, useEffect } from 'react';
+import { StyleSheet, Text, View, ScrollView, SafeAreaView, Dimensions, ActivityIndicator, Pressable, Modal, Alert, Platform } from 'react-native';
 import Svg, { Circle, Line, Text as SvgText, G } from 'react-native-svg';
 import { useAppStore } from '@/store/appStore';
+import { useAuthStore } from '@/store/authStore';
+import { useCosmicCalendarStore } from '@/store/cosmicCalendarStore';
 import GlassCard from '@/components/glass/GlassCard';
 import { getZodiacSign } from '@/utils/astronomy';
+import { fetchFullChartAnalysis } from '@/api/gemini';
+import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import { useRouter } from 'expo-router';
 
 const BIG_THREE_INTERPRETATIONS: Record<string, {
   sun: { archetype: string; ego: string; advice: string };
@@ -12,215 +19,214 @@ const BIG_THREE_INTERPRETATIONS: Record<string, {
 }> = {
   'Koç': {
     sun: {
-      archetype: 'Savaşçı (The Warrior)',
-      ego: 'Güneş Koç burcundayken ego, bağımsızlık, cesaret ve öncülük vasıtasıyla kendini var eder. Bireyleşme yolculuğunuz, inisiyatif almayı ve engeller karşısında kendi özgün kimliğinizi korkusuzca savunmayı öğrenmeyi gerektirir. Kendinizi doğrudan eyleme geçerek ve risk alarak gerçekleştirirsiniz.',
-      advice: 'Gelişiminiz için sabırsızlığınızı ve dürtüselliğinizi dengelemeli, başkalarının sınırlarına saygı duymayı öğrenmelisiniz. Enerjinizi yıkıcı bir öfke yerine, yaratıcı bir liderliğe dönüştürün.'
+      archetype: 'Öncü Savaşçı',
+      ego: 'Güneşiniz Koç burcundayken yaşam enerjiniz bağımsızlık, cesaret ve sabırsızlıkla doludur. Hayatta öncü rol oynamak, inisiyatif almak ve kendi yolunuzu korkusuzca çizmek sizin temel yaşam amacınızdır. Yönetici gezegeniniz Mars, size durdurulamaz bir irade gücü ve mücadeleci bir karakter bahşeder.',
+      advice: 'Yaşam yolculuğunuzda sabırsızlığınızı dengelemeli, başkalarının sınırlarına saygı duymayı öğrenmelisiniz. Enerjinizi ani öfke patlamaları yerine yapıcı liderlik alanlarına kanalize edin.'
     },
     moon: {
-      archetype: 'Ateşli Ruh (The Fiery Soul)',
-      shadow: 'Ay Koç\'tayken duygusal dünyanız son derece hareketli, sabırsız ve tutkuludur. Bilinçdışınızda, kısıtlanma korkusu ve sürekli bir savunma mekanizması yatar. Duygularınızı anında ve filtresizce dışa vurma eğilimindesinizdir. İçsel çocuk hızlıca parlayıp sönebilir.',
-      advice: 'Duygusal tepkilerinizle aranıza kısa bir mesafe koymayı öğrenin. Anlık öfke patlamalarının arkasındaki incinme korkusunu (gölgenizi) kabul edin.'
+      archetype: 'Ateşli Ruh',
+      shadow: 'Ayınız Koç burcundayken iç dünyanız son derece tez canlı, tutkulu ve tepkiseldir. Sezgisel olarak kısıtlanmak ve bekletilmek sizi en çok huzursuz eden şeylerdir. Hislerinizi anında ve filtresizce dışa vurma eğilimindesinizdir.',
+      advice: 'Duygusal tepkilerinizle aranıza kısa bir mesafe koymayı öğrenin. Anlık kararlar vermeden önce derin nefes alarak içsel dengenizi koruyun.'
     },
     asc: {
-      archetype: 'Öncü (The Pioneer)',
-      persona: 'Yükselen Koç olarak dünyaya sunduğunuz maske (Persona) cesur, enerjik, dinamik ve doğrudan bir karakterdir. İnsanlar sizi kararlı, mücadeleci ve harekete geçmeye hazır biri olarak görür. Hayata karşı duruşunuz rekabetçidir.',
-      advice: 'Persona\'nızın aşırı hırçın veya bencil görünmesini engellemek için diyalogda diplomasiye ve yumuşaklığa yer açın.'
+      archetype: 'Dinamik Öncü',
+      persona: 'Yükselen Koç olarak dış dünyaya sunduğunuz sosyal duruş cesur, enerjik, dinamik ve doğrudan bir karakterdir. İnsanlar sizi kararlı, açık sözlü ve ilk adımı atmaktan çekinmeyen biri olarak görür.',
+      advice: 'Sosyal ilişkilerinizde bazen aşırı sabırsız veya sert algılanmamak adına diplomasiden ve yumuşak diyaloglardan faydalanın.'
     }
   },
   'Boğa': {
     sun: {
-      archetype: 'Yaratıcı Muhafız (The Builder/Preserver)',
-      ego: 'Güneş Boğa\'dayken ego, maddi-manevi istikrar, güzellik, köklenme ve üretkenlik arayışındadır. Bireyleşme yolculuğunuz, hayatta kalıcı değerler yaratmayı ve doğayla, duyularla uyum içinde yaşamayı öğrenmektir. Kararlılık ve güvenilirlik en güçlü yönlerinizdir.',
-      advice: 'Değişime karşı gösterdiğiniz aşırı direnci (inatçılık) esnetin. Güvenlik ihtiyacınızın sizi konfor alanınıza hapsetmesine izin vermeyin.'
+      archetype: 'Yaratıcı Muhafız',
+      ego: 'Güneşiniz Boğa burcundayken karakteriniz güven, istikrar, estetik ve üretkenlik odaklıdır. Hayatta kalıcı değerler inşa etmek, konfor alanınızı korumak ve doğanın ritmiyle uyumlanmak en temel amacınızdır. Yönetici gezegeniniz Venüs, size sanatsal bir zarafet, sadakat ve huzur verir.',
+      advice: 'Değişimlere karşı gösterdiğiniz aşırı direnci (inatçılık) esnetmeyi öğrenin. Güvenlik ihtiyacınızın sizi konfor alanınıza hapsetmesine izin vermeyin.'
     },
     moon: {
-      archetype: 'Huzur Arayan (The Inner Sanctuary)',
-      shadow: 'Ay Boğa\'da yücelir; bu da duygusal dünyanızın oldukça dengeli, sakin ve bedensel konfora düşkün olduğunu gösterir. Bilinçdışınızda ani değişimlerden ve maddi kayıplardan duyulan derin bir endişe yatar. Duygusal gıdayı doğada ve dokunmada bulursunuz.',
-      advice: 'Maddi varlıklara ve insanlara bağımlılık geliştirmek yerine, kendi içinizdeki manevi değer duygusunu büyütün.'
+      archetype: 'Huzur Arayan',
+      shadow: 'Ayınız Boğa burcundayken duygusal dengeniz son derece sağlam, sakin ve sabırlıdır. Duygusal huzuru maddi güvencede, sakinlikte ve bedensel konforda bulursunuz. Yaşamınızda ani değişimlerden hoşlanmazsınız.',
+      advice: 'Maddi varlıklara ve insanlara aşırı bağımlılık geliştirmek yerine, kendi manevi değer duygunuzu ve iç huzurunuzu büyütün.'
     },
     asc: {
-      archetype: 'Güven Limanı (The Solid Presence)',
-      persona: 'Yükselen Boğa olarak dış dünyaya yansıttığınız imaj sabırlı, sakin, estetik açıdan özenli ve sarsılmaz bir duruştur. İnsanlar sizin yanınızda huzur bulur ve pratik zekanıza güvenir. Doğallık ve zarafet maskenizin bir parçasıdır.',
-      advice: 'Zaman zaman aşırı uyuşuk veya duyarsız görünme eğilimlerinizi kırmak için yeniliklere kapınızı aralayın.'
+      archetype: 'Güven Limanı',
+      persona: 'Yükselen Boğa olarak dış dünyaya yansıttığınız imaj sabırlı, sakin, güvenilir ve sarsılmaz bir duruştur. İnsanlar sizin yanınızda huzur bulur ve pratik zekanıza güvenir. Doğallık ve zarafet auranızın bir parçasıdır.',
+      advice: 'Aşırı uyuşuk veya inatçı görünme eğilimini kırmak için yeniliklere ve değişimlere kapınızı aralayın.'
     }
   },
   'İkizler': {
     sun: {
-      archetype: 'Haberci/Meraklı (The Messenger)',
-      ego: 'Güneş İkizler\'deyken ego, bilgi toplama, iletişim, entelektüel merak ve adaptasyon yoluyla parlar. Bireyleşme yolculuğunuz, zıtlıklar arasındaki köprüleri kurmayı, bilgiyi yaymayı ve zihinsel esnekliği öğrenmektir. Kelimeler en büyük gücünüzdür.',
+      archetype: 'Bilgi Habercisi',
+      ego: 'Güneşiniz İkizler burcundayken zihinsel aktivite, merak, iletişim ve bilgi akışı en yüksek seviyededir. Sürekli öğrenmek, fikir alışverişinde bulunmak ve sosyal bağlar kurmak en büyük gücünüzdür. Yönetici gezegeniniz Merkür, size kıvrak bir zeka ve hitabet yeteneği verir.',
       advice: 'Zihinsel yüzeysellikten ve odak dağınıklığından kaçınmak için derinleşmeye önem verin. Aynı anda çok fazla şey yapmak yerine enerjinizi odaklayın.'
     },
     moon: {
-      archetype: 'Rasyonel Zihin (The Thinking Heart)',
-      shadow: 'Ay İkizler\'deyken duyguları rasyonalize etme ve entelektüel analiz süzgecinden geçirme eğiliminiz vardır. Bilinçdışı düzeyde, duyguların derin sularında boğulma korkusu yaşarsınız. Bu yüzden hislerinizi konuşarak hafifletmeye çalışırsınız.',
-      advice: 'Duygularınızı sadece düşünmeyin, onları bedeninizde hissetmeye izin verin. Kalbinizin mantık aramayan sesine kulak verin.'
+      archetype: 'Rasyonel Kalp',
+      shadow: 'Ayınız İkizler burcundayken hislerinizi konuşarak, yazarak veya mantıksal analiz süzgecinden geçirerek anlamlandırma eğilimindesinizdir. Duygusal dünyanız zihinsel uyarımlarla beslenir; monotonluk ruhunuzu daraltabilir.',
+      advice: 'Duygularınızı sadece düşünmeyin, onları bedeninizde hissetmeye ve kalbinizin mantık aramayan sesine kulak vermeye izin verin.'
     },
     asc: {
-      archetype: 'Sosyal Kelebek (The Spark of Wit)',
-      persona: 'Dış dünyaya sunduğunuz maske meraklı, konuşkan, sempatik ve sürekli öğrenmeye açık bir profildir. İnsanlar sizi esprili, hızlı düşünen ve sosyal ilişkileri kolayca başlatan biri olarak algılar.',
-      advice: 'Persona\'nızın samimiyetsiz veya tutarsız olarak algılanmaması için verdiğiniz sözleri tutmaya ve derin bağlar kurmaya özen gösterin.'
+      archetype: 'Sosyal Kelebek',
+      persona: 'Yükselen İkizler olarak dış dünyaya yansıttığınız imaj meraklı, konuşkan, sempatik ve hareketli bir profildir. İnsanlar sizi sosyal, hızlı düşünen ve dost canlısı olarak algılar.',
+      advice: 'Sosyal duruşunuzun samimiyetsiz veya tutarsız olarak algılanmaması için derin bağlar kurmaya özen gösterin.'
     }
   },
   'Yengeç': {
     sun: {
-      archetype: 'Besleyici/Koruyucu (The Nurturer)',
-      ego: 'Güneş Yengeç\'teyken ego, koruma, şefkat, aile bağları ve duygusal derinlik üzerinden kendini ifade eder. Bireyleşme yolculuğunuz, kendi hassasiyetinizi kabul edip onu bir zayıflık değil, şifa ve empati gücü olarak dünyaya sunmaktır.',
+      archetype: 'Şefkatli Koruyucu',
+      ego: 'Güneşiniz Yengeç burcundayken empati, şefkat, aile bağları ve geçmişe bağlılık ön plandadır. Sevdiklerinizi korumak, kollamak ve duygusal güvenliği sağlamak en temel yaşam amacınızdır. Yönetici gezegeniniz Ay, size derin sezgiler ve hassas bir mizaç verir.',
       advice: 'Geçmişe ve nostaljiye aşırı tutunarak şimdiki anı kaçırmaktan kaçının. Başkalarını korumaya çalışırken kendi sınırlarınızı feda etmeyin.'
     },
     moon: {
-      archetype: 'Duygusal Okyanus (The Empathetic Well)',
-      shadow: 'Ay kendi yönettiği Yengeç burcunda çok güçlüdür. Muazzam bir sezgisel güç, empati kabiliyeti ve yoğun duygusal dalgalanmalar verir. Bilinçdışınızda reddedilme ve korunmasız kalma korkusu yatar; bu yüzden sık sık kabuğunuza çekilirsiniz.',
-      advice: 'Duygusal savunma kalkanlarınızı (aşırı alınganlık) aşarak, kırılganlığınızı yapıcı bir şekilde ifade etmeyi deneyin.'
+      archetype: 'Duygusal Okyanus',
+      shadow: 'Ayınız Yengeç burcundayken duygusal derinliğiniz, sezgileriniz ve sahiplenme duygunuz en üst seviyededir. Çevrenizdeki enerjilerden çok çabuk etkilenirsiniz; yuvanız ve sığınağınız sizin için ruhen hayati öneme sahiptir.',
+      advice: 'Aşırı alınganlık göstermek yerine, kırılganlığınızı yapıcı bir şekilde ifade etmeyi deneyin. Ruhsal temizlik ritüellerine hayatınızda yer açın.'
     },
     asc: {
-      archetype: 'Şefkatli Rehber (The Warm Host)',
-      persona: 'Yükselen Yengeç olarak dış dünyaya gösterdiğiniz maske son derece duyarlı, koruyucu, sıcakkanlı ve sezgiseldir. İnsanlar size içini açmakta zorlanmaz. Çevrenizde anaç/babaç bir koruma çemberi oluşturursunuz.',
+      archetype: 'Şefkatli Rehber',
+      persona: 'Yükselen Yengeç olarak dış dünyaya gösterdiğiniz duruş duyarlı, koruyucu, sıcakkanlı ve sezgiseldir. İnsanlar size içini açmakta zorlanmaz; çevrenizde anaç/babaç bir koruma çemberi oluşturursunuz.',
       advice: 'Dış dünyaya karşı aşırı savunmacı veya mesafeli (sert kabuklu) görünmemek için içsel güveninizi geliştirin.'
     }
   },
   'Aslan': {
     sun: {
-      archetype: 'Hükümdar/Kahraman (The Sovereign)',
-      ego: 'Güneş Aslan\'dayken ego, sahnede olmak, takdir edilmek, cömertlik ve yaratıcı liderlik vasıtasıyla parlar. Bireyleşme yolculuğunuz, kendi içsel krallığınızın hükümdarı olmayı öğrenmek ve ışığınızı başkalarını gölgede bırakmadan cömertçe paylaşmaktır.',
-      advice: 'Kibir, egoizm ve sürekli onaylanma ihtiyacından (dışsal motivasyonlar) sıyrılıp içsel öz-değerinizi keşfedin.'
+      archetype: 'Karizmatik Hükümdar',
+      ego: 'Güneşiniz Aslan burcundayken cömertlik, karizma, yaratıcı liderlik ve sahnede olma arzusu ön plandadır. Kendi özgünlüğünü sergilemek, takdir edilmek ve çevresine ışık saçmak onun için esastır. Yönetici gezegeniniz Güneş, size yüksek özgüven ve yaşam enerjisi verir.',
+      advice: 'Kibir, egoizm ve sürekli onaylanma ihtiyacından sıyrılıp içsel öz-değerinizi ve sessiz gücünüzü keşfedin.'
     },
     moon: {
-      archetype: 'Gururlu Yürek (The Inner King/Queen)',
-      shadow: 'Ay Aslan\'dayken duygusal dünyanız ilgi, sevilme ve özel hissetme arzusuyla doludur. Bilinçdışı düzeyde, görmezden gelinmek veya sıradan bulunmak en büyük gölgenizdir. Duygusal krizlerde dramatize etmeye meyillisinizdir.',
-      advice: 'Sıradanlığı kabul etmenin ruhsal olgunluğun bir parçası olduğunu unutmayın. Başkalarının ışığını da takdir ederek egonuzu eğitin.'
+      archetype: 'Cömert Yürek',
+      shadow: 'Ayınız Aslan burcundayken duygusal olarak ilgi, sevilme ve özel hissetme arzusuyla dolusunuzdur. Gururunuz ve hisleriniz çok güçlüdür; sevdiklerinize karşı son derece koruyucu, cömert ve sadık bir tavır sergilersiniz.',
+      advice: 'Sıradanlığı kabul etmenin ruhsal olgunluğun bir parçası olduğunu unutmayın. Başkalarının ışığını ve başarılarını da içtenlikle takdir edin.'
     },
     asc: {
-      archetype: 'Göz Alıcı Işık (The Creative Performer)',
-      persona: 'Yükselen Aslan olarak dünyaya sunduğunuz maske özgüvenli, karizmatik, canlı ve dikkat çekici bir duruştur. İnsanlar sizi girdiniz her ortamda fark eder; liderlik vasıflarınız ve neşeli tavırlarınız ön plandadır.',
-      advice: 'Persona\'nızın kibirli görünmemesi için samimi bir alçakgönüllülüğü benimseyin.'
+      archetype: 'Göz Alıcı Işık',
+      persona: 'Yükselen Aslan olarak dış dünyaya yansıttığınız imaj özgüvenli, karizmatik, canlı ve dikkat çekici bir duruştur. Girdiğiniz her ortamda liderlik vasıflarınız ve sıcak enerjinizle fark edilirsiniz.',
+      advice: 'Dış duruşunuzun kibirli görünmemesi için samimi bir alçakgönüllülüğü benimseyin.'
     }
   },
   'Başak': {
     sun: {
-      archetype: 'Şifacı/Analist (The Analyst/Alchemist)',
-      ego: 'Güneş Başak\'tayken ego, faydalı olmak, düzen yaratmak, analiz ve ustalık vasıtasıyla kendini gerçekleştirir. Bireyleşme yolculuğunuz, kaosun içindeki düzeni bulmak, şifa vermek ve mükemmeliyetçiliği esneterek hayatın doğal kusurlarını kabul etmektir.',
-      advice: 'Kendinizi ve çevrenizi aşırı eleştirmekten (hiper-kritik zihin) kaçının. Kusurların da bütünün (Self) bir parçası olduğunu unutmayın.'
+      archetype: 'Detaycı Şifacı',
+      ego: 'Güneşiniz Başak burcundayken analiz, düzen, faydalı olma, ustalık ve titizlik en önemli karakter özellikleridir. Hayatı organize etmek, detayları mükemmelleştirmek ve şifa/hizmet odaklı yaşamak yaşam amacınızdır. Yönetici gezegeniniz Merkür, size keskin bir mantık verir.',
+      advice: 'Kendinizi ve çevrenizi aşırı eleştirmekten kaçının. Mükemmeliyetçilik arayışının hayatın doğal kusurlarını görmenizi engellemesine izin vermeyin.'
     },
     moon: {
-      archetype: 'Hassas Düzenleyici (The Structured Soul)',
-      shadow: 'Ay Başak\'tayken duygusal huzuru hayatı kontrol altında tutarak, planlayarak ve işe yarayarak bulursunuz. Bilinçdışınızda başarısızlık ve düzensizlik korkusu yatar. Duygularınızı kontrol etmek için onları görevlere bölersiniz.',
-      advice: 'Zihinsel endişelerinizin bedensel sağlığınızı (somatizasyon) etkilemesine izin vermeyin. Kontrol edemeyeceğiniz süreçleri serbest bırakmayı öğrenin.'
+      archetype: 'Hassas Düzenleyici',
+      shadow: 'Ayınız Başak burcundayken duygusal huzuru hayatı planlayarak ve işe yarayarak bulursunuz. Endişeli ve detaycı bir iç dünyanız olabilir; başkalarına yardım etmek ruhunuzu en çok dinlendiren şeydir.',
+      advice: 'Zihinsel endişelerinizin bedensel sağlığınızı etkilemesine izin vermeyin. Kontrol edemeyeceğiniz süreçleri serbest bırakmayı öğrenin.'
     },
     asc: {
-      archetype: 'Titiz Gözlemci (The Silent Craftsman)',
-      persona: 'Yükselen Başak olarak dış dünyaya yansıttığınız imaj temiz, düzenli, mütevazı, kibar ve analitiktir. İnsanlar sizi detaylara önem veren, iş bitirici ve güvenilir biri olarak görür.',
-      advice: 'Persona\'nızın aşırı çekingen veya mesafeli durmasını engellemek için duygusal sıcaklığınızı dışarıya daha fazla yansıtın.'
+      archetype: 'Titiz Gözlemci',
+      persona: 'Yükselen Başak olarak dış dünyaya yansıttığınız imaj temiz, düzenli, mütevazı ve analitik bir duruştur. İnsanlar sizi detaylara önem veren, iş bitirici ve güvenilir biri olarak görür.',
+      advice: 'Dış duruşunuzun aşırı çekingen veya mesafeli durmasını engellemek için duygusal sıcaklığınızı dışarıya daha fazla yansıtın.'
     }
   },
   'Terazi': {
     sun: {
-      archetype: 'Dengeleyici/Sanatçı (The Peacemaker)',
-      ego: 'Güneş Terazi\'deyken ego, ilişkiler, adalet, estetik uyum ve denge kurma yoluyla parlar. Bireyleşme yolculuğunuz, kendi içsel merkezinizi kaybetmeden başkalarıyla uyumlanmayı başarmak ve hayatta adaleti savunmaktır.',
-      advice: 'Çatışmalardan kaçmak adına kendi doğrularınızdan (gölge uyumluluk) ödün vermeyin. Hayır demeyi öğrenmek bireyselleşmenizin en önemli adımıdır.'
+      archetype: 'Zarif Peacemaker',
+      ego: 'Güneşiniz Terazi burcundayken adalet, estetik, diplomasi, ilişkiler ve ahenk arayışı ön plandadır. Hayatta dengeleri korumak, ortaklıklar kurmak ve güzellikleri paylaşmak sizin temel amacınızdır. Yönetici gezegeniniz Venüs, size zarafet ve uzlaşma kabiliyeti verir.',
+      advice: 'Çatışmalardan kaçmak adına kendi doğrularınızdan ödün vermeyin. Hayır demeyi öğrenmek ve kendi sınırlarınızı çizmek yaşam yolunuzda en önemli adımlardan biridir.'
     },
     moon: {
-      archetype: 'Ahenkli Kalp (The Diplomat)',
-      shadow: 'Ay Terazi\'deyken yalnız kalma korkusu ve sürekli onaylanma ihtiyacı bilinçdışı motivasyonlarınızdır. Duygusal huzurunuz dışsal dengelere ve ilişkilerdeki huzura bağlıdır. Çatışma anlarında dengenizi kolayca yitirirsiniz.',
-      advice: 'İçsel dengenizin başkalarının onayına bağlı olmadığını kabul edin. Kendi kendinizle kalmanın ve içsel çatışmalarınızın üstüne gitmenin gücünü keşfedin.'
+      archetype: 'Ahenkli Kalp',
+      shadow: 'Ayınız Terazi burcundayken duygusal dengeniz ilişkilerinizdeki huzura doğrudan bağlıdır. Yalnız kalmaktan hoşmanmaz, çevrenizde ahenk ve adalet görmedikçe içsel olarak rahat edemezsiniz.',
+      advice: 'İçsel dengenizin başkalarının onayına bağlı olmadığını kabul edin. Kendi kendinizle kalmanın gücünü keşfedin.'
     },
     asc: {
-      archetype: 'Zarif Köprü (The Diplomatic Presence)',
-      persona: 'Yükselen Terazi olarak dış dünyaya sunduğunuz maske son derece nazik, estetik açıdan dengeli, güler yüzlü ve çekicidir. İnsanlar sizi uyumlu ve uzlaşmacı biri olarak algılar.',
-      advice: 'Dış görünüşe ve başkalarının ne düşündüğüne aşırı odaklanıp kendi derin duygularınızı maskelemeyin.'
+      archetype: 'Zarif Köprü',
+      persona: 'Yükselen Terazi olarak dış dünyaya sunduğunuz maske son derece nazik, güler yüzlü, estetik açıdan dengeli ve çekicidir. İnsanlar sizi uyumlu ve kolay iletişim kurulan biri olarak algılar.',
+      advice: 'Dış görünüşe ve başkalarının onayına odaklanırken kendi derin ve samimi duygularınızı bastırmayın.'
     }
   },
   'Akrep': {
     sun: {
-      archetype: 'Dönüştürücü/Simyacı (The Alchemist)',
-      ego: 'Güneş Akrep\'teyken ego, krizler, dönüşüm, derin psikolojik sular ve gizemleri çözme vasıtasıyla kendini var eder. Bireyleşme yolculunuz, kendi karanlığınızla (Shadow) yüzleşip onu yüksek bir manevi güce dönüştürmektir (anka kuşu simgesi).',
-      advice: 'Kontrol ve güç arzusunu serbest bırakın. İnsanlara güvenmeyi ve affetmeyi öğrenmek, ruhsal simyanızın anahtarıdır.'
+      archetype: 'Mistik Simyacı',
+      ego: 'Güneşiniz Akrep burcundayken derinlik, tutku, gizemleri çözme ve krizler vasıtasıyla dönüşme gücü ön plandadır. Yüzeysel olan hiçbir şey size hitap etmez; hayatın en gizli ve karanlık yönlerini aydınlatmak sizin amacınızdır. Yönetici gezegeniniz Mars, size direnç gücü verir.',
+      advice: 'Kontrol ve güç arzusunu serbest bırakın. İnsanlara güvenmeyi ve affetmeyi öğrenmek, ruhsal enerjinizi en yüksek seviyeye taşıyacaktır.'
     },
     moon: {
-      archetype: 'Derin Kuyu (The Intense Seeker)',
-      shadow: 'Ay Akrep\'te düşüştedir; bu da duygusal dünyanızın son derece yoğun, gizemli ve krizlere yatkın olduğunu gösterir. Bilinçdışınızda ihanete uğrama ve kontrolü kaybetme korkusu yatar. Duygularınızı çok derinde saklar, kolay kolay güvenmezsiniz.',
+      archetype: 'Derin Sezgi',
+      shadow: 'Ayınız Akrep burcundayken duygusal dünyanız son derece yoğun, sezgisel ve ketumdur. Hislerinizi çok derinde saklar, kolay kolay güvenmezsiniz. Güçlü sezgileriniz sayesinde yalanları ve arkadan çevrilen işleri anında fark edersiniz.',
       advice: 'İçinizdeki şüpheciliği ve intikam duygusunu serbest bırakın. Kendi kendinizi sabote etme eğilimlerinizi fark ederek şifalandırın.'
     },
     asc: {
-      archetype: 'Mistik Kalkan (The Magnetic Sentinel)',
-      persona: 'Yükselen Akrep olarak dış dünyaya gösterdiğiniz maske karizmatik, gizemli, keskin gözlemlere sahip ve korunaklıdır. İnsanlar sizin gizemli havanızdan hem etkilenir hem de temkinli yaklaşır.',
+      archetype: 'Karizmatik Kalkan',
+      persona: 'Yükselen Akrep olarak dış dünyaya gösterdiğiniz duruş karizmatik, gizemli, keskin gözlemlere sahip ve korunaklıdır. İnsanlar sizin gizemli havanızdan hem etkilenir hem de temkinli yaklaşır.',
       advice: 'Aşırı savunmacı veya tehditkar bir imaj çizmemek için çevrenize daha şeffaf ve güven verici yaklaşımlar sergileyin.'
     }
   },
   'Yay': {
     sun: {
-      archetype: 'Kaşif/Filozof (The Seeker/Philosopher)',
-      ego: 'Güneş Yay\'dayken ego, keşif, bilgelik arayışı, inançlar ve özgürlük vasıtasıyla kendini gerçekleştirir. Bireyleşme yolculuğunuz, hayatın yüksek anlamını keşfetmek, farklı kültürleri ve felsefeleri bütünleştirerek zihni genişletmektir.',
-      advice: 'Aşırı iyimserliğin getirdiği dogmatizmden ve fanatik fikirlerden (gölge öğretmen) kaçının. Gerçek bilgeliğin sorgulamak olduğunu unutmayın.'
+      archetype: 'Bilge Kaşif',
+      ego: 'Güneşiniz Yay burcundayken keşif, bilgelik arayışı, inançlar, iyimserlik ve özgürlük en temel karakter özellikleridir. Hayatın yüksek anlamını keşfetmek, sürekli seyahat etmek ve ufkunu genişletmek sizin amacınızdır. Yönetici gezegeniniz Jüpiter, size büyük bir şans ve iyimserlik verir.',
+      advice: 'Aşırı iyimserliğin getirdiği dogmatizmden ve her şeyi ben bilirim tavrından kaçının. Gerçek bilgeliğin dinlemek olduğunu unutmayın.'
     },
     moon: {
-      archetype: 'Gezgin Ruh (The Optimistic Wanderer)',
-      shadow: 'Ay Yay\'dayken iç dünyanız iyimser, neşeli ve sınırlara isyan eden bir yapıdadır. Bilinçdışınızda, duygusal sorumluluklardan kaçma ve daralma korkusu yatar. Kriz anlarında uzaklaşmayı veya durumu espriye vurmayı tercih edersiniz.',
-      advice: 'Duygusal derinliklerden kaçmak yerine kriz anlarında kalmayı öğrenin. Bazen durmanın ve içe bakmanın da bir keşif olduğunu fark edin.'
+      archetype: 'Gezgin Ruh',
+      shadow: 'Ayınız Yay burcundayken iç dünyanız maceracı, neşeli ve sınırlara isyan eden bir yapıdadır. Zorluklar karşısında umudunuzu asla kaybetmez, her deneyimden felsefi bir ders çıkarmayı başarırsınız.',
+      advice: 'Duygusal sorumluluklardan kaçmak yerine kriz anlarında kalmayı öğrenin. Bazen durmanın ve içe bakmanın da büyük bir keşif olduğunu fark edin.'
     },
     asc: {
-      archetype: 'Kozmik Vizyoner (The Friendly Guide)',
-      persona: 'Yükselen Yay olarak dış dünyaya sunduğunuz maske coşkulu, neşeli, açık fikirli ve enerjik bir profildir. İnsanlar sizi maceraperest, şanslı ve felsefi sohbetleri seven biri olarak görür.',
-      advice: 'Persona\'nızın ciddiyetsiz veya her şeyi bilen biri gibi algılanmamasına dikkat edin.'
+      archetype: 'Pozitif Vizyoner',
+      persona: 'Yükselen Yay olarak dış dünyaya sunduğunuz maske coşkulu, neşeli, açık fikirli ve dost canlısı bir profildir. İnsanlar sizi maceraperest, şanslı ve felsefi sohbetleri seven biri olarak görür.',
+      advice: 'Sosyal imajınızın ciddiyetsiz veya her şeyi bilen biri gibi algılanmamasına dikkat edin.'
     }
   },
   'Oğlak': {
     sun: {
-      archetype: 'Yönetici/Mimar (The Builder of Order)',
-      ego: 'Güneş Oğlak\'tayken ego, disiplin, sorumluluk, toplumsal inşa ve sabır vasıtasıyla parlar. Bireyleşme yolculuğunuz, dış dünyadaki otoriteyi kurarken içsel otoritenizi ve şefkatinizi de keşfetmek, dayanıklı bir yaşam inşa etmektir.',
-      advice: 'Başarı ve statüye aşırı odaklanıp içsel duygu dünyanızı (Anima) kurutmayın. Hayatın sadece görevlerden ibaret olmadığını kabul edin.'
+      archetype: 'Kozmik Mimar',
+      ego: 'Güneşiniz Oğlak burcundayken disiplin, sorumluluk, ciddiyet, sabır ve yüksek hedefler ön plandadır. Hayatta kalıcı başarılar elde etmek, saygınlık kazanmak ve somut yapılar kurmak sizin amacınızdır. Yönetici gezegeniniz Satürn, size çelik gibi bir irade verir.',
+      advice: 'Başarı ve statüye odaklanırken içsel duygu dünyanızı ve sevdiklerinizi ihmal etmeyin. Hayatın sadece görevlerden ibaret olmadığını kabul edin.'
     },
     moon: {
-      archetype: 'Sabırlı Kaya (The Stoic Guardian)',
-      shadow: 'Ay Oğlak\'ta zarardadır; duyguları bastırma, aşırı sorumluluk üstlenme ve kendine karşı acımasız olma eğilimi verir. Bilinçdışınızda yetersizlik ve muhtaç duruma düşme korkusu yatar. Bu yüzden duygusal olarak mesafeli kalırsınız.',
-      advice: 'Zayıf ve muhtaç olmanın insani bir hak olduğunu kabul edin. Kendinize karşı daha yumuşak ve bağışlayıcı olun.'
+      archetype: 'Sabırlı Kaya',
+      shadow: 'Ayınız Oğlak burcundayken duygularınızı kontrol altında tutma ve dışarıya yansıttığınızda zayıf görünme korkunuz vardır. Kendinize karşı son derece disiplinli, stoik ve sabırlı bir iç dünyanız vardır.',
+      advice: 'Bazen zayıf ve muhtaç olmanın insani bir hak olduğunu kabul edin. Kendinize karşı daha yumuşak ve bağışlayıcı olun.'
     },
     asc: {
-      archetype: 'Saygın Lider (The Professional)',
-      persona: 'Yükselen Oğlak olarak dış dünyaya yansıttığınız imaj ciddi, mesafeli, olgun ve son derece profesyoneldir. İnsanlar sizi güvenilir, saygın ve kontrolü elinde tutan biri olarak görür.',
-      advice: 'Persona\'nızın aşırı soğuk ve erişilmez görünmemesi için samimiyetinizi dışarıya aktarmaya çalışın.'
+      archetype: 'Saygın Lider',
+      persona: 'Yükselen Oğlak olarak dış dünyaya yansıttığınız imaj ciddi, olgun, mesafeli ve son derece profesyoneldir. İnsanlar sizi sarsılmaz, ağırbaşlı ve kontrolü elinde tutan biri olarak görür.',
+      advice: 'Dış duruşunuzun aşırı soğuk ve erişilmez görünmemesi için samimiyetinizi dışarıya aktarmaya çalışın.'
     }
   },
   'Kova': {
     sun: {
-      archetype: 'Devrimci/Vizyoner (The Reformer)',
-      ego: 'Güneş Kova\'dayken ego, özgünlük, toplumsal vizyon, hümanizm ve bağımsızlık yoluyla parlar. Bireyleşme yolculuğunuz, kolektifin bir parçası olurken kendi benzersiz bireyselliğinizi korumak ve geleceğe yön vermektir.',
-      advice: 'Sırf farklı olmak adına marjinalleşmekten (gölge isyancı) kaçının. Zihinsel vizyonlarınızı kalbin sıcaklığıyla buluşturun.'
+      archetype: 'Özgür Vizyoner',
+      ego: 'Güneşiniz Kova burcundayken özgünlük, bağımsızlık, entelektüel vizyon ve toplumsal konulara duyarlılık ön plandadır. Sınırları aşmak, yeni fikirler geliştirmek ve toplumsal ilerlemeye katkıda bulunmak en büyük amacınızdır. Yönetici gezegeniniz Satürn, size zihinsel kararlılık verir.',
+      advice: 'Sırf farklı olmak adına marjinalleşmekten kaçının. Zihinsel vizyonlarınızı ve fikirlerinizi kalbinizin sıcaklığıyla buluşturun.'
     },
     moon: {
-      archetype: 'Özgür Kuş (The Independent Mind)',
-      shadow: 'Ay Kova\'dayken duygusal yakınlıktan ve bağımlılıktan kaçınma eğiliminiz vardır. Bilinçdışı düzeyde, duygusal olarak yutulma ve özgürlüğünü kaybetme korkusu yaşarsınız. Duyguları zihinselleştirip dışarıdan izlersiniz.',
-      advice: 'Başkalarıyla derin duygusal bağlar kurmanın özgürlüğünüzü kısıtlamadığını, aksine sizi bütünleştirdiğini fark edin.'
+      archetype: 'Bağımsız Zihin',
+      shadow: 'Ayınız Kova burcundayken duygusal bağımsızlığınıza son derece düşkünsünüzdür. Duygularınızı zihinselleştirip dışarıdan izleme eğiliminiz vardır; arkadaşlık ve dostluk bağları sizin için çok önemlidir.',
+      advice: 'Başkalarıyla derin duygusal bağlar kurmanın özgürlüğünüzü kısıtlamadığını, aksine ruhunuzu zenginleştirdiğini fark edin.'
     },
     asc: {
-      archetype: 'Sıra Dışı Deha (The Altruistic Rebel)',
-      persona: 'Yükselen Kova olarak dünyaya gösterdiğiniz maske orijinal, arkadaş canlısı, entelektüel ve toplumsal konulara duyarlı bir karakterdir. İnsanlar sizi vizyoner ve ön yargısız biri olarak görür.',
-      advice: 'Persona\'nızın aşırı marjinal veya duygusuz görünmesini engellemek için birebir ilişkilerde empatiye yer verin.'
+      archetype: 'Sıra Dışı Deha',
+      persona: 'Yükselen Kova olarak dış dünyaya gösterdiğiniz maske orijinal, arkadaş canlısı, entelektüel ve sıra dışı bir karakterdir. İnsanlar sizi vizyoner ve ön yargısız biri olarak algılar.',
+      advice: 'Dış imajınızın aşırı mesafeli veya duygusuz görünmesini engellemek için birebir ilişkilerde empatiye yer verin.'
     }
   },
   'Balık': {
     sun: {
-      archetype: 'Mistik/Hayalperest (The Mystic/Dreamer)',
-      ego: 'Güneş Balık\'tayken ego, teslimiyet, evrensel sevgi, sanatsal ilham ve mistik birlik vasıtasıyla kendini gerçekleştirir. Bireyleşme yolculuğunuz, sınırların ötesindeki kolektif bilinçdışı sularında kaybolmadan kendi egonuzu koruyabilmektir.',
-      advice: 'Gerçeklerden kaçma ve kurban psikolojisine (gölge kurban) sığınma eğiliminizle yüzleşin. Sınırlar koymayı ve hayatta topraklanmayı öğrenin.'
+      archetype: 'Mistik Hayalperest',
+      ego: 'Güneşiniz Balık burcundayken evrensel sevgi, teslimiyet, sanatsal ilham, güçlü sezgiler ve fedakarlık ön plandadır. Dünyanın sert gerçeklerinden ziyade manevi boyutlarla uyumlanmak ve bütünlüğü hissetmek sizin amacınızdır. Yönetici gezegeniniz Jüpiter, size engin bir hayal gücü verir.',
+      advice: 'Gerçeklerden kaçma ve kurban psikolojisine sığınma eğiliminizle yüzleşin. Sınırlar koymayı ve hayatta topraklanmayı öğrenin.'
     },
     moon: {
-      archetype: 'Sonsuz Şefkat (The Dreamer\'s Ocean)',
-      shadow: 'Ay Balık\'tayken ruhunuz aşırı duyarlı, psişik olarak geçirgen ve aşırı empatiktir. Bilinçdışınızda, dünyanın sert gerçekleriyle yüzleşme korkusu ve evrensel bir acı yatar. Başkalarının enerjilerini sünger gibi çekersiniz.',
-      advice: 'Ruhsal sınırlarınızı korumak için koruma çalışmaları yapın. Kendi kendinizi kurban/kurtarıcı rollerine hapsetmeyin.'
+      archetype: 'Sonsuz Şefkat',
+      shadow: 'Ayınız Balık burcundayken ruhunuz aşırı duyarlı, psişik olarak geçirgen ve aşırı empatiktir. Başkalarının acılarını ve sevinçlerini kendi içinizde hisseder, rüyalarınız vasıtasıyla gelecekten mesajlar alabilirsiniz.',
+      advice: 'Ruhsal sınırlarınızı korumak için koruma çalışmaları yapın. Kendi kendinizi kurban veya kurtarıcı rollerine hapsetmeyin.'
     },
     asc: {
-      archetype: 'Büyülü Ruh (The Ethereal Seeker)',
-      persona: 'Yükselen Balık olarak dış dünyaya sunduğunuz maske son derece kibar, hayalperest, sanatsal, yumuşak ve gizemlidir. İnsanlar sizin yanınızda yargılanmadıklarını hisseder; büyüleyici bir auranız vardır.',
+      archetype: 'Eterik Arayıcı',
+      persona: 'Yükselen Balık olarak dış dünyaya sunduğunuz maske son derece nazik, hayalperest, gizemli ve yumuşak bir auranın yansımasıdır. İnsanlar sizin yanınızda kendilerini güvende ve yargılanmamış hisseder.',
       advice: 'Hayatın pratik detaylarında kaybolmamak için kararlılık ve netlik maskesini de kuşanmayı öğrenin.'
     }
   }
 };
 
-
 const { width } = Dimensions.get('window');
-const CANVAS_SIZE = Math.min(width - 40, 340);
+const CANVAS_SIZE = Math.min(width - 40, 320);
 const CENTER = CANVAS_SIZE / 2;
-const RADIUS = CANVAS_SIZE * 0.45;
+const RADIUS = CANVAS_SIZE * 0.44;
 
 const PLANET_SYMBOLS: Record<string, string> = {
   Sun: '☉',
@@ -241,14 +247,216 @@ const ZODIAC_ABBREVIATIONS = [
 
 export default function ChartScreen() {
   const { computedChart } = useAppStore();
+  const { profile, isPremium } = useAuthStore();
+  const { auraColors } = useCosmicCalendarStore();
+  const router = useRouter();
+
+  // AI Modal States
+  const [loadingAI, setLoadingAI] = useState(false);
+  const [aiReport, setAiReport] = useState<string | null>(null);
+  const [aiModalVisible, setAiModalVisible] = useState(false);
+
+  // Background Aura Reanimated Config
+  const color1 = useSharedValue('#B2F7EF');
+  const color2 = useSharedValue('#EFF7F6');
+
+  useEffect(() => {
+    if (auraColors && auraColors.length >= 2) {
+      color1.value = withTiming(auraColors[0], { duration: 2500 });
+      color2.value = withTiming(auraColors[1], { duration: 2500 });
+    }
+  }, [auraColors]);
+
+  const animatedAuraStyle1 = useAnimatedStyle(() => ({
+    backgroundColor: color1.value,
+  }));
+
+  const animatedAuraStyle2 = useAnimatedStyle(() => ({
+    backgroundColor: color2.value,
+  }));
+
+  // 1. Calculate Fire/Earth/Air/Water element percentages
+  const elementPercentages = useMemo(() => {
+    if (!computedChart) return null;
+    const elementCounts = { Ateş: 0, Toprak: 0, Hava: 0, Su: 0 };
+    
+    computedChart.planets.forEach((p) => {
+      const sign = p.sign;
+      if (['Koç', 'Aslan', 'Yay'].includes(sign)) elementCounts.Ateş++;
+      else if (['Boğa', 'Başak', 'Oğlak'].includes(sign)) elementCounts.Toprak++;
+      else if (['İkizler', 'Terazi', 'Kova'].includes(sign)) elementCounts.Hava++;
+      else if (['Yengeç', 'Akrep', 'Balık'].includes(sign)) elementCounts.Su++;
+    });
+
+    const total = computedChart.planets.length;
+    return {
+      Ateş: total ? Math.round((elementCounts.Ateş / total) * 100) : 0,
+      Toprak: total ? Math.round((elementCounts.Toprak / total) * 100) : 0,
+      Hava: total ? Math.round((elementCounts.Hava / total) * 100) : 0,
+      Su: total ? Math.round((elementCounts.Su / total) * 100) : 0,
+    };
+  }, [computedChart]);
+
+  // 2. Format exact degrees & minutes (e.g. 15° Koç 32')
+  const formatPlanetDegree = (longitude: number, sign: string) => {
+    const degInSign = longitude % 30;
+    const deg = Math.floor(degInSign);
+    const min = Math.floor((degInSign - deg) * 60);
+    return `${deg}° ${sign} ${min}'`;
+  };
+
+  // 3. Calculate natal aspects (conjunction, sextile, square, trine, opposition)
+  const aspects = useMemo(() => {
+    if (!computedChart) return [];
+    const calculated: any[] = [];
+    const orb = 6;
+    const planets = computedChart.planets;
+
+    const ASPECT_TYPES = [
+      { type: 'Conjunction', angle: 0, label: 'Kavuşum', symbol: '☌', color: '#B2F7EF' },
+      { type: 'Sextile', angle: 60, label: 'Sekstil', symbol: '⚹', color: '#C7F9CC' },
+      { type: 'Square', angle: 90, label: 'Kare', symbol: '□', color: '#F8AD9D' },
+      { type: 'Trine', angle: 120, label: 'Üçgen', symbol: '△', color: '#FEEAFA' },
+      { type: 'Opposition', angle: 180, label: 'Karşıt', symbol: '☍', color: '#D8BBFF' },
+    ];
+
+    const planetNameTR: Record<string, string> = {
+      Sun: 'Güneş',
+      Moon: 'Ay',
+      Mercury: 'Merkür',
+      Venus: 'Venüs',
+      Mars: 'Mars',
+      Jupiter: 'Jüpiter',
+      Saturn: 'Satürn',
+      Uranus: 'Uranüs',
+      Neptune: 'Neptün',
+      Pluto: 'Plüton',
+    };
+
+    for (let i = 0; i < planets.length; i++) {
+      for (let j = i + 1; j < planets.length; j++) {
+        const p1 = planets[i];
+        const p2 = planets[j];
+        let diff = Math.abs(p1.longitude - p2.longitude);
+        if (diff > 180) diff = 360 - diff;
+
+        for (const aspectType of ASPECT_TYPES) {
+          if (Math.abs(diff - aspectType.angle) <= orb) {
+            calculated.push({
+              p1Name: planetNameTR[p1.name] || p1.name,
+              p2Name: planetNameTR[p2.name] || p2.name,
+              type: aspectType.type,
+              label: aspectType.label,
+              symbol: aspectType.symbol,
+              color: aspectType.color,
+              diff: Number(diff.toFixed(1)),
+            });
+          }
+        }
+      }
+    }
+    return calculated;
+  }, [computedChart]);
+
+  // 4. Generate dynamic planet placements explanations
+  const planetPlacements = useMemo(() => {
+    if (!computedChart) return [];
+    
+    const PLANET_KEYWORDS: Record<string, { turkish: string; symbol: string; archetype: string; theme: string }> = {
+      Mercury: { turkish: 'Merkür', symbol: '☿', archetype: 'Zihinsel Rehber', theme: 'iletişim tarzınızı, karar verme süreçlerinizi ve zihinsel ilgi alanlarınızı şekillendirir. Bilgiyi nasıl işlediğinizi gösterir.' },
+      Venus: { turkish: 'Venüs', symbol: '♀', archetype: 'Değer ve Sevgi Elçisi', theme: 'ilişki modelinizi, sevgi dilinizi, estetik algınızı ve hayattan nasıl keyif aldığınızı gösterir. Maddi bolluk ve değer duygunuzla ilgilidir.' },
+      Mars: { turkish: 'Mars', symbol: '♂', archetype: 'Eylem ve Güç Savaşçısı', theme: 'fiziksel enerjinizi, mücadele gücünüzü, tutkularınızı ve hedeflerinize ulaşmak için nasıl harekete geçtiğinizi temsil eder.' },
+      Jupiter: { turkish: 'Jüpiter', symbol: '♃', archetype: 'Bilgelik ve Şans Yıldızı', theme: 'bolluk ve bereketin yaşamınızdaki kapılarını, gelişim alanlarınızı, inançlarınızı ve şanslı fırsatları nasıl çektiğinizi gösterir.' },
+      Saturn: { turkish: 'Satürn', symbol: '♄', archetype: 'Zamanın ve Sınırların Efendisi', theme: 'öğrenmeniz gereken karmik dersleri, sorumluluk alanlarınızı, korkularınızı ve olgunlaşma yollarınızı gösterir.' },
+      Uranus: { turkish: 'Uranüs', symbol: '♅', archetype: 'Devrimci ve Reformcu Deha', theme: 'özgürleşme ihtiyacınızı, yenilikçi fikirlerinizi, ani değişimleri ve nerede sıra dışı olduğunuzu simgeler.' },
+      Neptune: { turkish: 'Neptün', symbol: '♆', archetype: 'İlham ve Teslimiyet Şairi', theme: 'hayal gücünüzü, spiritüel derinliğinizi, illüzyonları, sanatsal ilhamı ve evrensel bütünleşmeyi temsil eder.' },
+      Pluto: { turkish: 'Plüton', symbol: '♇', archetype: 'Küllerinden Doğan Simyacı', theme: 'güç savaşlarını, derin dönüşüm süreçlerinizi, krizleri aşma potansiyelinizi ve bilinçaltının derinliklerini gösterir.' },
+    };
+
+    const SIGN_KEYWORDS: Record<string, string> = {
+      'Koç': 'cesur, inisiyatif alan, sabırsız ve enerjik bir üslupla',
+      'Boğa': 'sakin, kararlı, somut değerlere odaklı ve istikrarlı bir dille',
+      'İkizler': 'meraklı, konuşkan, çok yönlü ve rasyonel bir yaklaşımla',
+      'Yengeç': 'sezgisel, şefkatli, korumacı ve duygusal bir derinlikle',
+      'Aslan': 'cömert, gururlu, sahne alan ve yaratıcı bir özgüvenle',
+      'Başak': 'analitik, titiz, faydalı ve detaycı bir yaklaşımla',
+      'Terazi': 'diplomatik, uyumlu, estetiğe ve adalete önem veren bir biçimde',
+      'Akrep': 'tutkulu, gizemli, derin ve dönüştürücü bir güçle',
+      'Yay': 'iyimser, maceracı, inançlı ve felsefi bir bakış açısıyla',
+      'Oğlak': 'disiplinli, sabırlı, sorumluluk sahibi ve mesafeli bir ciddiyetle',
+      'Kova': 'özgün, bağımsız, yenilikçi ve toplumsal bir vizyonla',
+      'Balık': 'mistik, fedakar, hayal gücü yüksek ve teslimiyetçi bir hassasiyetle',
+    };
+
+    const HOUSE_KEYWORDS: Record<number, string> = {
+      1: 'kişisel imajınız, dış dünyaya verdiğiniz ilk izlenim ve fiziksel canlılık alanında kendini gösterir.',
+      2: 'maddi kaynaklarınız, kazanç yöntemleriniz ve kendi öz-değer duygunuz üzerinde etkili olur.',
+      3: 'yakın çevre ilişkileriniz, kardeşleriniz, kısa yolculuklar ve günlük iletişim süreçlerinizde rol oynar.',
+      4: 'yuvanız, aile kökleriniz, içsel sığınağınız ve bilinçaltı temelleriniz alanında çalışır.',
+      5: 'yaratıcılığınız, aşk hayatınız, hobileriniz, çocuklarınız ve hayattan aldığınız keyif sahasını etkiler.',
+      6: 'günlük rutinleriniz, çalışma ortamınız, sağlığınız ve başkalarına sunduğunuz hizmetler alanında belirleyicidir.',
+      7: 'evlilik, ortaklıklar, yakın ikili ilişkileriniz ve açık düşmanlar evinde görünür hale gelir.',
+      8: 'ortaklaşa kazançlar, miras, cinsellik, krizler ve küllerinden yeniden doğma süreçlerinde etkilidir.',
+      9: 'yüksek öğrenim, yurt dışı seyahatler, felsefi inançlar ve yaşam vizyonu alanını aydınlatır.',
+      10: 'toplumsal statünüz, kariyeriniz, hedefleriniz ve otorite figürleriyle olan ilişkilerinizi yönetir.',
+      11: 'sosyal çevre, arkadaşlık grupları, toplumsal idealleriniz ve gelecek umutlarınız alanında aktiftir.',
+      12: 'bilinçaltı sırlar, rüyalar, yalnızlık, spiritüel çalışmalar ve gizli düşmanlar boyutunda işler.',
+    };
+
+    return computedChart.planets
+      .filter(p => p.name !== 'Sun' && p.name !== 'Moon')
+      .map(p => {
+        const kw = PLANET_KEYWORDS[p.name];
+        if (!kw) return null;
+        
+        const signText = SIGN_KEYWORDS[p.sign] || 'kendine has bir üslupla';
+        const houseText = HOUSE_KEYWORDS[p.house] || 'yaşam alanlarınızda etkili olur.';
+        
+        return {
+          name: kw.turkish,
+          symbol: kw.symbol,
+          placement: `${kw.turkish} ${p.sign} Burcunda (${p.house}. Ev)`,
+          archetype: kw.archetype,
+          description: `Astrolojide ${kw.turkish}, ${kw.theme} Gezegeninizin bu konumu, enerjisini ${signText} yansıtır ve özellikle ${houseText}`,
+        };
+      })
+      .filter(Boolean);
+  }, [computedChart]);
+
+  const handleFetchAIAnalysis = async () => {
+    if (!isPremium) {
+      Alert.alert(
+        'Elite Üyelik Gerekli',
+        'Kapsamlı AI Harita Analizi yalnızca Cosmic Elite üyelerimize özeldir. Elite üyelikle doğum haritanızın derin analizini yapabilirsiniz.',
+        [
+          { text: 'Vazgeç', style: 'cancel' },
+          { text: 'Üyeliği İncele', onPress: () => router.push('/settings') }
+        ]
+      );
+      return;
+    }
+
+    if (!computedChart || !profile) return;
+
+    setLoadingAI(true);
+    setAiModalVisible(true);
+    try {
+      const response = await fetchFullChartAnalysis(profile.name || 'Kozmik Ruh', computedChart, aspects);
+      setAiReport(response);
+    } catch (error) {
+      console.warn('AI analysis error:', error);
+      Alert.alert('Hata', 'Analiz raporu alınırken bir sorun oluştu. Lütfen tekrar deneyin.');
+      setAiModalVisible(false);
+    } finally {
+      setLoadingAI(false);
+    }
+  };
 
   const svgContent = useMemo(() => {
     if (!computedChart) return null;
 
     const { planets, houses, ascendant } = computedChart;
 
-    // Helper: Convert polar coordinates to rectangular coordinates
-    // We add 180 degrees to place the Ascendant (0 angle) at the left horizon (9 o'clock position / 180° in standard trig coords)
     const getCoordinates = (angleDegrees: number, radius: number) => {
       const adjustedAngle = angleDegrees - ascendant + 180;
       const angleRad = adjustedAngle * (Math.PI / 180);
@@ -257,7 +465,6 @@ export default function ChartScreen() {
       return { x, y };
     };
 
-    // Draw houses lines
     const houseLines = houses.map((houseDegree, idx) => {
       const pInner = getCoordinates(houseDegree, RADIUS * 0.45);
       const pOuter = getCoordinates(houseDegree, RADIUS);
@@ -268,13 +475,12 @@ export default function ChartScreen() {
           y1={pInner.y}
           x2={pOuter.x}
           y2={pOuter.y}
-          stroke="rgba(214, 175, 55, 0.25)"
-          strokeWidth={idx === 0 || idx === 9 ? "2" : "1"} // Highlight ASC (1st) and MC (10th)
+          stroke="rgba(255, 255, 255, 0.12)"
+          strokeWidth={idx === 0 || idx === 9 ? "2" : "1"}
         />
       );
     });
 
-    // Draw zodiac segment separation lines (every 30 degrees starting from 0)
     const zodiacLines = [];
     for (let i = 0; i < 12; i++) {
       const deg = i * 30;
@@ -287,13 +493,12 @@ export default function ChartScreen() {
           y1={pInner.y}
           x2={pOuter.x}
           y2={pOuter.y}
-          stroke="rgba(212, 175, 55, 0.4)"
+          stroke="rgba(255, 255, 255, 0.15)"
           strokeWidth="1"
         />
       );
     }
 
-    // Draw zodiac symbols/text in the middle of each segment (every 15 degrees offset)
     const zodiacSymbols = ZODIAC_ABBREVIATIONS.map((symbol, i) => {
       const midDeg = i * 30 + 15;
       const pos = getCoordinates(midDeg, RADIUS * 0.91);
@@ -301,21 +506,20 @@ export default function ChartScreen() {
         <SvgText
           key={`zodiac-symbol-${i}`}
           x={pos.x}
-          y={pos.y + 4} // Slight vertical offset to center text
-          fill="#D4AF37"
-          fontSize="11"
-          fontWeight="600"
+          y={pos.y + 4}
+          fill="rgba(255, 255, 255, 0.6)"
+          fontSize="10"
+          fontWeight="700"
           textAnchor="middle"
+          fontFamily="Inter"
         >
           {symbol}
         </SvgText>
       );
     });
 
-    // Draw planet points
     const planetPoints = planets.map((p, idx) => {
       const symbol = PLANET_SYMBOLS[p.name] || '?';
-      // Stagger radius slightly if planets are very close to avoid overlay overlap
       const radOffset = (idx % 2 === 0) ? 0.65 : 0.55;
       const pos = getCoordinates(p.longitude, RADIUS * radOffset);
 
@@ -325,15 +529,16 @@ export default function ChartScreen() {
             cx={pos.x}
             cy={pos.y}
             r="4"
-            fill="#D4AF37"
+            fill="#ffffff"
           />
           <SvgText
             x={pos.x}
             y={pos.y - 8}
-            fill="#F0F6FC"
+            fill="#ffffff"
             fontSize="14"
             fontWeight="bold"
             textAnchor="middle"
+            fontFamily="Inter"
           >
             {symbol}
           </SvgText>
@@ -343,14 +548,9 @@ export default function ChartScreen() {
 
     return (
       <Svg width={CANVAS_SIZE} height={CANVAS_SIZE}>
-        {/* Outer boundary circles */}
-        <Circle cx={CENTER} cy={CENTER} r={RADIUS} stroke="#D4AF37" strokeWidth="1.5" fill="transparent" />
-        <Circle cx={CENTER} cy={CENTER} r={RADIUS * 0.82} stroke="rgba(212, 175, 55, 0.5)" strokeWidth="1" fill="transparent" />
-        
-        {/* Inner core circle */}
-        <Circle cx={CENTER} cy={CENTER} r={RADIUS * 0.45} stroke="rgba(212, 175, 55, 0.5)" strokeWidth="1.5" fill="transparent" />
-
-        {/* Division layers */}
+        <Circle cx={CENTER} cy={CENTER} r={RADIUS} stroke="rgba(255, 255, 255, 0.2)" strokeWidth="1.5" fill="transparent" />
+        <Circle cx={CENTER} cy={CENTER} r={RADIUS * 0.82} stroke="rgba(255, 255, 255, 0.12)" strokeWidth="1" fill="transparent" />
+        <Circle cx={CENTER} cy={CENTER} r={RADIUS * 0.45} stroke="rgba(255, 255, 255, 0.12)" strokeWidth="1.5" fill="transparent" />
         {zodiacLines}
         {houseLines}
         {zodiacSymbols}
@@ -368,7 +568,6 @@ export default function ChartScreen() {
     const sunSign = sunPlanet ? sunPlanet.sign : 'Koç';
     const moonSign = moonPlanet ? moonPlanet.sign : 'Koç';
     
-    // Calculate Ascendant sign name using getZodiacSign
     const ascSignInfo = getZodiacSign(computedChart.ascendant);
     const ascSign = ascSignInfo ? ascSignInfo.turkish : 'Koç';
 
@@ -397,121 +596,289 @@ export default function ChartScreen() {
   }, [computedChart]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Göksel Harita</Text>
-          <Text style={styles.subtitle}>Doğum Anınızdaki Gezegen Yerleşimleri</Text>
-        </View>
+    <View style={{ flex: 1, backgroundColor: '#000000' }}>
+      {/* Background Ethereal Auras */}
+      <Animated.View
+        style={[
+          {
+            position: 'absolute',
+            top: -100,
+            right: -100,
+            width: 300,
+            height: 300,
+            borderRadius: 150,
+            opacity: 0.15,
+          },
+          animatedAuraStyle1
+        ]}
+      />
+      <Animated.View
+        style={[
+          {
+            position: 'absolute',
+            bottom: 100,
+            left: -100,
+            width: 320,
+            height: 320,
+            borderRadius: 160,
+            opacity: 0.12,
+          },
+          animatedAuraStyle2
+        ]}
+      />
 
-        {computedChart ? (
-          <View style={styles.chartContainer}>
-            <View style={styles.wheelWrapper}>
-              {svgContent}
-            </View>
+      {Platform.OS === 'ios' && (
+        <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFillObject} />
+      )}
 
-            <Text style={styles.tableTitle}>Gezegen Konumları</Text>
-            
-            <View style={styles.table}>
-              {computedChart.planets.map((p, idx) => {
-                const symbol = PLANET_SYMBOLS[p.name] || '•';
-                return (
-                  <GlassCard key={idx} style={styles.tableRow}>
-                    <View style={styles.rowMain}>
-                      <Text style={styles.planetSymbol}>{symbol}</Text>
-                      <Text style={styles.planetName}>
-                        {p.name === 'Sun' ? 'Güneş' :
-                         p.name === 'Moon' ? 'Ay' :
-                         p.name === 'Mercury' ? 'Merkür' :
-                         p.name === 'Venus' ? 'Venüs' :
-                         p.name === 'Mars' ? 'Mars' :
-                         p.name === 'Jupiter' ? 'Jüpiter' :
-                         p.name === 'Saturn' ? 'Satürn' :
-                         p.name === 'Uranus' ? 'Uranüs' :
-                         p.name === 'Neptune' ? 'Neptün' :
-                         p.name === 'Pluto' ? 'Plüton' : p.name}
-                      </Text>
+      <SafeAreaView style={styles.container}>
+        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Kozmik Harita</Text>
+            <Text style={styles.subtitle}>Doğum Anınızdaki Gezegen Hizalanmaları</Text>
+          </View>
+
+          {computedChart ? (
+            <View style={styles.chartContainer}>
+              <View style={styles.wheelWrapper}>
+                {svgContent}
+              </View>
+
+              {/* AI Report Button */}
+              <Pressable 
+                onPress={handleFetchAIAnalysis}
+                style={({ pressed }) => [
+                  styles.aiButton,
+                  pressed && { opacity: 0.85 }
+                ]}
+              >
+                <Ionicons name="sparkles" size={18} color="#000000" style={{ marginRight: 6 }} />
+                <Text style={styles.aiButtonText}>Kapsamlı Harita Analizi (Gemini AI)</Text>
+              </Pressable>
+
+              {/* Element Percentages Panel */}
+              <Text style={styles.sectionDividerTitle}>Element Dengesi</Text>
+              <GlassCard style={styles.elementCard}>
+                {elementPercentages && Object.entries(elementPercentages).map(([el, pct], idx) => {
+                  const colors: Record<string, string> = {
+                    Ateş: '#FF9E9E',
+                    Toprak: '#A3E4D7',
+                    Hava: '#AED6F1',
+                    Su: '#D7BDE2'
+                  };
+                  const barColor = colors[el] || '#ffffff';
+                  return (
+                    <View key={idx} style={styles.elementRow}>
+                      <View style={styles.elementLabelRow}>
+                        <Text style={styles.elementLabel}>{el}</Text>
+                        <Text style={[styles.elementPct, { color: barColor }]}>%{pct}</Text>
+                      </View>
+                      <View style={styles.progressBarBg}>
+                        <View style={[styles.progressBarFill, { width: `${pct}%`, backgroundColor: barColor }]} />
+                      </View>
                     </View>
-                    <View style={styles.rowRight}>
-                      <Text style={styles.planetSign}>{p.sign}</Text>
-                      <Text style={styles.planetHouse}>{p.house}. Ev</Text>
-                      {p.retrograde && <Text style={styles.retroBadge}>R</Text>}
+                  );
+                })}
+              </GlassCard>
+
+              {/* Planets Degrees List */}
+              <Text style={styles.sectionDividerTitle}>Gezegen Konumları</Text>
+              <View style={styles.table}>
+                {computedChart.planets.map((p, idx) => {
+                  const symbol = PLANET_SYMBOLS[p.name] || '•';
+                  return (
+                    <GlassCard key={idx} style={styles.tableRow}>
+                      <View style={styles.rowMain}>
+                        <Text style={styles.planetSymbol}>{symbol}</Text>
+                        <Text style={styles.planetName}>
+                          {p.name === 'Sun' ? 'Güneş' :
+                           p.name === 'Moon' ? 'Ay' :
+                           p.name === 'Mercury' ? 'Merkür' :
+                           p.name === 'Venus' ? 'Venüs' :
+                           p.name === 'Mars' ? 'Mars' :
+                           p.name === 'Jupiter' ? 'Jüpiter' :
+                           p.name === 'Saturn' ? 'Satürn' :
+                           p.name === 'Uranus' ? 'Uranüs' :
+                           p.name === 'Neptune' ? 'Neptün' :
+                           p.name === 'Pluto' ? 'Plüton' : p.name}
+                        </Text>
+                      </View>
+                      <View style={styles.rowRight}>
+                        <Text style={styles.planetSign}>
+                          {formatPlanetDegree(p.longitude, p.sign)}
+                        </Text>
+                        <Text style={styles.planetHouse}>{p.house}. Ev</Text>
+                        {p.retrograde && <Text style={styles.retroBadge}>R</Text>}
+                      </View>
+                    </GlassCard>
+                  );
+                })}
+              </View>
+
+              {/* Natal Aspects Calculation Section */}
+              <Text style={styles.sectionDividerTitle}>Açı İlişkileri (Aspects)</Text>
+              <GlassCard style={styles.aspectsCard}>
+                {isPremium ? (
+                  aspects.length > 0 ? (
+                    <View style={styles.aspectsList}>
+                      {aspects.map((aspect, idx) => (
+                        <View key={idx} style={styles.aspectRow}>
+                          <View style={styles.aspectLeft}>
+                            <Text style={[styles.aspectSymbol, { color: aspect.color }]}>{aspect.symbol}</Text>
+                            <Text style={styles.aspectText}>
+                              {aspect.p1Name} <Text style={{ color: aspect.color }}>{aspect.label}</Text> {aspect.p2Name}
+                            </Text>
+                          </View>
+                          <Text style={styles.aspectDiff}>({aspect.diff}°)</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={styles.noAspectsText}>Haritanızda majör açı ilişkisi bulunmuyor.</Text>
+                  )
+                ) : (
+                  <View style={styles.lockedContainer}>
+                    <Ionicons name="lock-closed" size={20} color="#ffffff" style={{ marginBottom: 6 }} />
+                    <Text style={styles.lockedText}>Açı İlişkileri Stellium Elite Üyelerine Özeldir.</Text>
+                    <Pressable onPress={() => router.push('/settings')} style={styles.unlockInlineBtn}>
+                      <Text style={styles.unlockInlineText}>Elite Üyeliğe Geç →</Text>
+                    </Pressable>
+                  </View>
+                )}
+              </GlassCard>
+
+              {/* Detailed Astrology Interpretations */}
+              <Text style={styles.sectionDividerTitle}>Derinlikli Astroloji Analizleri</Text>
+              {interpretations && (
+                <View style={styles.interpretationsList}>
+                  {/* Sun Interpretation Card */}
+                  <GlassCard style={styles.interpretationCard}>
+                    <View style={styles.interpHeaderRow}>
+                      <Text style={styles.interpHeaderEmoji}>☀️</Text>
+                      <View style={styles.interpHeaderDetails}>
+                        <Text style={styles.interpPlacementTitle}>Güneş {interpretations.sun.sign} Burcunda ({interpretations.sun.house}. Ev)</Text>
+                        <Text style={styles.interpArchetypeText}>Temsili Karakter: {interpretations.sun.archetype}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.interpBodyText}>{interpretations.sun.ego}</Text>
+                    <View style={styles.interpAdviceBox}>
+                      <Text style={styles.interpAdviceTitle}>🔑 Gelişim & Yaşam Önerisi</Text>
+                      <Text style={styles.interpAdviceText}>{interpretations.sun.advice}</Text>
                     </View>
                   </GlassCard>
-                );
-              })}
+
+                  {/* Moon Interpretation Card */}
+                  <GlassCard style={styles.interpretationCard}>
+                    <View style={styles.interpHeaderRow}>
+                      <Text style={styles.interpHeaderEmoji}>☽</Text>
+                      <View style={styles.interpHeaderDetails}>
+                        <Text style={styles.interpPlacementTitle}>Ay {interpretations.moon.sign} Burcunda ({interpretations.moon.house}. Ev)</Text>
+                        <Text style={styles.interpArchetypeText}>Temsili Karakter: {interpretations.moon.archetype}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.interpBodyText}>{interpretations.moon.shadow}</Text>
+                    <View style={styles.interpAdviceBox}>
+                      <Text style={styles.interpAdviceTitle}>🔑 Duygusal Denge & Huzur Önerisi</Text>
+                      <Text style={styles.interpAdviceText}>{interpretations.moon.advice}</Text>
+                    </View>
+                  </GlassCard>
+
+                  {/* Ascendant Interpretation Card */}
+                  <GlassCard style={styles.interpretationCard}>
+                    <View style={styles.interpHeaderRow}>
+                      <Text style={styles.interpHeaderEmoji}>✨</Text>
+                      <View style={styles.interpHeaderDetails}>
+                        <Text style={styles.interpPlacementTitle}>Yükselen {interpretations.asc.sign} Burcu</Text>
+                        <Text style={styles.interpArchetypeText}>Temsili Karakter: {interpretations.asc.archetype}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.interpBodyText}>{interpretations.asc.persona}</Text>
+                    <View style={styles.interpAdviceBox}>
+                      <Text style={styles.interpAdviceTitle}>🔑 Sosyal İlişkiler Önerisi</Text>
+                      <Text style={styles.interpAdviceText}>{interpretations.asc.advice}</Text>
+                    </View>
+                  </GlassCard>
+
+                  {/* Placements Cards for other Planets */}
+                  {isPremium ? (
+                    planetPlacements.map((p, idx) => p && (
+                      <GlassCard key={idx} style={styles.interpretationCard}>
+                        <View style={styles.interpHeaderRow}>
+                          <Text style={styles.interpHeaderEmoji}>{p.symbol}</Text>
+                          <View style={styles.interpHeaderDetails}>
+                            <Text style={styles.interpPlacementTitle}>{p.placement}</Text>
+                            <Text style={styles.interpArchetypeText}>Temsili Karakter: {p.archetype}</Text>
+                          </View>
+                        </View>
+                        <Text style={styles.interpBodyText}>{p.description}</Text>
+                      </GlassCard>
+                    ))
+                  ) : (
+                    <GlassCard style={styles.lockedPlacementsCard}>
+                      <Ionicons name="lock-closed" size={20} color="#ffffff" style={{ marginBottom: 8 }} />
+                      <Text style={styles.lockedText}>
+                        Merkür, Venüs, Mars ve diğer gezegen konumlarının derinlemesine analizleri Stellium Elite üyelerine özeldir.
+                      </Text>
+                      <Pressable onPress={() => router.push('/settings')} style={styles.unlockInlineBtn}>
+                        <Text style={styles.unlockInlineText}>Tüm Gezegen Analizlerini Aç →</Text>
+                      </Pressable>
+                    </GlassCard>
+                  )}
+                </View>
+              )}
             </View>
+          ) : (
+            <GlassCard style={styles.errorCard}>
+              <Text style={styles.errorText}>
+                Lütfen önce doğum haritanızı oluşturmak için profilinizi tamamlayın.
+              </Text>
+            </GlassCard>
+          )}
+        </ScrollView>
 
-            <Text style={styles.sectionDividerTitle}>Derinlikli Psikolojik Analizler (Big Three)</Text>
-            
-            {interpretations && (
-              <View style={styles.interpretationsList}>
-                {/* Sun Interpretation Card */}
-                <GlassCard style={styles.interpretationCard}>
-                  <View style={styles.interpHeaderRow}>
-                    <Text style={styles.interpHeaderEmoji}>☀️</Text>
-                    <View style={styles.interpHeaderDetails}>
-                      <Text style={styles.interpPlacementTitle}>Güneş {interpretations.sun.sign} Burcunda ({interpretations.sun.house}. Ev)</Text>
-                      <Text style={styles.interpArchetypeText}>Arketip: {interpretations.sun.archetype}</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.interpBodyText}>{interpretations.sun.ego}</Text>
-                  <View style={styles.interpAdviceBox}>
-                    <Text style={styles.interpAdviceTitle}>🔑 Bireyleşme Tavsiyesi</Text>
-                    <Text style={styles.interpAdviceText}>{interpretations.sun.advice}</Text>
-                  </View>
-                </GlassCard>
-
-                {/* Moon Interpretation Card */}
-                <GlassCard style={styles.interpretationCard}>
-                  <View style={styles.interpHeaderRow}>
-                    <Text style={styles.interpHeaderEmoji}>☽</Text>
-                    <View style={styles.interpHeaderDetails}>
-                      <Text style={styles.interpPlacementTitle}>Ay {interpretations.moon.sign} Burcunda ({interpretations.moon.house}. Ev)</Text>
-                      <Text style={styles.interpArchetypeText}>Arketip: {interpretations.moon.archetype}</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.interpBodyText}>{interpretations.moon.shadow}</Text>
-                  <View style={styles.interpAdviceBox}>
-                    <Text style={styles.interpAdviceTitle}>🔑 Bilinçdışı & Gölge Entegrasyonu</Text>
-                    <Text style={styles.interpAdviceText}>{interpretations.moon.advice}</Text>
-                  </View>
-                </GlassCard>
-
-                {/* Ascendant Interpretation Card */}
-                <GlassCard style={styles.interpretationCard}>
-                  <View style={styles.interpHeaderRow}>
-                    <Text style={styles.interpHeaderEmoji}>✨</Text>
-                    <View style={styles.interpHeaderDetails}>
-                      <Text style={styles.interpPlacementTitle}>Yükselen {interpretations.asc.sign} Burcu</Text>
-                      <Text style={styles.interpArchetypeText}>Arketip: {interpretations.asc.archetype}</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.interpBodyText}>{interpretations.asc.persona}</Text>
-                  <View style={styles.interpAdviceBox}>
-                    <Text style={styles.interpAdviceTitle}>🔑 Persona Dengesi</Text>
-                    <Text style={styles.interpAdviceText}>{interpretations.asc.advice}</Text>
-                  </View>
-                </GlassCard>
+        {/* AI Report Full-Screen Modal */}
+        <Modal
+          visible={aiModalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setAiModalVisible(false)}
+        >
+          <View style={styles.modalBg}>
+            <BlurView intensity={95} tint="dark" style={StyleSheet.absoluteFillObject} />
+            <SafeAreaView style={styles.modalSafeArea}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Kapsamlı Harita Analizi</Text>
+                <Pressable onPress={() => setAiModalVisible(false)} style={styles.closeBtn}>
+                  <Ionicons name="close" size={24} color="#ffffff" />
+                </Pressable>
               </View>
-            )}
+
+              {loadingAI ? (
+                <View style={styles.modalLoadingContainer}>
+                  <ActivityIndicator size="large" color="#ffffff" />
+                  <Text style={styles.loadingText}>Yıldız haritanız yapay zeka ile tahlil ediliyor...</Text>
+                  <Text style={styles.loadingSubtext}>Bu işlem yaklaşık 10-15 saniye sürebilir.</Text>
+                </View>
+              ) : (
+                <ScrollView contentContainerStyle={styles.modalScrollContent} showsVerticalScrollIndicator={false}>
+                  {aiReport ? (
+                    <Text style={styles.modalReportText}>{aiReport}</Text>
+                  ) : (
+                    <Text style={styles.modalReportText}>Analiz yüklenemedi. Lütfen tekrar deneyin.</Text>
+                  )}
+                </ScrollView>
+              )}
+            </SafeAreaView>
           </View>
-        ) : (
-          <GlassCard style={styles.errorCard}>
-            <Text style={styles.errorText}>
-              Lütfen önce doğum haritanızı oluşturmak için profilinizi tamamlayın.
-            </Text>
-          </GlassCard>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+        </Modal>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0D1117',
   },
   scrollContainer: {
     padding: 20,
@@ -523,39 +890,96 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontFamily: 'Cinzel',
+    fontFamily: 'InterBold',
     fontSize: 26,
-    color: '#D4AF37',
+    color: '#ffffff',
     fontWeight: '700',
   },
   subtitle: {
     fontFamily: 'Inter',
     fontSize: 13,
-    color: '#8B949E',
+    color: 'rgba(255, 255, 255, 0.5)',
     marginTop: 4,
   },
   chartContainer: {
     alignItems: 'center',
   },
   wheelWrapper: {
-    backgroundColor: 'rgba(22, 27, 34, 0.4)',
-    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 24,
     padding: 10,
     borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.12)',
-    marginBottom: 24,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    marginBottom: 20,
   },
-  tableTitle: {
-    fontFamily: 'Cinzel',
+  aiButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    width: '100%',
+    justifyContent: 'center',
+    marginBottom: 24,
+    shadowColor: '#ffffff',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+  },
+  aiButtonText: {
+    color: '#000000',
+    fontFamily: 'InterBold',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  sectionDividerTitle: {
+    fontFamily: 'InterBold',
     fontSize: 18,
-    color: '#F0F6FC',
-    fontWeight: '600',
+    color: '#ffffff',
+    fontWeight: '700',
     alignSelf: 'flex-start',
+    marginTop: 24,
     marginBottom: 12,
+  },
+  elementCard: {
+    width: '100%',
+    padding: 18,
+    gap: 14,
+    marginBottom: 10,
+  },
+  elementRow: {
+    width: '100%',
+  },
+  elementLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  elementLabel: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '600',
+  },
+  elementPct: {
+    fontFamily: 'InterBold',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  progressBarBg: {
+    height: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 3,
   },
   table: {
     width: '100%',
-    gap: 10,
+    gap: 8,
   },
   tableRow: {
     flexDirection: 'row',
@@ -570,44 +994,83 @@ const styles = StyleSheet.create({
   },
   planetSymbol: {
     fontSize: 20,
-    color: '#D4AF37',
+    color: '#ffffff',
     marginRight: 12,
     width: 24,
     textAlign: 'center',
   },
   planetName: {
     fontFamily: 'Inter',
-    fontSize: 15,
-    color: '#F0F6FC',
+    fontSize: 14,
+    color: '#ffffff',
     fontWeight: '600',
   },
   rowRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   planetSign: {
     fontFamily: 'Inter',
-    fontSize: 14,
-    color: '#8B949E',
+    fontSize: 12.5,
+    color: 'rgba(255, 255, 255, 0.5)',
   },
   planetHouse: {
     fontFamily: 'Inter',
-    fontSize: 14,
-    color: '#D4AF37',
+    fontSize: 13.5,
+    color: '#ffffff',
+    fontWeight: '600',
     width: 45,
     textAlign: 'right',
   },
   retroBadge: {
     color: '#FF7B72',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 'bold',
-    backgroundColor: 'rgba(255, 123, 114, 0.15)',
+    backgroundColor: 'rgba(255, 123, 114, 0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 123, 114, 0.3)',
+    borderColor: 'rgba(255, 123, 114, 0.25)',
     borderRadius: 4,
-    paddingHorizontal: 5,
+    paddingHorizontal: 4,
     paddingVertical: 1,
+  },
+  aspectsCard: {
+    width: '100%',
+    padding: 16,
+  },
+  aspectsList: {
+    gap: 10,
+  },
+  aspectRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  aspectLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  aspectSymbol: {
+    fontSize: 16,
+    marginRight: 10,
+    width: 20,
+    textAlign: 'center',
+  },
+  aspectText: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.85)',
+  },
+  aspectDiff: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.4)',
+  },
+  noAspectsText: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.5)',
+    textAlign: 'center',
   },
   errorCard: {
     padding: 24,
@@ -619,80 +1082,156 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: 'Inter',
   },
-  sectionDividerTitle: {
-    fontFamily: 'Cinzel',
-    fontSize: 18,
-    color: '#D4AF37',
-    fontWeight: '600',
-    alignSelf: 'flex-start',
-    marginTop: 30,
-    marginBottom: 16,
-  },
   interpretationsList: {
     width: '100%',
-    gap: 16,
+    gap: 14,
     marginBottom: 20,
   },
   interpretationCard: {
-    padding: 18,
+    padding: 16,
   },
   interpHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(212, 175, 55, 0.12)',
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
     paddingBottom: 10,
   },
   interpHeaderEmoji: {
-    fontSize: 24,
-    color: '#D4AF37',
-    fontWeight: '700',
-    marginRight: 14,
-    width: 36,
+    fontSize: 22,
+    color: '#ffffff',
+    marginRight: 12,
+    width: 32,
     textAlign: 'center',
   },
   interpHeaderDetails: {
     flex: 1,
   },
   interpPlacementTitle: {
-    fontFamily: 'Cinzel',
+    fontFamily: 'InterBold',
     fontSize: 14,
-    color: '#F0F6FC',
+    color: '#ffffff',
     fontWeight: '700',
   },
   interpArchetypeText: {
     fontFamily: 'Inter',
     fontSize: 12,
-    color: '#8B949E',
+    color: 'rgba(255, 255, 255, 0.5)',
     marginTop: 2,
     fontStyle: 'italic',
   },
   interpBodyText: {
     fontFamily: 'Inter',
-    fontSize: 13.5,
-    color: '#8B949E',
-    lineHeight: 20,
-    marginBottom: 14,
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.7)',
+    lineHeight: 19,
+    marginBottom: 12,
   },
   interpAdviceBox: {
-    backgroundColor: 'rgba(212, 175, 55, 0.06)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     borderLeftWidth: 2,
-    borderLeftColor: '#D4AF37',
-    padding: 12,
+    borderLeftColor: '#ffffff',
+    padding: 10,
     borderRadius: 6,
   },
   interpAdviceTitle: {
-    fontFamily: 'Cinzel',
+    fontFamily: 'InterBold',
     fontSize: 12,
-    color: '#D4AF37',
+    color: '#ffffff',
     fontWeight: '700',
     marginBottom: 4,
   },
   interpAdviceText: {
     fontFamily: 'Inter',
     fontSize: 12,
-    color: '#E6EDF0',
+    color: 'rgba(255, 255, 255, 0.8)',
     lineHeight: 16,
+  },
+  modalBg: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalSafeArea: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  modalTitle: {
+    fontFamily: 'InterBold',
+    fontSize: 18,
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+  closeBtn: {
+    padding: 4,
+  },
+  modalLoadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  loadingText: {
+    fontFamily: 'InterBold',
+    fontSize: 15,
+    color: '#ffffff',
+    fontWeight: '700',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  loadingSubtext: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.5)',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  modalScrollContent: {
+    padding: 24,
+    paddingBottom: 60,
+  },
+  modalReportText: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.95)',
+    lineHeight: 24,
+  },
+  lockedContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lockedText: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.65)',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  unlockInlineBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: '#ffffff',
+  },
+  unlockInlineText: {
+    fontFamily: 'InterBold',
+    color: '#000000',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  lockedPlacementsCard: {
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

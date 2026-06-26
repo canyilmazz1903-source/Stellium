@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, SafeAreaView, Alert, ActivityIndicator, Pressable, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useAuthStore } from '@/store/authStore';
-import { useAppStore } from '@/store/appStore';
 import { supabase } from '@/api/supabase';
 import { searchLocation, getTimezoneForCoordinates, LocationSuggestion } from '@/api/location';
 import GlassCard from '@/components/glass/GlassCard';
@@ -10,8 +9,7 @@ import CosmicButton from '@/components/ui/CosmicButton';
 import CosmicInput from '@/components/ui/CosmicInput';
 
 export default function SettingsScreen() {
-  const { user, profile, signOut } = useAuthStore();
-  const { isPremium, setPremium } = useAppStore();
+  const { user, profile, signOut, isPremium, setPremium } = useAuthStore();
   const [loading, setLoading] = useState(false);
 
   // Profile editing states
@@ -383,8 +381,8 @@ export default function SettingsScreen() {
                 
                 <Text style={styles.description}>
                   {isPremium 
-                    ? 'Aboneliğiniz aktif! Gemini destekli transit yorumları, detaylı Yıldızname ve Sinastri gibi tüm Elite özelliklere tam erişim hakkınız bulunmaktadır.'
-                    : 'Carl Jung ekolünden ilham alan detaylı transit tahlillerine erişin, doğum haritanızın detaylı yıldızname ve ebced analizini çıkarın.'
+                    ? 'Aboneliğiniz aktif! Gemini destekli göksel transit yorumları, detaylı Yıldızname ve Sinastri gibi tüm Elite özelliklere tam erişim hakkınız bulunmaktadır.'
+                    : 'Günün kozmik ritimlerine ve yıldız hareketlerine dayalı detaylı tahlillere erişin, hayatınızı Ay evrelerine göre optimize edin ve derinlemesine ebced analizleri çıkarın.'
                   }
                 </Text>
 
@@ -515,7 +513,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0D1117',
+    backgroundColor: '#000000',
   },
   scrollContainer: {
     padding: 20,

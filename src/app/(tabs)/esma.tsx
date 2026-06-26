@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, SafeAreaView, Keyboard } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, SafeAreaView, Keyboard, Vibration, Pressable } from 'react-native';
 import CosmicInput from '@/components/ui/CosmicInput';
 import CosmicButton from '@/components/ui/CosmicButton';
 import GlassCard from '@/components/glass/GlassCard';
@@ -9,6 +9,8 @@ export default function EsmaScreen() {
   const [inputText, setInputText] = useState('');
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [zikirCount, setZikirCount] = useState(0);
+  const [targetEsma, setTargetEsma] = useState<any>(null);
 
   const handleCalculate = () => {
     if (!inputText.trim()) return;
@@ -19,6 +21,8 @@ export default function EsmaScreen() {
     try {
       const computed = computePersonalEbced(inputText);
       setResult(computed);
+      setZikirCount(0);
+      setTargetEsma(computed.primaryEsma);
     } catch (e) {
       console.warn(e);
     } finally {
@@ -102,6 +106,59 @@ export default function EsmaScreen() {
                 </View>
               </View>
               <Text style={styles.esmaHourDescription}>{result.primaryEsma.hour} saatlerinde okunması geleneksel olarak tavsiye edilir.</Text>
+              
+              {targetEsma?.name !== result.primaryEsma.name && (
+                <Pressable 
+                  onPress={() => {
+                    setTargetEsma(result.primaryEsma);
+                    setZikirCount(0);
+                  }}
+                  className="mt-3 py-2 rounded-xl bg-amber-400/10 border border-amber-400/20 active:bg-amber-400/20 items-center"
+                >
+                  <Text className="text-amber-300 text-xs font-bold font-sans">Bu Esmayı Zikirmatik İçin Seç</Text>
+                </Pressable>
+              )}
+            </GlassCard>
+
+            {/* Kozmik Zikirmatik Panel */}
+            <GlassCard className="mt-4 p-5 rounded-3xl border border-white/10 bg-white/5 items-center">
+              <Text className="text-white font-bold text-base font-sans mb-3">🔮 Kozmik Zikirmatik</Text>
+              
+              <Text className="text-white/60 text-xs font-semibold font-sans mb-4 text-center">
+                Seçili Esma: <Text className="text-amber-300 font-bold">{targetEsma?.name || 'Seçilmedi'}</Text> (Hedef: {targetEsma?.ebced || 0})
+              </Text>
+
+              {/* Glowing Circle Button */}
+              <Pressable
+                onPress={() => {
+                  Vibration.vibrate(45);
+                  setZikirCount(prev => prev + 1);
+                }}
+                className="w-32 h-32 rounded-full border-4 border-amber-400/40 bg-amber-400/5 items-center justify-center shadow-lg shadow-amber-400/20 active:bg-amber-400/10 mb-4"
+              >
+                <Text className="text-white text-3xl font-extrabold font-sans">{zikirCount}</Text>
+                <Text className="text-white/40 text-[9px] uppercase font-bold tracking-wider mt-1">Dokun</Text>
+              </Pressable>
+
+              {/* Progress and resets */}
+              <View className="w-full px-4 flex-row justify-between items-center mt-2">
+                <Pressable 
+                  onPress={() => setZikirCount(0)}
+                  className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 active:bg-white/10"
+                >
+                  <Text className="text-white/70 text-xs font-bold font-sans">Sıfırla</Text>
+                </Pressable>
+
+                <Text className="text-amber-300 text-xs font-bold font-sans">
+                  Tamamlanan: %{targetEsma?.ebced ? Math.min(100, Math.round((zikirCount / targetEsma.ebced) * 100)) : 0}
+                </Text>
+              </View>
+
+              {targetEsma?.ebced && zikirCount >= targetEsma.ebced && (
+                <View className="mt-4 bg-emerald-400/10 border border-emerald-400/30 px-4 py-2.5 rounded-2xl w-full items-center">
+                  <Text className="text-emerald-300 text-xs font-bold font-sans">✨ Zikir Tamamlandı! Ağzınıza Sağlık.</Text>
+                </View>
+              )}
             </GlassCard>
 
             {/* Alternative Esma List */}
@@ -131,7 +188,7 @@ export default function EsmaScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0D1117',
+    backgroundColor: '#000000',
   },
   scrollContainer: {
     padding: 20,

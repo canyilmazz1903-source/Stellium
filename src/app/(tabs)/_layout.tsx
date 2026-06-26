@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderTopWidth: 1,
     borderTopColor: 'rgba(212, 175, 55, 0.15)', // Antique gold top border
-    backgroundColor: Platform.OS === 'ios' ? 'transparent' : '#0D1117', // Android fallback solid background
+    backgroundColor: Platform.OS === 'ios' ? 'transparent' : '#000000', // Android fallback solid background
     height: Platform.OS === 'ios' ? 88 : 64,
     paddingBottom: Platform.OS === 'ios' ? 28 : 10,
     paddingTop: 8,

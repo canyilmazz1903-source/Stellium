@@ -337,7 +337,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0D1117',
+    backgroundColor: '#000000',
   },
   scrollContainer: {
     flexGrow: 1,
