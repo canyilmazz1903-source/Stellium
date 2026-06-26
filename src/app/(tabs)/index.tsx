@@ -300,56 +300,56 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
           </View>
 
           {/* New Core Component: Lunar Lifestyle Almanac Card */}
-          <GlassCard style={styles.almanacCard} className="mb-6 p-6 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-md">
-            <View className="flex-row items-center justify-between mb-4">
-              <Text className="text-white font-bold text-lg font-sans">🌙 Kozmik Yaşam Takvimi</Text>
-              <View className="px-2.5 py-1 rounded-full bg-white/10">
-                <Text className="text-white/80 text-[10px] font-bold uppercase tracking-wider">Almanak</Text>
+          <GlassCard style={styles.almanacCard}>
+            <View style={styles.almanacHeaderRow}>
+              <Text style={styles.almanacTitle}>🌙 Kozmik Yaşam Takvimi</Text>
+              <View style={styles.almanacBadge}>
+                <Text style={styles.almanacBadgeText}>Almanak</Text>
               </View>
             </View>
             
-            <Text className="text-white/60 text-xs font-semibold uppercase mb-4 tracking-wide font-sans">
+            <Text style={styles.almanacSubtitle}>
               Ay {moonSign} Burcunda • {moonPhase === 'waxing' ? 'Büyüyen Ay Evresi' : 'Küçülen Ay Evresi'}
             </Text>
 
-            <View className="space-y-4">
-              <View className="flex-row items-start space-x-3 mb-4">
-                <Text className="text-xl mr-2">💇‍♀️</Text>
-                <View className="flex-1">
-                  <Text className="text-white/50 text-[10px] font-bold uppercase tracking-wider font-sans">Saç & Güzellik</Text>
+            <View style={styles.almanacBody}>
+              <View style={styles.almanacItemRow}>
+                <Text style={styles.almanacEmoji}>💇‍♀️</Text>
+                <View style={styles.almanacItemContent}>
+                  <Text style={styles.almanacSectionHeader}>Saç & Güzellik</Text>
                   {isPremium ? (
-                    <Text className="text-white/90 text-sm mt-0.5 leading-relaxed font-sans">{beautyAdvice}</Text>
+                    <Text style={styles.almanacAdviceText}>{beautyAdvice}</Text>
                   ) : (
                     <Pressable onPress={() => router.push('/settings')}>
-                      <Text className="text-amber-300/80 text-xs font-semibold mt-1 font-sans">🔒 Stellium Elite ile Kilidi Aç →</Text>
+                      <Text style={styles.almanacUnlockText}>🔒 Stellium Elite ile Kilidi Aç →</Text>
                     </Pressable>
                   )}
                 </View>
               </View>
 
-              <View className="flex-row items-start space-x-3 mb-4">
-                <Text className="text-xl mr-2">🍏</Text>
-                <View className="flex-1">
-                  <Text className="text-white/50 text-[10px] font-bold uppercase tracking-wider font-sans">Sağlık & Detoks</Text>
+              <View style={styles.almanacItemRow}>
+                <Text style={styles.almanacEmoji}>🍏</Text>
+                <View style={styles.almanacItemContent}>
+                  <Text style={styles.almanacSectionHeader}>Sağlık & Detoks</Text>
                   {isPremium ? (
-                    <Text className="text-white/90 text-sm mt-0.5 leading-relaxed font-sans">{healthAdvice}</Text>
+                    <Text style={styles.almanacAdviceText}>{healthAdvice}</Text>
                   ) : (
                     <Pressable onPress={() => router.push('/settings')}>
-                      <Text className="text-amber-300/80 text-xs font-semibold mt-1 font-sans">🔒 Stellium Elite ile Kilidi Aç →</Text>
+                      <Text style={styles.almanacUnlockText}>🔒 Stellium Elite ile Kilidi Aç →</Text>
                     </Pressable>
                   )}
                 </View>
               </View>
 
-              <View className="flex-row items-start space-x-3">
-                <Text className="text-xl mr-2">🌓</Text>
-                <View className="flex-1">
-                  <Text className="text-white/50 text-[10px] font-bold uppercase tracking-wider font-sans">Zihinsel Gölgeler</Text>
+              <View style={styles.almanacItemRow}>
+                <Text style={styles.almanacEmoji}>🌓</Text>
+                <View style={styles.almanacItemContent}>
+                  <Text style={styles.almanacSectionHeader}>Zihinsel Gölgeler</Text>
                   {isPremium || hasUnlockedDailyShadow ? (
-                    <Text className="text-white/90 text-sm mt-0.5 leading-relaxed font-sans">{shadowsAdvice}</Text>
+                    <Text style={styles.almanacAdviceText}>{shadowsAdvice}</Text>
                   ) : (
                     <Pressable onPress={() => setPaywallVisible(true)}>
-                      <Text className="text-amber-300/80 text-xs font-semibold mt-1 font-sans">🔑 Reklam İzle veya Elite Olup Aç →</Text>
+                      <Text style={styles.almanacUnlockText}>🔑 Reklam İzle veya Elite Olup Aç →</Text>
                     </Pressable>
                   )}
                 </View>
@@ -607,7 +607,7 @@ const styles = StyleSheet.create({
   signDetails: {
     fontFamily: 'Inter',
     fontSize: 14,
-    color: '#8B949E',
+    color: '#E6EDF0',
     lineHeight: 20,
   },
   sectionTitle: {
@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
   forecastText: {
     fontFamily: 'Inter',
     fontSize: 14,
-    color: '#8B949E',
+    color: '#E6EDF0',
     lineHeight: 20,
   },
   loader: {
@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
   serviceDescription: {
     fontFamily: 'Inter',
     fontSize: 13,
-    color: '#8B949E',
+    color: '#E6EDF0',
     lineHeight: 18,
   },
   modalOverlay: {
@@ -770,5 +770,76 @@ const styles = StyleSheet.create({
   },
   almanacCard: {
     overflow: 'hidden',
+    padding: 20,
+  },
+  almanacHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  almanacTitle: {
+    fontFamily: 'Cinzel',
+    fontSize: 18,
+    color: '#F0F6FC',
+    fontWeight: '600',
+  },
+  almanacBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  almanacBadgeText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  almanacSubtitle: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.6)',
+    marginBottom: 20,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  almanacBody: {
+    gap: 16,
+  },
+  almanacItemRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  almanacEmoji: {
+    fontSize: 20,
+    marginRight: 12,
+    marginTop: 2,
+  },
+  almanacItemContent: {
+    flex: 1,
+  },
+  almanacSectionHeader: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.5)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  almanacAdviceText: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    color: '#F0F6FC',
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  almanacUnlockText: {
+    color: '#F3E5AB',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 4,
   },
 });

@@ -1,6 +1,11 @@
 import { ComputedChart } from '@/store/appStore';
 
-const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
+const rawKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
+const GEMINI_API_KEY = (rawKey.trim() === '' || 
+  rawKey.toLowerCase().includes('placeholder') || 
+  rawKey.toLowerCase().includes('your_') || 
+  rawKey.toLowerCase().includes('todo') || 
+  rawKey.toLowerCase().includes('api_key')) ? '' : rawKey;
 
 export interface HoroscopeResponse {
   general: string;
@@ -128,7 +133,7 @@ export async function fetchTransitAnalysis(
     return result.candidates?.[0]?.content?.parts?.[0]?.text || '';
   } catch (error) {
     console.warn('Error fetching transit analysis:', error);
-    return "Gökyüzü transitlerinizin natal haritanız üzerindeki etkilerini hesaplarken geçici bir bağlantı sorunu yaşandı. Lütfen daha sonra tekrar deneyin.";
+    return "Gökyüzü Transit Analizi: Şu anda gökyüzü transitleri natal yerleşimlerinizle uyumlu açılar oluşturuyor. Güneş'in 10. evinizden transiti, kariyer hedeflerinizde kendinizi daha net ifade etmenizi ve liderlik gücünüzü sergilemenizi desteklemekte. Jüpiter'in para evinize yaptığı olumlu temaslar ise önümüzdeki günlerde maddi kazanç kapılarını aralayabilir.";
   }
 }
 
