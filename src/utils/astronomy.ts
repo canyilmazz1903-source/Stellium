@@ -507,3 +507,16 @@ export function calculatePlanetaryHours(
 function formatTime(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
+
+export function getTimezoneOffset(timezone: string, date: Date): number {
+  try {
+    const tzString = date.toLocaleString('en-US', { timeZone: timezone });
+    const localDate = new Date(tzString);
+    const utcString = date.toLocaleString('en-US', { timeZone: 'UTC' });
+    const utcDate = new Date(utcString);
+    const diffMs = localDate.getTime() - utcDate.getTime();
+    return diffMs / (1000 * 60 * 60);
+  } catch (e) {
+    return 3; // Fallback to GMT+3 (Turkey)
+  }
+}

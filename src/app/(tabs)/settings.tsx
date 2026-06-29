@@ -53,12 +53,14 @@ export default function SettingsScreen() {
       const parts = profile.birth_date.split('-');
       if (parts.length === 3) {
         const [year, month, day] = parts.map(Number);
-        dateObj = new Date(year, month - 1, day);
+        // Initialize local date at noon (12:00) to avoid boundary wrapping
+        dateObj = new Date(year, month - 1, day, 12, 0, 0);
       }
     }
     setBirthDate(dateObj);
     
-    let timeObj = new Date(1995, 9, 25, 12, 0);
+    // Initialize timeObj on the EXACT SAME local date to prevent DST timezone offset shifts
+    let timeObj = new Date(dateObj);
     if (profile?.birth_time) {
       const parts = profile.birth_time.split(':');
       if (parts.length >= 2) {
@@ -139,7 +141,7 @@ export default function SettingsScreen() {
     setLoading(true);
     setUpdateError('');
     try {
-      const dateString = birthDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      const dateString = `${birthDate.getFullYear()}-${String(birthDate.getMonth() + 1).padStart(2, '0')}-${String(birthDate.getDate()).padStart(2, '0')}`; // YYYY-MM-DD
       const timeString = `${String(birthTime.getHours()).padStart(2, '0')}:${String(birthTime.getMinutes()).padStart(2, '0')}:00`; // HH:MM:SS
       
       const { error } = await supabase

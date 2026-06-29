@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, ScrollView, ActivityIndicator, SafeAreaView, Pr
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
-import { computeNatalChart } from '@/utils/astronomy';
+import { computeNatalChart, getTimezoneOffset } from '@/utils/astronomy';
 import { fetchSynastryAnalysis } from '@/api/gemini';
 import { searchLocation, getTimezoneForCoordinates, LocationSuggestion } from '@/api/location';
 import GlassCard from '@/components/glass/GlassCard';
@@ -30,6 +30,7 @@ export default function SynastryScreen() {
   const [birthPlace, setBirthPlace] = useState('');
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
+  const [timezone, setTimezone] = useState<string | null>(null);
 
   // Date/Time pickers
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -68,7 +69,8 @@ export default function SynastryScreen() {
     setLongitude(loc.longitude);
     setSuggestions([]);
     try {
-      await getTimezoneForCoordinates(loc.latitude, loc.longitude);
+      const tz = await getTimezoneForCoordinates(loc.latitude, loc.longitude);
+      setTimezone(tz);
     } catch (err) {
       console.warn(err);
     }
@@ -170,8 +172,10 @@ export default function SynastryScreen() {
       const hour = birthTime.getHours();
       const minute = birthTime.getMinutes();
 
-      // Estimate timezone offset from longitude (15 degrees per hour)
-      const tzOffset = Math.round(longitude / 15);
+      // Dynamically calculate the partner's historical timezone offset
+      const tzName = timezone || 'Europe/Istanbul';
+      const birthDateLocal = new Date(year, month - 1, day, hour, minute);
+      const tzOffset = getTimezoneOffset(tzName, birthDateLocal);
 
       const chart = computeNatalChart(year, month, day, hour, minute, latitude, longitude, tzOffset);
       setPartnerChart(chart);

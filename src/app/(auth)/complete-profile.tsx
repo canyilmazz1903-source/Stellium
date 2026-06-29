@@ -96,8 +96,8 @@ export default function CompleteProfileScreen() {
     setLoading(true);
 
     try {
-      // Format birth parameters
-      const dateString = birthDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      // Format birth parameters locally to avoid UTC timezone shifts
+      const dateString = `${birthDate.getFullYear()}-${String(birthDate.getMonth() + 1).padStart(2, '0')}-${String(birthDate.getDate()).padStart(2, '0')}`; // YYYY-MM-DD
       const timeString = `${String(birthTime.getHours()).padStart(2, '0')}:${String(birthTime.getMinutes()).padStart(2, '0')}:00`; // HH:MM:SS
       
       // 1. Check if profile row already exists (RLS policy check bypass)

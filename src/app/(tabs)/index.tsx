@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, ScrollView, ActivityIndicator, SafeAreaView, Pr
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
-import { computeNatalChart, getPlanetLongitude, getJulianDaysSinceJ2000, calculatePlanetaryHours, PlanetaryHour } from '@/utils/astronomy';
+import { computeNatalChart, getPlanetLongitude, getJulianDaysSinceJ2000, calculatePlanetaryHours, PlanetaryHour, getTimezoneOffset } from '@/utils/astronomy';
 import { HoroscopeResponse } from '@/api/gemini';
 import GlassCard from '@/components/glass/GlassCard';
 import { Ionicons } from '@expo/vector-icons';
@@ -228,9 +228,11 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
       const [hour, minute] = profile.birth_time.split(':').map(Number);
       const lat = profile.latitude || 41.0082;
       const lon = profile.longitude || 28.9784;
+      const tzName = profile.timezone || 'Europe/Istanbul';
 
-      // Estimate timezone offset (standard GMT+3 for Turkey is common)
-      const tzOffset = 3;
+      // Dynamically calculate the historical timezone offset for this specific birth date
+      const birthDateLocal = new Date(year, month - 1, day, hour, minute);
+      const tzOffset = getTimezoneOffset(tzName, birthDateLocal);
 
       const chart = computeNatalChart(year, month, day, hour, minute, lat, lon, tzOffset);
       setComputedChart(chart);
@@ -331,11 +333,11 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
               ))}
             </ScrollView>
             {activeHour && (
-              <GlassCard className="mt-3 p-3.5 rounded-2xl border border-white/5 bg-white/5 flex-row items-center">
-                <Text style={{ color: '#FFFFFF' }} className="text-2xl mr-3">{activeHour.planetSymbol}</Text>
-                <View className="flex-1">
-                  <Text style={{ color: 'rgba(255, 255, 255, 0.9)' }} className="text-xs font-bold font-sans">Şu An: {activeHour.planetName} Saati ({activeHour.label})</Text>
-                  <Text style={{ color: 'rgba(255, 255, 255, 0.5)' }} className="text-[11px] font-sans mt-0.5 leading-relaxed">{activeHour.meaning}</Text>
+              <GlassCard style={{ backgroundColor: '#161B22', borderWidth: 1, borderColor: 'rgba(212, 175, 55, 0.15)', borderRadius: 16, flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
+                <Text style={{ color: '#FFFFFF', fontSize: 24, marginRight: 12 }}>{activeHour.planetSymbol}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: 12, fontWeight: '700', fontFamily: 'Inter' }}>Şu An: {activeHour.planetName} Saati ({activeHour.label})</Text>
+                  <Text style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 11, fontFamily: 'Inter', marginTop: 2, lineHeight: 16 }}>{activeHour.meaning}</Text>
                 </View>
               </GlassCard>
             )}
