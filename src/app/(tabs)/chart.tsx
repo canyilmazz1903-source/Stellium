@@ -490,7 +490,7 @@ export default function ChartScreen() {
     if (!isPremium) {
       Alert.alert(
         'Elite Üyelik Gerekli',
-        'Kapsamlı AI Harita Analizi yalnızca Cosmic Elite üyelerimize özeldir. Elite üyelikle doğum haritanızın derin analizini yapabilirsiniz.',
+        'Kapsamlı AI Harita Analizi yalnızca Stellium Elite üyelerimize özeldir. Elite üyelikle doğum haritanızın derin analizini yapabilirsiniz.',
         [
           { text: 'Vazgeç', style: 'cancel' },
           { text: 'Üyeliği İncele', onPress: () => router.push('/settings') }

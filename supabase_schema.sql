@@ -1,4 +1,4 @@
--- CosmicCore Supabase Database Schema
+-- Stellium Supabase Database Schema
 -- Run this script in your Supabase SQL Editor to set up the tables, triggers, and RLS policies.
 
 -- 1. Create profiles table linked to Supabase Auth users

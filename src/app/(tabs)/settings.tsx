@@ -180,8 +180,8 @@ export default function SettingsScreen() {
       setLoading(false);
       Alert.alert(
         'Elite Üyelik Aktif',
-        'Tebrikler! Cosmic Elite ailesine başarıyla katıldınız. Tüm kısıtlamalar kaldırıldı.',
-        [{ text: 'Kozmik Yolculuğa Başla' }]
+        'Tebrikler! Stellium Elite ailesine başarıyla katıldınız. Tüm kısıtlamalar kaldırıldı.',
+        [{ text: 'Mistisizm Yolculuğuna Başla' }]
       );
     }, 1500);
   };
@@ -376,7 +376,7 @@ export default function SettingsScreen() {
               {/* Premium Paywall / Subscription Status Card */}
               <GlassCard style={[styles.card, isPremium && styles.premiumCard]}>
                 <Text style={[styles.cardTitle, isPremium && styles.premiumTitle]}>
-                  {isPremium ? '🌟 Cosmic Elite Üyesi' : 'Upgrade to Cosmic Elite'}
+                  {isPremium ? '🌟 Stellium Elite Üyesi' : 'Stellium Elite\'e Yükselt'}
                 </Text>
                 
                 <Text style={styles.description}>
@@ -396,7 +396,7 @@ export default function SettingsScreen() {
                 ) : null}
 
                 <CosmicButton
-                  title={isPremium ? 'Aboneliği Yönet' : 'Kozmik Elite Katıl - 99.99 TL / Ay'}
+                  title={isPremium ? 'Aboneliği Yönet' : 'Stellium Elite\'e Katıl - 99.99 TL / Ay'}
                   onPress={isPremium ? handleCancelSubscription : handlePurchase}
                   style={styles.payButton}
                 />

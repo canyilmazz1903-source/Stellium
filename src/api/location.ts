@@ -16,7 +16,7 @@ export async function searchLocation(query: string): Promise<LocationSuggestion[
   try {
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'CosmicCoreAstrologyApp/1.0.0 (osmancan.yilmaz@gmail.com)',
+        'User-Agent': 'StelliumAstrologyApp/1.0.0 (osmancan.yilmaz@gmail.com)',
         'Accept': 'application/json',
       },
     });
@@ -54,7 +54,7 @@ export async function getTimezoneForCoordinates(lat: number, lon: number): Promi
     const response = await fetch(url, {
       headers: {
         'Accept': 'application/json',
-        'User-Agent': 'CosmicCoreAstrologyApp/1.0.0',
+        'User-Agent': 'StelliumAstrologyApp/1.0.0',
       },
     });
 

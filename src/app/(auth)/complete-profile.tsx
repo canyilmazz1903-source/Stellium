@@ -177,7 +177,7 @@ export default function CompleteProfileScreen() {
         automaticallyAdjustKeyboardInsets={false}
       >
         <View style={styles.headerContainer}>
-          <Text style={styles.title}>CosmicCore</Text>
+          <Text style={styles.title}>Stellium</Text>
           <Text style={styles.subtitle}>Doğum Haritası Bilgileri</Text>
         </View>
 

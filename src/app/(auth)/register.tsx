@@ -181,7 +181,7 @@ export default function RegisterScreen() {
         automaticallyAdjustKeyboardInsets={false}
       >
         <View style={styles.headerContainer}>
-          <Text style={styles.title}>CosmicCore</Text>
+          <Text style={styles.title}>Stellium</Text>
           <Text style={styles.subtitle}>Yıldız Haritanızı Çıkarın</Text>
         </View>
 

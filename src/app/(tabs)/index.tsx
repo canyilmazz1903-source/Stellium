@@ -156,7 +156,7 @@ export default function HomeScreen() {
     } else {
       Alert.alert(
         'Elite Üyelik Gerekli',
-        'Bu özellik yalnızca Cosmic Elite üyelerine özeldir. Detaylı analizleri açmak için üye olabilirsiniz.',
+        'Bu özellik yalnızca Stellium Elite üyelerine özeldir. Detaylı analizleri açmak için üye olabilirsiniz.',
         [
           { text: 'Vazgeç', style: 'cancel' },
           { text: 'Üyeliği İncele', onPress: () => router.push('/settings') }

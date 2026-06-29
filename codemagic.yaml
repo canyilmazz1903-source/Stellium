@@ -1,6 +1,6 @@
 workflows:
   ios-app-store:
-    name: CosmicCore iOS App Store Build & Deploy
+    name: Stellium iOS App Store Build & Deploy
     max_build_duration: 120
     instance_type: mac_mini_m1
     integrations:

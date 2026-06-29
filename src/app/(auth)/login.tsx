@@ -86,7 +86,7 @@ export default function LoginScreen() {
         automaticallyAdjustKeyboardInsets={false}
       >
         <View style={styles.headerContainer}>
-          <Text style={styles.title}>CosmicCore</Text>
+          <Text style={styles.title}>Stellium</Text>
           <Text style={styles.subtitle}>Mistisizm ve Astroloji Akademisi</Text>
         </View>
 
