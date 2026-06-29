@@ -399,12 +399,14 @@ export default function ChartScreen() {
     };
   }, [computedChart]);
 
-  // 2. Format exact degrees & minutes (e.g. 15° Koç 32')
+  // 2. Format exact degrees, minutes & seconds (e.g. 15° Koç 32' 45")
   const formatPlanetDegree = (longitude: number, sign: string) => {
     const degInSign = longitude % 30;
     const deg = Math.floor(degInSign);
-    const min = Math.floor((degInSign - deg) * 60);
-    return `${deg}° ${sign} ${min}'`;
+    const decimalMin = (degInSign - deg) * 60;
+    const min = Math.floor(decimalMin);
+    const sec = Math.floor((decimalMin - min) * 60);
+    return `${deg}° ${sign} ${min}' ${String(sec).padStart(2, '0')}"`;
   };
 
   // 3. Calculate natal aspects (conjunction, sextile, square, trine, opposition)
@@ -820,7 +822,7 @@ export default function ChartScreen() {
                         <Text style={styles.detailsSymbol}>🏠</Text>
                         <View>
                           <Text style={styles.detailsTitle}>{houseTitle}</Text>
-                          <Text style={styles.detailsSubtitle}>{cuspSign} Burcu Cusp Başlangıcı ({Math.floor(cuspDegree % 30)}°)</Text>
+                          <Text style={styles.detailsSubtitle}>{cuspSign} Burcu Cusp Başlangıcı | {formatPlanetDegree(cuspDegree, cuspSign)}</Text>
                         </View>
                       </View>
                       <Pressable onPress={() => setSelectedHouse(null)} style={{ padding: 4 }}>
