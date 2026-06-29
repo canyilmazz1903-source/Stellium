@@ -588,10 +588,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   moonWidget: {
+    backgroundColor: '#161B22',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.15)',
+    borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
-    paddingVertical: 12,
   },
   moonSymbol: {
     fontSize: 42,
@@ -613,6 +616,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   signCard: {
+    backgroundColor: '#161B22',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.15)',
+    borderRadius: 16,
     marginBottom: 24,
   },
   row: {
@@ -664,7 +671,10 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   forecastCard: {
-    padding: 16,
+    backgroundColor: '#161B22',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.15)',
+    borderRadius: 16,
   },
   forecastHeader: {
     fontFamily: 'Cinzel',
@@ -811,8 +821,11 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   almanacCard: {
+    backgroundColor: '#161B22',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.15)',
+    borderRadius: 16,
     overflow: 'hidden',
-    padding: 20,
   },
   almanacHeaderRow: {
     flexDirection: 'row',

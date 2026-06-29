@@ -16,7 +16,7 @@ export function getJulianDaysSinceJ2000(date: Date): number {
   const h = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
 
   // Formula from astronomical algorithms (valid for years 1901-2099)
-  const jd = 367 * y - Math.floor(7 * (y + Math.floor((m + 9) / 12)) / 4) + Math.floor(275 * m / 9) + d + h / 24 - 730530;
+  const jd = 367 * y - Math.floor(7 * (y + Math.floor((m + 9) / 12)) / 4) + Math.floor(275 * m / 9) + d + h / 24 - 730531.5;
   return jd;
 }
 
@@ -296,7 +296,7 @@ export function getHouseCusps(ramc: number, lat: number, obliquity: number) {
   const ascendant = normalize360(Math.atan2(y, x) * DEG);
   
   // Midheaven (MC) Calculation
-  const mc = normalize360(Math.atan2(Math.sin(ramcRad) * Math.cos(oblRad), Math.cos(ramcRad)) * DEG);
+  const mc = normalize360(Math.atan2(Math.sin(ramcRad), Math.cos(ramcRad) * Math.cos(oblRad)) * DEG);
 
   // In Equal House system, 1st House Cusp is the Ascendant.
   // Each subsequent cusp is exactly 30 degrees further.

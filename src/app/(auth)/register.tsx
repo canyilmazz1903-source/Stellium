@@ -98,10 +98,25 @@ export default function RegisterScreen() {
     setLoading(true);
 
     try {
-      // 1. Sign up User in Supabase Auth
+      // Format birth parameters
+      const dateString = birthDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      const timeString = `${String(birthTime.getHours()).padStart(2, '0')}:${String(birthTime.getMinutes()).padStart(2, '0')}:00`; // HH:MM:SS
+
+      // 1. Sign up User in Supabase Auth with metadata options for DB Triggers
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
+        options: {
+          data: {
+            name: name.trim(),
+            birth_date: dateString,
+            birth_time: timeString,
+            birth_place: birthPlace,
+            latitude,
+            longitude,
+            timezone: timezone || 'Europe/Istanbul'
+          }
+        }
       });
 
       if (signUpError) {
@@ -109,10 +124,6 @@ export default function RegisterScreen() {
       }
 
       if (data.user) {
-        // Format birth parameters
-        const dateString = birthDate.toISOString().split('T')[0]; // YYYY-MM-DD
-        const timeString = `${String(birthTime.getHours()).padStart(2, '0')}:${String(birthTime.getMinutes()).padStart(2, '0')}:00`; // HH:MM:SS
-        
         // 2. Insert Profile Data into profiles table
         const { error: profileError } = await supabase.from('profiles').insert({
           id: data.user.id,
@@ -126,7 +137,28 @@ export default function RegisterScreen() {
         });
 
         if (profileError) {
-          throw new Error(`Profil kaydı oluşturulurken hata: ${profileError.message}`);
+          // If user session is active, it means the insert failed for other reasons.
+          // If session is null, email confirmation is active and RLS blocked this insert.
+          if (data.session) {
+            throw new Error(`Profil kaydı oluşturulurken hata: ${profileError.message}`);
+          } else {
+            // Friendly message about email confirmation
+            Alert.alert(
+              "Doğrulama Gerekli",
+              "Kayıt işlemi tamamlandı! Hesabınızı aktifleştirmek için lütfen e-postanıza gönderilen doğrulama bağlantısına tıklayın. Ardından giriş yapabilirsiniz.",
+              [{ text: "Tamam", onPress: () => router.replace('/(auth)/login') }]
+            );
+            setLoading(false);
+            return;
+          }
+        }
+        
+        if (data.session) {
+          Alert.alert(
+            "Başarılı",
+            "Kayıt başarıyla tamamlandı!",
+            [{ text: "Tamam" }]
+          );
         }
       } else {
         throw new Error('Kayıt başarısız oldu, kullanıcı oluşturulamadı.');
