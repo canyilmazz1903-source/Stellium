@@ -316,7 +316,7 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
 
           {/* Live Planetary Hours Timeline */}
           <View className="mb-6">
-            <Text className="text-white/60 text-xs font-bold uppercase tracking-wider mb-2.5 font-sans">⏱️ Canlı Gezegen Saatleri</Text>
+            <Text style={{ color: 'rgba(255, 255, 255, 0.6)' }} className="text-xs font-bold uppercase tracking-wider mb-2.5 font-sans">⏱️ Canlı Gezegen Saatleri</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
               {planetaryHours.map((hour, idx) => (
                 <View 
@@ -324,18 +324,18 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
                   className={`px-3 py-2.5 rounded-2xl border ${hour.isActive ? 'border-amber-400 bg-amber-400/10' : 'border-white/5 bg-white/5'} items-center`}
                   style={{ width: 105 }}
                 >
-                  <Text className="text-lg mb-0.5">{hour.planetSymbol}</Text>
-                  <Text className={`text-[11px] font-bold font-sans ${hour.isActive ? 'text-amber-300' : 'text-white'}`}>{hour.planetName} Saati</Text>
-                  <Text className="text-[9px] text-white/50 font-semibold font-sans mt-0.5">{hour.label}</Text>
+                  <Text style={{ color: '#FFFFFF' }} className="text-lg mb-0.5">{hour.planetSymbol}</Text>
+                  <Text style={{ color: hour.isActive ? '#FCD34D' : '#FFFFFF' }} className="text-[11px] font-bold font-sans">{hour.planetName} Saati</Text>
+                  <Text style={{ color: 'rgba(255, 255, 255, 0.5)' }} className="text-[9px] font-semibold font-sans mt-0.5">{hour.label}</Text>
                 </View>
               ))}
             </ScrollView>
             {activeHour && (
               <GlassCard className="mt-3 p-3.5 rounded-2xl border border-white/5 bg-white/5 flex-row items-center">
-                <Text className="text-2xl mr-3">{activeHour.planetSymbol}</Text>
+                <Text style={{ color: '#FFFFFF' }} className="text-2xl mr-3">{activeHour.planetSymbol}</Text>
                 <View className="flex-1">
-                  <Text className="text-white/90 text-xs font-bold font-sans">Şu An: {activeHour.planetName} Saati ({activeHour.label})</Text>
-                  <Text className="text-white/50 text-[11px] font-sans mt-0.5 leading-relaxed">{activeHour.meaning}</Text>
+                  <Text style={{ color: 'rgba(255, 255, 255, 0.9)' }} className="text-xs font-bold font-sans">Şu An: {activeHour.planetName} Saati ({activeHour.label})</Text>
+                  <Text style={{ color: 'rgba(255, 255, 255, 0.5)' }} className="text-[11px] font-sans mt-0.5 leading-relaxed">{activeHour.meaning}</Text>
                 </View>
               </GlassCard>
             )}
