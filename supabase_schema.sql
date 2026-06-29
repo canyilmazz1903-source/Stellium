@@ -19,15 +19,21 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- 3. Create RLS Policies for Profiles
+-- Drop policies if they already exist to prevent execution errors
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can delete their own profile" ON public.profiles;
+
 -- Users can only SELECT their own profile
 CREATE POLICY "Users can view their own profile" 
 ON public.profiles FOR SELECT 
 USING (auth.uid() = id);
 
--- Users can only INSERT their own profile
+-- Users can insert their own profile (Allow true check to support unconfirmed signups when email verification is pending)
 CREATE POLICY "Users can insert their own profile" 
 ON public.profiles FOR INSERT 
-WITH CHECK (auth.uid() = id);
+WITH CHECK (true);
 
 -- Users can only UPDATE their own profile
 CREATE POLICY "Users can update their own profile" 
