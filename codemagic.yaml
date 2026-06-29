@@ -7,7 +7,7 @@ workflows:
       app_store_connect: "Codemagic API"
     environment:
       node: 22
-      xcode: latest
+      xcode: 15.4
       cocoapods: default
       vars:
         # Set these variables in Codemagic environment group "app-store"
