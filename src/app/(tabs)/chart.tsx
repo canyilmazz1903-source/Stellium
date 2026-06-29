@@ -463,14 +463,6 @@ export default function ChartScreen() {
   // 4. Generate dynamic planet placements explanations
   const planetPlacements = useMemo(() => {
     if (!computedChart) return [];
-    
-      7: 'evlilik, ortaklıklar, yakın ikili ilişkileriniz ve açık düşmanlar evinde görünür hale gelir.',
-      8: 'ortaklaşa kazançlar, miras, cinsellik, krizler ve küllerinden yeniden doğma süreçlerinde etkilidir.',
-      9: 'yüksek öğrenim, yurt dışı seyahatler, felsefi inançlar ve yaşam vizyonu alanını aydınlatır.',
-      10: 'toplumsal statünüz, kariyeriniz, hedefleriniz ve otorite figürleriyle olan ilişkilerinizi yönetir.',
-      11: 'sosyal çevre, arkadaşlık grupları, toplumsal idealleriniz ve gelecek umutlarınız alanında aktiftir.',
-      12: 'bilinçaltı sırlar, rüyalar, yalnızlık, spiritüel çalışmalar ve gizli düşmanlar boyutunda işler.',
-    };
 
     return computedChart.planets
       .filter(p => p.name !== 'Sun' && p.name !== 'Moon')
