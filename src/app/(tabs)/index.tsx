@@ -317,29 +317,37 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
           </View>
 
           {/* Live Planetary Hours Timeline */}
-          <View className="mb-6">
-            <Text style={{ color: 'rgba(255, 255, 255, 0.6)' }} className="text-xs font-bold uppercase tracking-wider mb-2.5 font-sans">⏱️ Canlı Gezegen Saatleri</Text>
+          <View style={{ marginBottom: 24 }}>
+            <Text style={{ color: '#D4AF37', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10, fontFamily: 'Inter' }}>⏱️ Canlı Gezegen Saatleri</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
               {planetaryHours.map((hour, idx) => (
                 <View 
                   key={idx} 
-                  className={`px-3 py-2.5 rounded-2xl border ${hour.isActive ? 'border-amber-400 bg-amber-400/10' : 'border-white/5 bg-white/5'} items-center`}
-                  style={{ width: 105 }}
+                  style={{
+                    width: 105,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: hour.isActive ? '#D4AF37' : 'rgba(212, 175, 55, 0.15)',
+                    backgroundColor: hour.isActive ? 'rgba(212, 175, 55, 0.12)' : '#161B22',
+                    alignItems: 'center',
+                  }}
                 >
-                  <Text style={{ color: '#FFFFFF' }} className="text-lg mb-0.5">{hour.planetSymbol}</Text>
-                  <Text style={{ color: hour.isActive ? '#FCD34D' : '#FFFFFF' }} className="text-[11px] font-bold font-sans">{hour.planetName} Saati</Text>
-                  <Text style={{ color: 'rgba(255, 255, 255, 0.5)' }} className="text-[9px] font-semibold font-sans mt-0.5">{hour.label}</Text>
+                  <Text style={{ color: '#FFFFFF', fontSize: 18, marginBottom: 2 }}>{hour.planetSymbol}</Text>
+                  <Text style={{ color: hour.isActive ? '#FCD34D' : '#F0F6FC', fontSize: 11, fontWeight: '700', fontFamily: 'Inter' }}>{hour.planetName} Saati</Text>
+                  <Text style={{ color: '#8B949E', fontSize: 9, fontWeight: '600', fontFamily: 'Inter', marginTop: 2 }}>{hour.label}</Text>
                 </View>
               ))}
             </ScrollView>
             {activeHour && (
-              <GlassCard style={{ backgroundColor: '#161B22', borderWidth: 1, borderColor: 'rgba(212, 175, 55, 0.15)', borderRadius: 16, flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
+              <View style={{ backgroundColor: '#161B22', borderWidth: 1, borderColor: 'rgba(212, 175, 55, 0.15)', borderRadius: 16, flexDirection: 'row', alignItems: 'center', marginTop: 12, padding: 16 }}>
                 <Text style={{ color: '#FFFFFF', fontSize: 24, marginRight: 12 }}>{activeHour.planetSymbol}</Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: 12, fontWeight: '700', fontFamily: 'Inter' }}>Şu An: {activeHour.planetName} Saati ({activeHour.label})</Text>
-                  <Text style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: 11, fontFamily: 'Inter', marginTop: 2, lineHeight: 16 }}>{activeHour.meaning}</Text>
+                  <Text style={{ color: '#F0F6FC', fontSize: 12, fontWeight: '700', fontFamily: 'Inter' }}>Şu An: {activeHour.planetName} Saati ({activeHour.label})</Text>
+                  <Text style={{ color: '#8B949E', fontSize: 11, fontFamily: 'Inter', marginTop: 2, lineHeight: 16 }}>{activeHour.meaning}</Text>
                 </View>
-              </GlassCard>
+              </View>
             )}
           </View>
 
