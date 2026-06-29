@@ -310,49 +310,58 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
           {/* Profile Welcome Header */}
           <View style={styles.header}>
-            <Text style={styles.greeting} className="text-white text-3xl font-extrabold tracking-tight">Selam, {profile?.name || 'Kozmik Ruh'}</Text>
-            <Text style={styles.dateText} className="text-white/50 text-xs font-semibold uppercase tracking-wider mt-1">
+            <Text style={styles.greeting}>Selam, {profile?.name || 'Kozmik Ruh'}</Text>
+            <Text style={styles.dateText}>
               {new Date().toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </Text>
           </View>
 
           {/* Live Planetary Hours Timeline */}
-          <View style={{ marginBottom: 24 }}>
-            <Text style={{ color: '#D4AF37', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10, fontFamily: 'Inter' }}>⏱️ Canlı Gezegen Saatleri</Text>
+          <View style={styles.planetarySection}>
+            <Text style={styles.sectionLabel}>⏱️ Canlı Gezegen Saatleri</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
               {planetaryHours.map((hour, idx) => (
                 <View 
                   key={idx} 
-                  style={{
-                    width: 105,
-                    paddingHorizontal: 12,
-                    paddingVertical: 10,
-                    borderRadius: 16,
-                    borderWidth: 1,
-                    borderColor: hour.isActive ? '#D4AF37' : 'rgba(212, 175, 55, 0.15)',
-                    backgroundColor: hour.isActive ? 'rgba(212, 175, 55, 0.12)' : '#161B22',
-                    alignItems: 'center',
-                  }}
+                  style={[
+                    styles.hourChip,
+                    hour.isActive && styles.hourChipActive,
+                  ]}
                 >
-                  <Text style={{ color: '#FFFFFF', fontSize: 18, marginBottom: 2 }}>{hour.planetSymbol}</Text>
-                  <Text style={{ color: hour.isActive ? '#FCD34D' : '#F0F6FC', fontSize: 11, fontWeight: '700', fontFamily: 'Inter' }}>{hour.planetName} Saati</Text>
-                  <Text style={{ color: '#8B949E', fontSize: 9, fontWeight: '600', fontFamily: 'Inter', marginTop: 2 }}>{hour.label}</Text>
+                  <Text style={styles.hourChipSymbol}>{hour.planetSymbol}</Text>
+                  <Text style={[styles.hourChipName, hour.isActive && { color: '#FCD34D' }]}>{hour.planetName}</Text>
+                  <Text style={styles.hourChipTime}>{hour.label}</Text>
                 </View>
               ))}
             </ScrollView>
             {activeHour && (
-              <View style={{ backgroundColor: '#161B22', borderWidth: 1, borderColor: 'rgba(212, 175, 55, 0.15)', borderRadius: 16, flexDirection: 'row', alignItems: 'center', marginTop: 12, padding: 16 }}>
-                <Text style={{ color: '#FFFFFF', fontSize: 24, marginRight: 12 }}>{activeHour.planetSymbol}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: '#F0F6FC', fontSize: 12, fontWeight: '700', fontFamily: 'Inter' }}>Şu An: {activeHour.planetName} Saati ({activeHour.label})</Text>
-                  <Text style={{ color: '#8B949E', fontSize: 11, fontFamily: 'Inter', marginTop: 2, lineHeight: 16 }}>{activeHour.meaning}</Text>
-                </View>
+              <View style={styles.activeHourBar}>
+                <Text style={styles.activeHourSymbol}>{activeHour.planetSymbol}</Text>
+                <Text style={styles.activeHourText}>Şu An: {activeHour.planetName} Saati</Text>
+                <Text style={styles.activeHourDot}>•</Text>
+                <Text style={styles.activeHourMeaning} numberOfLines={1}>{activeHour.meaning}</Text>
               </View>
             )}
           </View>
 
-          {/* New Core Component: Lunar Lifestyle Almanac Card */}
-          <GlassCard style={styles.almanacCard}>
+          {/* Moon + Sign Side-by-Side Row */}
+          <View style={styles.dualCardRow}>
+            <Pressable style={styles.dualCard} onPress={() => openDetailModal('moon')}>
+              <Text style={styles.dualCardEmoji}>{moonPhaseInfo.symbol}</Text>
+              <Text style={styles.dualCardLabel}>Ay Evresi</Text>
+              <Text style={styles.dualCardValue}>{moonPhaseInfo.name}</Text>
+              <Text style={styles.dualCardSub}>Ay {moonSign} Burcunda</Text>
+            </Pressable>
+            <Pressable style={styles.dualCard} onPress={() => openDetailModal('identity')}>
+              <Text style={styles.dualCardEmoji}>✦</Text>
+              <Text style={styles.dualCardLabel}>Kozmik Kimlik</Text>
+              <Text style={styles.dualCardValue}>{userSunSign} Burcu</Text>
+              {isPremium && <Text style={styles.eliteMicroBadge}>Elite</Text>}
+            </Pressable>
+          </View>
+
+          {/* Lunar Lifestyle Almanac Card */}
+          <View style={styles.almanacCard}>
             <View style={styles.almanacHeaderRow}>
               <Text style={styles.almanacTitle}>🌙 Kozmik Yaşam Takvimi</Text>
               <View style={styles.almanacBadge}>
@@ -407,122 +416,94 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
                 </View>
               </View>
             </View>
-          </GlassCard>
+          </View>
 
-          {/* Current Moon Phase widget */}
-          <Pressable onPress={() => openDetailModal('moon')}>
-            <GlassCard style={styles.moonWidget}>
-              <Text style={styles.moonSymbol}>{moonPhaseInfo.symbol}</Text>
-              <View style={styles.moonDetails}>
-                <Text style={styles.moonTitle}>Güncel Ay Evresi (Detay için dokunun)</Text>
-                <Text style={styles.moonName}>{moonPhaseInfo.name}</Text>
+          {/* Elite Services Section */}
+          <Text style={styles.sectionTitle}>Elite Kozmik Servisler</Text>
+          <View style={styles.servicesGrid}>
+            <Pressable style={styles.serviceCard} onPress={() => handlePremiumNavigation('/premium/transit')}>
+              <View style={styles.serviceIconWrap}>
+                <Text style={styles.serviceIcon}>🌌</Text>
               </View>
-            </GlassCard>
-          </Pressable>
-
-          {/* User Sun Sign card */}
-          <Pressable onPress={() => openDetailModal('identity')}>
-            <GlassCard style={styles.signCard}>
-              <View style={styles.row}>
-                <Text style={styles.signTitle}>Kozmik Kimlik (Detay için dokunun)</Text>
-                {isPremium && <Text style={styles.premiumBadge}>Elite</Text>}
+              <View style={styles.serviceInfo}>
+                <View style={styles.serviceNameRow}>
+                  <Text style={styles.serviceCardTitle}>Transit Analizi</Text>
+                  {!isPremium && <Text style={styles.lockIcon}>🔒</Text>}
+                </View>
+                <Text style={styles.serviceDescription} numberOfLines={2}>Gökyüzünün güncel hareketlerinin haritanıza yansımaları.</Text>
               </View>
-              <Text style={styles.signName}>{userSunSign} Burcu</Text>
-              <Text style={styles.signDetails}>
-                Haritanızdaki Güneş yerleşimi, öz kimliğinizi ve yaşam gücünüzün temel kozmik yansımasını temsil eder.
-              </Text>
-            </GlassCard>
-          </Pressable>
-
-        {/* Elite Services Section */}
-        <Text style={styles.sectionTitle}>Elite Kozmik Servisler</Text>
-        <View style={styles.premiumServicesRow}>
-          <Pressable
-            style={styles.serviceCard}
-            onPress={() => handlePremiumNavigation('/premium/transit')}
-          >
-            <View style={styles.serviceHeader}>
-              <Text style={styles.serviceEmoji}>🌌</Text>
-              <Text style={styles.serviceCardTitle}>Transit Analizi</Text>
-              {!isPremium && <Text style={styles.lockIcon}>🔒</Text>}
-            </View>
-            <Text style={styles.serviceDescription}>
-              Gökyüzünün güncel hareketlerinin doğum haritanıza olan psikolojik ve arketipsel yansımaları.
-            </Text>
-          </Pressable>
-
-          <Pressable
-            style={styles.serviceCard}
-            onPress={() => handlePremiumNavigation('/premium/synastry')}
-          >
-            <View style={styles.serviceHeader}>
-              <Text style={styles.serviceEmoji}>💞</Text>
-              <Text style={styles.serviceCardTitle}>Sinastri (İlişki Uyum)</Text>
-              {!isPremium && <Text style={styles.lockIcon}>🔒</Text>}
-            </View>
-            <Text style={styles.serviceDescription}>
-              İki doğum haritasının karşılaştırmalı analiziyle ilişkideki derin Anima/Animus dengesi.
-            </Text>
-          </Pressable>
-
-          <Pressable
-            style={styles.serviceCard}
-            onPress={() => handlePremiumNavigation('/premium/yildizname')}
-          >
-            <View style={styles.serviceHeader}>
-              <Text style={styles.serviceEmoji}>📜</Text>
-              <Text style={styles.serviceCardTitle}>Yıldızname Raporu</Text>
-              {!isPremium && <Text style={styles.lockIcon}>🔒</Text>}
-            </View>
-            <Text style={styles.serviceDescription}>
-              Geleneksel isim Ebced hesabı ve mizaç elementleriyle hazırlanan mistik rehber.
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* Gemini Daily Forecast Section */}
-        <Text style={styles.sectionTitle}>Bugünün Kozmik Yorumları</Text>
-        
-        {loadingHoroscope ? (
-          <ActivityIndicator size="large" color="#D4AF37" style={styles.loader} />
-        ) : horoscope ? (
-          <View style={styles.horoscopeGrid}>
-            <Pressable onPress={() => openDetailModal('general')}>
-              <GlassCard style={styles.forecastCard}>
-                <Text style={styles.forecastHeader}>☀️ Bireysel Yolculuk</Text>
-                <Text style={styles.forecastText} numberOfLines={4}>{horoscope.general}</Text>
-                <Text style={styles.detailLink}>Detaylı Analiz & Tavsiyeler için Dokunun →</Text>
-              </GlassCard>
             </Pressable>
 
-            <Pressable onPress={() => openDetailModal('love')}>
-              <GlassCard style={styles.forecastCard}>
-                <Text style={styles.forecastHeader}>💞 Yansımalar & İlişki</Text>
-                <Text style={styles.forecastText} numberOfLines={4}>{horoscope.love}</Text>
-                <Text style={styles.detailLink}>Detaylı Analiz & Tavsiyeler için Dokunun →</Text>
-              </GlassCard>
+            <Pressable style={styles.serviceCard} onPress={() => handlePremiumNavigation('/premium/synastry')}>
+              <View style={styles.serviceIconWrap}>
+                <Text style={styles.serviceIcon}>💞</Text>
+              </View>
+              <View style={styles.serviceInfo}>
+                <View style={styles.serviceNameRow}>
+                  <Text style={styles.serviceCardTitle}>Sinastri Analizi</Text>
+                  {!isPremium && <Text style={styles.lockIcon}>🔒</Text>}
+                </View>
+                <Text style={styles.serviceDescription} numberOfLines={2}>İki haritanın karşılaştırmalı ilişki uyum analizi.</Text>
+              </View>
             </Pressable>
 
-            <Pressable onPress={() => openDetailModal('career')}>
-              <GlassCard style={styles.forecastCard}>
-                <Text style={styles.forecastHeader}>💼 Kariyer & Bereket</Text>
-                <Text style={styles.forecastText} numberOfLines={4}>{horoscope.career}</Text>
-                <Text style={styles.detailLink}>Detaylı Analiz & Tavsiyeler için Dokunun →</Text>
-              </GlassCard>
-            </Pressable>
-
-            <Pressable onPress={() => openDetailModal('shadow')}>
-              <GlassCard style={styles.forecastCard}>
-                <Text style={styles.forecastHeader}>✨ Günlük Ritüel & Zikir</Text>
-                <Text style={styles.forecastText} numberOfLines={4}>{horoscope.shadowSelf}</Text>
-                <Text style={styles.detailLink}>Detaylı Analiz & Tavsiyeler için Dokunun →</Text>
-              </GlassCard>
+            <Pressable style={styles.serviceCard} onPress={() => handlePremiumNavigation('/premium/yildizname')}>
+              <View style={styles.serviceIconWrap}>
+                <Text style={styles.serviceIcon}>📜</Text>
+              </View>
+              <View style={styles.serviceInfo}>
+                <View style={styles.serviceNameRow}>
+                  <Text style={styles.serviceCardTitle}>Yıldızname Raporu</Text>
+                  {!isPremium && <Text style={styles.lockIcon}>🔒</Text>}
+                </View>
+                <Text style={styles.serviceDescription} numberOfLines={2}>Ebced hesabı ve mizaç elementleriyle mistik rehber.</Text>
+              </View>
             </Pressable>
           </View>
-        ) : (
-          <Text style={styles.errorText}>Yorumlar yüklenirken bir sorun oluştu.</Text>
-        )}
-      </ScrollView>
+
+          {/* Gemini Daily Forecast Section */}
+          <Text style={styles.sectionTitle}>Bugünün Kozmik Yorumları</Text>
+          
+          {loadingHoroscope ? (
+            <ActivityIndicator size="large" color="#D4AF37" style={styles.loader} />
+          ) : horoscope ? (
+            <View style={styles.horoscopeGrid}>
+              <Pressable onPress={() => openDetailModal('general')}>
+                <View style={styles.forecastCard}>
+                  <Text style={styles.forecastHeader}>☀️ Bireysel Yolculuk</Text>
+                  <Text style={styles.forecastText} numberOfLines={3}>{horoscope.general}</Text>
+                  <Text style={styles.detailLink}>Detaylı Analiz için Dokunun →</Text>
+                </View>
+              </Pressable>
+
+              <Pressable onPress={() => openDetailModal('love')}>
+                <View style={styles.forecastCard}>
+                  <Text style={styles.forecastHeader}>💞 Yansımalar & İlişki</Text>
+                  <Text style={styles.forecastText} numberOfLines={3}>{horoscope.love}</Text>
+                  <Text style={styles.detailLink}>Detaylı Analiz için Dokunun →</Text>
+                </View>
+              </Pressable>
+
+              <Pressable onPress={() => openDetailModal('career')}>
+                <View style={styles.forecastCard}>
+                  <Text style={styles.forecastHeader}>💼 Kariyer & Bereket</Text>
+                  <Text style={styles.forecastText} numberOfLines={3}>{horoscope.career}</Text>
+                  <Text style={styles.detailLink}>Detaylı Analiz için Dokunun →</Text>
+                </View>
+              </Pressable>
+
+              <Pressable onPress={() => openDetailModal('shadow')}>
+                <View style={styles.forecastCard}>
+                  <Text style={styles.forecastHeader}>✨ Günlük Ritüel & Zikir</Text>
+                  <Text style={styles.forecastText} numberOfLines={3}>{horoscope.shadowSelf}</Text>
+                  <Text style={styles.detailLink}>Detaylı Analiz için Dokunun →</Text>
+                </View>
+              </Pressable>
+            </View>
+          ) : (
+            <Text style={styles.errorText}>Yorumlar yüklenirken bir sorun oluştu.</Text>
+          )}
+        </ScrollView>
 
       {/* Full Screen Details Modal overlay */}
       <Modal
@@ -579,10 +560,12 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     padding: 20,
-    paddingBottom: 110, // Margin for tab bar overlap
+    paddingBottom: 110,
   },
+
+  // Header
   header: {
-    marginBottom: 24,
+    marginBottom: 20,
     marginTop: 10,
   },
   greeting: {
@@ -593,112 +576,326 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontFamily: 'Inter',
-    fontSize: 14,
+    fontSize: 13,
     color: '#8B949E',
     marginTop: 4,
   },
-  moonWidget: {
-    backgroundColor: '#161B22',
-    borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.15)',
-    borderRadius: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  moonSymbol: {
-    fontSize: 42,
-    marginRight: 16,
-  },
-  moonDetails: {
-    flex: 1,
-  },
-  moonTitle: {
+
+  // Section Labels & Titles
+  sectionLabel: {
     fontFamily: 'Inter',
-    fontSize: 12,
-    color: '#8B949E',
-  },
-  moonName: {
-    fontFamily: 'Cinzel',
-    fontSize: 18,
-    color: '#F0F6FC',
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  signCard: {
-    backgroundColor: '#161B22',
-    borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.15)',
-    borderRadius: 16,
-    marginBottom: 24,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  signTitle: {
-    fontFamily: 'Inter',
-    fontSize: 12,
-    color: '#8B949E',
-    letterSpacing: 0.5,
-  },
-  premiumBadge: {
-    backgroundColor: 'rgba(212, 175, 55, 0.2)',
-    borderColor: '#D4AF37',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingVertical: 2,
-    paddingHorizontal: 8,
-    color: '#D4AF37',
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
+    color: '#D4AF37',
     textTransform: 'uppercase',
-  },
-  signName: {
-    fontFamily: 'Cinzel',
-    fontSize: 22,
-    color: '#D4AF37',
-    fontWeight: '700',
+    letterSpacing: 1.2,
     marginBottom: 10,
-  },
-  signDetails: {
-    fontFamily: 'Inter',
-    fontSize: 14,
-    color: '#E6EDF0',
-    lineHeight: 20,
   },
   sectionTitle: {
     fontFamily: 'Cinzel',
     fontSize: 18,
     color: '#F0F6FC',
     fontWeight: '600',
-    marginBottom: 16,
+    marginBottom: 14,
+    marginTop: 8,
     letterSpacing: 0.5,
   },
+
+  // Planetary Hours
+  planetarySection: {
+    marginBottom: 20,
+  },
+  hourChip: {
+    width: 100,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.12)',
+    backgroundColor: '#161B22',
+    alignItems: 'center',
+  },
+  hourChipActive: {
+    borderColor: '#D4AF37',
+    backgroundColor: 'rgba(212, 175, 55, 0.1)',
+  },
+  hourChipSymbol: {
+    fontSize: 18,
+    color: '#FFFFFF',
+    marginBottom: 3,
+  },
+  hourChipName: {
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'Inter',
+    color: '#F0F6FC',
+  },
+  hourChipTime: {
+    fontSize: 9,
+    fontWeight: '600',
+    fontFamily: 'Inter',
+    color: '#8B949E',
+    marginTop: 2,
+  },
+  activeHourBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#161B22',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.12)',
+    borderRadius: 12,
+    marginTop: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  activeHourSymbol: {
+    fontSize: 18,
+    color: '#FCD34D',
+    marginRight: 8,
+  },
+  activeHourText: {
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: 'Inter',
+    color: '#F0F6FC',
+  },
+  activeHourDot: {
+    fontSize: 12,
+    color: '#8B949E',
+    marginHorizontal: 6,
+  },
+  activeHourMeaning: {
+    fontSize: 11,
+    fontFamily: 'Inter',
+    color: '#8B949E',
+    flex: 1,
+  },
+
+  // Dual Card Row (Moon + Sign)
+  dualCardRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  dualCard: {
+    flex: 1,
+    backgroundColor: '#161B22',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.12)',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+  },
+  dualCardEmoji: {
+    fontSize: 36,
+    marginBottom: 8,
+    color: '#D4AF37',
+  },
+  dualCardLabel: {
+    fontFamily: 'Inter',
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#8B949E',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 4,
+  },
+  dualCardValue: {
+    fontFamily: 'Cinzel',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#D4AF37',
+    textAlign: 'center',
+  },
+  dualCardSub: {
+    fontFamily: 'Inter',
+    fontSize: 10,
+    color: '#8B949E',
+    marginTop: 4,
+  },
+  eliteMicroBadge: {
+    fontFamily: 'Inter',
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#D4AF37',
+    backgroundColor: 'rgba(212, 175, 55, 0.15)',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginTop: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    overflow: 'hidden',
+  },
+
+  // Almanac Card
+  almanacCard: {
+    backgroundColor: '#161B22',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.12)',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+  },
+  almanacHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  almanacTitle: {
+    fontFamily: 'Cinzel',
+    fontSize: 16,
+    color: '#F0F6FC',
+    fontWeight: '600',
+  },
+  almanacBadge: {
+    backgroundColor: 'rgba(212, 175, 55, 0.12)',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  almanacBadgeText: {
+    color: '#D4AF37',
+    fontSize: 9,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  almanacSubtitle: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#8B949E',
+    marginBottom: 16,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  almanacBody: {
+    gap: 14,
+  },
+  almanacItemRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  almanacEmoji: {
+    fontSize: 18,
+    marginRight: 12,
+    marginTop: 1,
+  },
+  almanacItemContent: {
+    flex: 1,
+  },
+  almanacSectionHeader: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#8B949E',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  almanacAdviceText: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    color: '#F0F6FC',
+    marginTop: 3,
+    lineHeight: 18,
+  },
+  almanacUnlockText: {
+    color: '#D4AF37',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 3,
+  },
+
+  // Services Grid (icon-based)
+  servicesGrid: {
+    gap: 10,
+    marginBottom: 24,
+  },
+  serviceCard: {
+    backgroundColor: '#161B22',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.12)',
+    borderRadius: 14,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  serviceIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: 'rgba(212, 175, 55, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  serviceIcon: {
+    fontSize: 22,
+  },
+  serviceInfo: {
+    flex: 1,
+  },
+  serviceNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  serviceCardTitle: {
+    fontFamily: 'Cinzel',
+    fontSize: 14,
+    color: '#D4AF37',
+    fontWeight: '700',
+    flex: 1,
+  },
+  lockIcon: {
+    fontSize: 13,
+    color: '#8B949E',
+    marginLeft: 6,
+  },
+  serviceDescription: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: '#8B949E',
+    lineHeight: 16,
+  },
+
+  // Forecast Cards
   horoscopeGrid: {
-    gap: 16,
+    gap: 12,
+    marginBottom: 10,
   },
   forecastCard: {
     backgroundColor: '#161B22',
     borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.15)',
-    borderRadius: 16,
+    borderColor: 'rgba(212, 175, 55, 0.12)',
+    borderRadius: 14,
+    padding: 16,
   },
   forecastHeader: {
     fontFamily: 'Cinzel',
-    fontSize: 15,
+    fontSize: 14,
     color: '#D4AF37',
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   forecastText: {
     fontFamily: 'Inter',
-    fontSize: 14,
+    fontSize: 13,
     color: '#E6EDF0',
-    lineHeight: 20,
+    lineHeight: 19,
   },
+  detailLink: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    color: '#D4AF37',
+    marginTop: 10,
+    fontWeight: '600',
+    textAlign: 'right',
+  },
+
+  // Utility
   loader: {
     marginTop: 40,
   },
@@ -708,43 +905,8 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontFamily: 'Inter',
   },
-  premiumServicesRow: {
-    gap: 12,
-    marginBottom: 24,
-  },
-  serviceCard: {
-    backgroundColor: '#161B22',
-    borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.15)',
-    borderRadius: 16,
-    padding: 16,
-  },
-  serviceHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  serviceEmoji: {
-    fontSize: 20,
-    marginRight: 8,
-  },
-  serviceCardTitle: {
-    fontFamily: 'Cinzel',
-    fontSize: 16,
-    color: '#D4AF37',
-    fontWeight: '700',
-    flex: 1,
-  },
-  lockIcon: {
-    fontSize: 14,
-    color: '#8B949E',
-  },
-  serviceDescription: {
-    fontFamily: 'Inter',
-    fontSize: 13,
-    color: '#E6EDF0',
-    lineHeight: 18,
-  },
+
+  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: '#000000',
@@ -821,90 +983,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#E6EDF0',
     lineHeight: 20,
-  },
-  detailLink: {
-    fontFamily: 'Inter',
-    fontSize: 11,
-    color: '#D4AF37',
-    marginTop: 12,
-    fontWeight: '600',
-    textAlign: 'right',
-  },
-  almanacCard: {
-    backgroundColor: '#161B22',
-    borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.15)',
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  almanacHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  almanacTitle: {
-    fontFamily: 'Cinzel',
-    fontSize: 18,
-    color: '#F0F6FC',
-    fontWeight: '600',
-  },
-  almanacBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  almanacBadgeText: {
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontSize: 10,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  almanacSubtitle: {
-    fontFamily: 'Inter',
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.6)',
-    marginBottom: 20,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  almanacBody: {
-    gap: 16,
-  },
-  almanacItemRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  almanacEmoji: {
-    fontSize: 20,
-    marginRight: 12,
-    marginTop: 2,
-  },
-  almanacItemContent: {
-    flex: 1,
-  },
-  almanacSectionHeader: {
-    fontFamily: 'Inter',
-    fontSize: 11,
-    fontWeight: '700',
-    color: 'rgba(255, 255, 255, 0.5)',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  almanacAdviceText: {
-    fontFamily: 'Inter',
-    fontSize: 13,
-    color: '#F0F6FC',
-    marginTop: 4,
-    lineHeight: 18,
-  },
-  almanacUnlockText: {
-    color: '#F3E5AB',
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 4,
   },
 });
