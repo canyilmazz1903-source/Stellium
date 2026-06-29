@@ -33,20 +33,30 @@ export async function fetchDailyHoroscope(
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
   
   const prompt = `
-    Sen geleneksel ve modern astroloji, Ay evreleri, ebced hesapları, zikir saatleri ve kozmik ritüeller konusunda uzman, son derece bilgili mistik bir astrologsun.
-    Kullanıcının adı: "${name}"
-    Zodyak Burcu: "${zodiacSign}"
-    Doğum Parametreleri: ${birthDate} - ${birthPlace}
-    
-    Lütfen bu kullanıcı için klasik astroloji detaylarını (Güneş/Ay transitleri, günün gezegen saatleri vb.) ve ebced zikirlerini harmanlayan, merak uyandırıcı ve günlük girişi teşvik eden zengin bir yorum yaz. Carl Jung veya psikolojik/Jungcu terimler (anima, animus, gölge vb.) kesinlikle kullanma. Doğrudan geleneksel astroloji, yıldız hareketleri ve manevi/kozmik ritüeller odaklı olsun.
-    
-    Yazacağın yanıtı SADECE aşağıdaki JSON formatında döndür, ekstra hiçbir açıklama veya markdown bloğu yazma:
-    {
-      "general": "Bugünün detaylı genel astrolojik enerjisi, gezegen konumları ve yapılması gereken günlük işler (maksimum 4 cümle)",
-      "love": "Bugünün aşk ve ilişki enerjileri, Venüs/Mars etkileri, partnerle uyum veya çekim tavsiyeleri (maksimum 3 cümle)",
-      "career": "Kariyer, bereket, bolluk kapıları, finansal durumlar ve iş hayatındaki fırsatlar (maksimum 3 cümle)",
-      "shadowSelf": "Bugünün Ay evresine (yeni ay, dolunay vb.) uygun yapılacak ev/beden ritüeli (adaçayı, niyet vb.) ve günün enerjisine özel 1 adet Esma-ül Hüsna (zikir adı ve geleneksel ebced zikir adedi ile birlikte) (maksimum 3 cümle)"
-    }
+[SYSTEM INSTRUCTION]
+Sen; İsviçre Efemerisi hassasiyetine vakıf, Carl Jung'un psikolojik astroloji ekolünü, Keldani numerolojisini ve klasik/modern astroloji metodolojilerini birleştiren elit bir Astroloji Profesörüsün. Görevin, kullanıcının natal harita verilerine dayanarak yüzeysel olmaktan uzak, edebi derinliği yüksek, felsefi, psikolojik ve son derece detaylı analizler üretmektir.
+
+[STRICT OUTPUT FORMAT RULES]
+1. Asla "Bugün şanslısınız" veya "Para gelebilir" gibi klişe, falcı ağzı cümleler kurma. Bunun yerine transitlerin psikolojik izdüşümlerini, ev yerleşimlerinin gölge ve ışık yönlerini analiz et.
+2. Çıktı dilin mistik, bilge, sarmalayıcı ama aynı zamanda bilimsel ve analitik olmalıdır.
+3. Metin içi yapılandırmada başlıklar ve anahtar kelimeler için **kalın metin** kullan. Bölümler arasını net ayır.
+4. Çıktıyı kesinlikle aşağıdaki JSON şemasında belirtilen anahtarlarla eksiksiz döndür. Tek bir karakter bile şema dışına çıkmamalıdır.
+
+Kullanıcının adı: "${name}"
+Öz Burcu: "${zodiacSign}"
+Doğum Parametreleri: ${birthDate} - ${birthPlace}
+
+JSON Çıktı Şeması:
+{
+  "cosmic_vibe": "Günün kozmik özeti (Mistik ve metaforik 1 cümle)",
+  "general_analysis": "En az 3 paragraftan oluşan felsefi ve psikolojik günlük analiz.",
+  "love_and_relationships": "Derinlemesine bağ ve ilişki dinamikleri yorumu (2 paragraf).",
+  "career_and_manifest": "Kariyer, finans ve eylem planı tavsiyeleri (2 paragraf).",
+  "ritual_of_the_day": {
+    "title": "Günün Ritüeli Başlığı",
+    "instructions": "Adım adım uygulanacak, elemente uygun majikal/psikolojik ritüel veya meditasyon."
+  }
+}
   `;
 
   try {
@@ -71,8 +81,14 @@ export async function fetchDailyHoroscope(
 
     const result = await response.json();
     const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const parsed = JSON.parse(jsonText.trim());
     
-    return JSON.parse(jsonText.trim()) as HoroscopeResponse;
+    return {
+      general: parsed.general_analysis || parsed.general || '',
+      love: parsed.love_and_relationships || parsed.love || '',
+      career: parsed.career_and_manifest || parsed.career || '',
+      shadowSelf: `**Kozmik Titreşim:** ${parsed.cosmic_vibe || 'Mistik dengelenme'}\n\n**Ritüel: ${parsed.ritual_of_the_day?.title || 'Kozmik Bağlantı'}**\n${parsed.ritual_of_the_day?.instructions || 'Derin nefes meditasyonu yapın.'}`
+    };
   } catch (error) {
     console.warn('Error fetching daily horoscope from Gemini:', error);
     return {
@@ -261,18 +277,31 @@ export async function fetchDailyShadows(
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
   
   const prompt = `
-    Sen analitik psikoloji (Carl Jung) ve psikolojik astroloji konusunda uzmanlaşmış derinlikli bir astrologsun.
-    Kullanıcı Adı: "${name}"
-    Doğum Haritası Konumları:
-    - Natal Mars: ${mars.sign} burcunda, ${mars.house}. evde
-    - Natal Satürn: ${saturn.sign} burcunda, ${saturn.house}. evde
-    Mevcut Transit Gökyüzü:
-    - Transit Ay: ${moonSign} burcunda
-    - Ay Fazı: ${moonPhase === 'waxing' ? 'Büyüyen Ay' : 'Küçülen Ay'}
-    
-    Lütfen transit Ay'ın natal Mars ve Satürn üzerindeki etkisine dayanarak, kullanıcının bugün yaşayabileceği psikolojik tetiklenmeleri, ego savunma mekanizmalarını veya yansıttığı gölge (shadow) yönlerini tahlil et. 
-    Analizinde Jungiyen terminoloji (örn. gölge entegrasyonu, bastırılmış öfke, projeksiyon, içsel dirençler) kullanarak, farkındalık kazandıran ve bu tetiklenmeleri nasıl yönetebileceğine dair pratik bir öneri sunan kısa bir yorum yaz.
-    Yorum son derece samimi, derinlikli ve akıcı olsun. Maksimum 3-4 cümle olsun. Türkçe yaz.
+[SYSTEM INSTRUCTION]
+Sen; analitik psikoloji (Carl Jung) ve psikolojik astroloji konusunda uzmanlaşmış derinlikli bir psikolog ve astrologsun. Görevin, transit gök cisimlerinin gerilimli açılarını inceleyerek bireyin bugün yüzleşmesi gereken bastırılmış dürtüleri, gölge yönlerini (Shadow Work) ve projeksiyonlarını tahlil etmektir.
+
+[STRICT OUTPUT FORMAT RULES]
+1. Çıktıyı kesinlikle aşağıdaki JSON şemasında belirtilen anahtarlarla eksiksiz döndür. Tek bir karakter bile şema dışına çıkmamalıdır.
+2. Analiz dili akademik, Jungcu ve samimi olmalıdır. Bilinçaltı savunmalarını sarsıcı ama şefkatli bir şekilde açıkla.
+
+Kullanıcı Adı: "${name}"
+Doğum Haritası Konumları:
+- Natal Mars: ${mars.sign} burcunda, ${mars.house}. evde
+- Natal Satürn: ${saturn.sign} burcunda, ${saturn.house}. evde
+Mevcut Transit Gökyüzü:
+- Transit Ay: ${moonSign} burcunda
+- Ay Fazı: ${moonPhase === 'waxing' ? 'Büyüyen Ay' : 'Küçülen Ay'}
+
+JSON Çıktı Şeması:
+{
+  "shadow_core": "Bugünkü krizin veya içsel blokajın psikolojik kökeni.",
+  "jungian_analysis": "Bilinçaltı süreçleri açıklayan derin akademik metin (3 paragraf).",
+  "confrontation_questions": [
+    "Kullanıcının kendine sorması gereken sarsıcı ve dönüştürücü soru 1",
+    "Kullanıcının kendine sorması gereken sarsıcı ve dönüştürücü soru 2",
+    "Kullanıcının kendine sorması gereken sarsıcı ve dönüştürücü soru 3"
+  ]
+}
   `;
 
   try {
@@ -284,7 +313,10 @@ export async function fetchDailyShadows(
       body: JSON.stringify({
         contents: [{
           parts: [{ text: prompt }]
-        }]
+        }],
+        generationConfig: {
+          responseMimeType: "application/json"
+        }
       })
     });
 
@@ -293,7 +325,14 @@ export async function fetchDailyShadows(
     }
 
     const result = await response.json();
-    return result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const parsed = JSON.parse(jsonText.trim());
+
+    const questionsText = Array.isArray(parsed.confrontation_questions)
+      ? parsed.confrontation_questions.map((q: string) => `• ${q}`).join('\n')
+      : '';
+
+    return `### 🌌 Bugünkü Gölge Odağı\n${parsed.shadow_core}\n\n### 🧠 Jungcu Analiz\n${parsed.jungian_analysis}\n\n### 🔑 Kendinle Yüzleşme Soruları\n${questionsText}`;
   } catch (error) {
     console.warn('Error fetching shadows analysis from Gemini:', error);
     return `Sevgili ${name}, bugün gökyüzünde transit yapan Ay'ın (${moonSign} burcunda) natal haritanızdaki Mars ve Satürn ile kurduğu kontaklar, bastırılmış dürtülerinizi veya yetersizlik korkularınızı yüzeye çıkarabilir. İçinizdeki direnç noktalarını gözlemleyin; öfkenizi dışa yansıtmak yerine, bu enerjiyi içsel sınırlarınızı belirlemek ve disiplin kazanmak için dönüştürün.`;
@@ -312,21 +351,28 @@ export async function fetchFullChartAnalysis(
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
   
   const prompt = `
-    Sen profesyonel, bilge ve son derece bilgili geleneksel ve modern psikolojik bir astrologsun.
-    Kullanıcının Adı: "${name}"
-    Doğum Haritası Gezegen Konumları ve Evleri:
-    ${JSON.stringify(birthChart.planets)}
-    Haritadaki Gezegenler Arası Açı İlişkileri:
-    ${JSON.stringify(aspects)}
-    
-    Lütfen kullanıcı için 5 ayrı paragraftan oluşan kapsamlı bir Doğum Haritası Analizi yaz. Her paragraf şu başlıkları derinlemesine tahlil etmelidir:
-    1. **Genel Mizaç ve Yaşam Yolu:** Yükselen ve Güneş yerleşimlerine göre temel karakter yapısı ve hayattaki nihai amacı.
-    2. **Zihinsel Yapı ve İletişim:** Merkür konumuna göre zekası, karar verme mekanizması ve kendini ifade etme stili.
-    3. **Aşk, Değerler ve Bolluk:** Venüs yerleşimine göre ikili ilişkilerdeki beklentileri, sevgi dili ve finansal bereket potansiyeli.
-    4. **Mücadele Gücü ve Eylem:** Mars konumuna göre motivasyon kaynakları, engellerle nasıl başa çıktığı ve irade gücü.
-    5. **Kader Haritasındaki Açılar ve Sınavlar (Satürn):** Satürn yerleşimine ve gezegenler arasındaki majör açılara (kavuşum, kare, karşıt vb.) göre hayatındaki karmik zorluklar, aşması gereken engeller ve manevi olgunlaşma yolları.
-    
-    Analizin son derece kişiselleştirilmiş, akıcı, merak uyandırıcı ve edebi bir dilde olsun. Klişe burç yorumlarının ötesine geçip derinlemesine bir hayat rehberi sun. Türkçe yaz.
+[SYSTEM INSTRUCTION]
+Sen; İsviçre Efemerisi hassasiyetine vakıf, Carl Jung'un psikolojik astroloji ekolünü, Keldani numerolojisini ve klasik/modern astroloji metodolojilerini birleştiren elit bir Astroloji Profesörüsün. Görevin, kullanıcının natal harita verilerini, element dağılımlarını, niteliklerini ve gezegen açılarını sentezleyerek adeta bir kitap bölümü niteliğinde, son derece kapsamlı ve derin bir yaşam yolculuğu raporu oluşturmaktır.
+
+[WRITING RULES]
+1. Analiz dili mistik, bilge, sarmalayıcı ama aynı zamanda bilimsel, analitik ve psikolojik olmalıdır.
+2. Metin içi yapılandırmada başlıklar ve anahtar kelimeler için **kalın metin** kullan.
+3. Raporu tam 5 paragraf halinde yapılandır ve her bir paragrafı aşağıdaki başlıklara göre derinlemesine tahlil et.
+
+Kullanıcının Adı: "${name}"
+Doğum Haritası Gezegen Konumları ve Evleri:
+${JSON.stringify(birthChart.planets)}
+Doğum Haritası Ev Başlangıç Dereceleri:
+${JSON.stringify(birthChart.houses)}
+Haritadaki Gezegenler Arası Açı İlişkileri:
+${JSON.stringify(aspects)}
+
+Rapor Bölümleri:
+1. **Genel Mizaç, Kozmik Elementler ve Yaşam Yolu:** Yükselen, Güneş ve Ay konumları ile element dengesinin sentezi. Temel karakter ve yaşam amacı.
+2. **Zihinsel Yapı, Akıl ve İletişim:** Merkür konumuna ve açılarına göre zekası, karar verme yapısı ve iletişim üslubu.
+3. **Aşk, Bağlar, Değerler ve Finansal Bereket:** Venüs yerleşimi ve açılarına göre ilişkilerdeki beklentileri, sevgi dili ve maddi değerleri çekme potansiyeli.
+4. **Eylem, Tutku, Mücadele ve İrade Gücü:** Mars konumuna göre motivasyon kaynakları, engelleri aşma tarzı ve fiziksel enerjiyi kullanma biçimi.
+5. **Kader Haritasındaki Açılar, Sınavlar ve Olgunlaşma (Satürn):** Satürn yerleşimine ve gezegenler arasındaki majör açılara (kavuşum, kare, karşıt vb.) göre hayatındaki karmik zorluklar, aşması gereken engeller ve manevi olgunlaşma yolları.
   `;
 
   try {

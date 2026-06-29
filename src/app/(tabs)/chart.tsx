@@ -9,7 +9,7 @@ import { getZodiacSign } from '@/utils/astronomy';
 import { fetchFullChartAnalysis } from '@/api/gemini';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, withDelay, Easing } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 
 const BIG_THREE_INTERPRETATIONS: Record<string, {
@@ -245,11 +245,71 @@ const ZODIAC_ABBREVIATIONS = [
   'Koç', 'Boğ', 'İki', 'Yen', 'Asl', 'Baş', 'Ter', 'Akr', 'Yay', 'Oğl', 'Kov', 'Bal'
 ];
 
+const PLANET_NAME_TR: Record<string, string> = {
+  Sun: 'Güneş',
+  Moon: 'Ay',
+  Mercury: 'Merkür',
+  Venus: 'Venüs',
+  Mars: 'Mars',
+  Jupiter: 'Jüpiter',
+  Saturn: 'Satürn',
+  Uranus: 'Uranüs',
+  Neptune: 'Neptün',
+  Pluto: 'Plüton',
+};
+
+const PLANET_KEYWORDS: Record<string, { turkish: string; symbol: string; archetype: string; theme: string }> = {
+  Mercury: { turkish: 'Merkür', symbol: '☿', archetype: 'Zihinsel Rehber', theme: 'iletişim tarzınızı, karar verme süreçlerinizi ve zihinsel ilgi alanlarınızı şekillendirir. Bilgiyi nasıl işlediğinizi gösterir.' },
+  Venus: { turkish: 'Venüs', symbol: '♀', archetype: 'Değer ve Sevgi Elçisi', theme: 'ilişki modelinizi, sevgi dilinizi, estetik algınızı ve hayattan nasıl keyif aldığınızı gösterir. Maddi bolluk ve değer duygunuzla ilgilidir.' },
+  Mars: { turkish: 'Mars', symbol: '♂', archetype: 'Eylem ve Güç Savaşçısı', theme: 'fiziksel enerjinizi, mücadele gücünüzü, tutkularınızı ve hedeflerinize ulaşmak için nasıl harekete geçtiğinizi temsil eder.' },
+  Jupiter: { turkish: 'Jüpiter', symbol: '♃', archetype: 'Bilgelik ve Şans Yıldızı', theme: 'bolluk ve bereketin yaşamınızdaki kapılarını, gelişim alanlarınızı, inançlarınızı ve şanslı fırsatları nasıl çektiğinizi gösterir.' },
+  Saturn: { turkish: 'Satürn', symbol: '♄', archetype: 'Zamanın ve Sınırlerin Efendisi', theme: 'öğrenmeniz gereken karmik dersleri, sorumluluk alanlarınızı, korkularınızı ve olgunlaşma yollarınızı gösterir.' },
+  Uranus: { turkish: 'Uranüs', symbol: '♅', archetype: 'Devrimci ve Reformcu Deha', theme: 'özgürleşme ihtiyacınızı, yenilikçi fikirlerinizi, ani değişimleri ve nerede sıra dışı olduğunuzu simgeler.' },
+  Neptune: { turkish: 'Neptün', symbol: '♆', archetype: 'İlham ve Teslimiyet Şairi', theme: 'hayal gücünüzü, spiritüel derinliğinizi, illüzyonları, sanatsal ilhamı ve evrensel bütünleşmeyi temsil eder.' },
+  Pluto: { turkish: 'Plüton', symbol: '♇', archetype: 'Küllerinden Doğan Simyacı', theme: 'güç savaşlarını, derin dönüşüm süreçlerinizi, krizleri aşma potansiyelinizi ve bilinçaltının derinliklerini gösterir.' },
+  Sun: { turkish: 'Güneş', symbol: '☉', archetype: 'Öncü Savaşçı / Yaşam Gücü', theme: 'temel kimliğinizi, egonuzu, iradenizi ve hayattaki ana yönünüzü gösterir.' },
+  Moon: { turkish: 'Ay', symbol: '☽', archetype: 'Duygusal Besleyici / İç Dünyanız', theme: 'duygusal tepkilerinizi, bilinçaltınızı, alışkanlıklarınızı ve kendinizi nasıl güvende hissettiğinizi gösterir.' }
+};
+
+const SIGN_KEYWORDS: Record<string, string> = {
+  'Koç': 'cesur, inisiyatif alan, sabırsız ve enerjik bir üslupla',
+  'Boğa': 'sakin, kararlı, somut değerlere odaklı ve istikrarlı bir dille',
+  'İkizler': 'meraklı, konuşkan, çok yönlü ve rasyonel bir yaklaşımla',
+  'Yengeç': 'sezgisel, şefkatli, korumacı ve duygusal bir derinlikle',
+  'Aslan': 'cömert, gururlu, sahne alan ve yaratıcı bir özgüvenle',
+  'Başak': 'analitik, titiz, faydalı ve detaycı bir yaklaşımla',
+  'Terazi': 'diplomatik, uyumlu, estetiğe ve adalete önem veren bir biçimde',
+  'Akrep': 'tutkulu, gizemli, derin ve dönüştürücü bir güçle',
+  'Yay': 'iyimser, maceracı, inançlı ve felsefi bir bakış açısıyla',
+  'Oğlak': 'disiplinli, sabırlı, sorumluluk sahibi ve mesafeli bir ciddiyetle',
+  'Kova': 'özgün, bağımsız, yenilikçi ve toplumsal bir vizyonla',
+  'Balık': 'mistik, fedakar, hayal gücü yüksek ve teslimiyetçi bir hassasiyetle',
+};
+
+const HOUSE_KEYWORDS: Record<number, string> = {
+  1: 'kişisel imajınız, dış dünyaya verdiğiniz ilk izlenim ve fiziksel canlılık alanında kendini gösterir.',
+  2: 'maddi kaynaklarınız, kazanç yöntemleriniz ve kendi öz-değer duygunuz üzerinde etkili olur.',
+  3: 'yakın çevre ilişkileriniz, kardeşleriniz, kısa yolculuklar ve günlük iletişim süreçlerinizde rol oynar.',
+  4: 'yuvanız, aile kökleriniz, içsel sığınağınız ve bilinçaltı temelleriniz alanında çalışır.',
+  5: 'yaratıcılığınız, aşk hayatınız, hobileriniz, çocuklarınız ve hayattan aldığınız keyif sahasını etkiler.',
+  6: 'günlük rutinleriniz, çalışma ortamınız, sağlığınız ve başkalarına sunduğunuz hizmetler alanında belirleyicidir.',
+  7: 'evlilik, ortaklıklar, yakın ikili ilişkileriniz ve açık düşmanlar evinde görünür hale gelir.',
+  8: 'ortaklaşa kazançlar, miras, cinsellik, krizler ve küllerinden yeniden doğma süreçlerinde etkilidir.',
+  9: 'yüksek öğrenim, yurt dışı seyahatler, felsefi inançlar ve yaşam vizyonu alanını aydınlatır.',
+  10: 'toplumsal statünüz, kariyeriniz, hedefleriniz ve otorite figürleriyle olan ilişkilerinizi yönetir.',
+  11: 'sosyal çevre, arkadaşlık grupları, toplumsal idealleriniz ve gelecek umutlarınız alanında aktiftir.',
+  12: 'bilinçaltı sırlar, rüyalar, yalnızlık, spiritüel çalışmalar ve gizli düşmanlar boyutunda işler.',
+};
+
 export default function ChartScreen() {
   const { computedChart } = useAppStore();
   const { profile, isPremium } = useAuthStore();
   const { auraColors } = useCosmicCalendarStore();
   const router = useRouter();
+
+  // Interactive Selection State
+  const [selectedPlanet, setSelectedPlanet] = useState<string | null>(null);
+  const [selectedHouse, setSelectedHouse] = useState<number | null>(null);
 
   // AI Modal States
   const [loadingAI, setLoadingAI] = useState(false);
@@ -260,6 +320,12 @@ export default function ChartScreen() {
   const color1 = useSharedValue('#B2F7EF');
   const color2 = useSharedValue('#EFF7F6');
 
+  // Breathing effect values
+  const breatheScale1 = useSharedValue(1);
+  const breatheOpacity1 = useSharedValue(0.12);
+  const breatheScale2 = useSharedValue(1.1);
+  const breatheOpacity2 = useSharedValue(0.09);
+
   useEffect(() => {
     if (auraColors && auraColors.length >= 2) {
       color1.value = withTiming(auraColors[0], { duration: 2500 });
@@ -267,12 +333,48 @@ export default function ChartScreen() {
     }
   }, [auraColors]);
 
+  useEffect(() => {
+    // Start repeating breathing loop for Aura 1
+    breatheScale1.value = withRepeat(
+      withTiming(1.35, { duration: 7000, easing: Easing.bezier(0.42, 0, 0.58, 1) }),
+      -1,
+      true
+    );
+    breatheOpacity1.value = withRepeat(
+      withTiming(0.24, { duration: 7000, easing: Easing.bezier(0.42, 0, 0.58, 1) }),
+      -1,
+      true
+    );
+
+    // Start repeating breathing loop for Aura 2 with a delay
+    breatheScale2.value = withDelay(
+      1800,
+      withRepeat(
+        withTiming(1.45, { duration: 8000, easing: Easing.bezier(0.42, 0, 0.58, 1) }),
+        -1,
+        true
+      )
+    );
+    breatheOpacity2.value = withDelay(
+      1800,
+      withRepeat(
+        withTiming(0.20, { duration: 8000, easing: Easing.bezier(0.42, 0, 0.58, 1) }),
+        -1,
+        true
+      )
+    );
+  }, []);
+
   const animatedAuraStyle1 = useAnimatedStyle(() => ({
     backgroundColor: color1.value,
+    transform: [{ scale: breatheScale1.value }],
+    opacity: breatheOpacity1.value,
   }));
 
   const animatedAuraStyle2 = useAnimatedStyle(() => ({
     backgroundColor: color2.value,
+    transform: [{ scale: breatheScale2.value }],
+    opacity: breatheOpacity2.value,
   }));
 
   // 1. Calculate Fire/Earth/Air/Water element percentages
@@ -362,39 +464,6 @@ export default function ChartScreen() {
   const planetPlacements = useMemo(() => {
     if (!computedChart) return [];
     
-    const PLANET_KEYWORDS: Record<string, { turkish: string; symbol: string; archetype: string; theme: string }> = {
-      Mercury: { turkish: 'Merkür', symbol: '☿', archetype: 'Zihinsel Rehber', theme: 'iletişim tarzınızı, karar verme süreçlerinizi ve zihinsel ilgi alanlarınızı şekillendirir. Bilgiyi nasıl işlediğinizi gösterir.' },
-      Venus: { turkish: 'Venüs', symbol: '♀', archetype: 'Değer ve Sevgi Elçisi', theme: 'ilişki modelinizi, sevgi dilinizi, estetik algınızı ve hayattan nasıl keyif aldığınızı gösterir. Maddi bolluk ve değer duygunuzla ilgilidir.' },
-      Mars: { turkish: 'Mars', symbol: '♂', archetype: 'Eylem ve Güç Savaşçısı', theme: 'fiziksel enerjinizi, mücadele gücünüzü, tutkularınızı ve hedeflerinize ulaşmak için nasıl harekete geçtiğinizi temsil eder.' },
-      Jupiter: { turkish: 'Jüpiter', symbol: '♃', archetype: 'Bilgelik ve Şans Yıldızı', theme: 'bolluk ve bereketin yaşamınızdaki kapılarını, gelişim alanlarınızı, inançlarınızı ve şanslı fırsatları nasıl çektiğinizi gösterir.' },
-      Saturn: { turkish: 'Satürn', symbol: '♄', archetype: 'Zamanın ve Sınırların Efendisi', theme: 'öğrenmeniz gereken karmik dersleri, sorumluluk alanlarınızı, korkularınızı ve olgunlaşma yollarınızı gösterir.' },
-      Uranus: { turkish: 'Uranüs', symbol: '♅', archetype: 'Devrimci ve Reformcu Deha', theme: 'özgürleşme ihtiyacınızı, yenilikçi fikirlerinizi, ani değişimleri ve nerede sıra dışı olduğunuzu simgeler.' },
-      Neptune: { turkish: 'Neptün', symbol: '♆', archetype: 'İlham ve Teslimiyet Şairi', theme: 'hayal gücünüzü, spiritüel derinliğinizi, illüzyonları, sanatsal ilhamı ve evrensel bütünleşmeyi temsil eder.' },
-      Pluto: { turkish: 'Plüton', symbol: '♇', archetype: 'Küllerinden Doğan Simyacı', theme: 'güç savaşlarını, derin dönüşüm süreçlerinizi, krizleri aşma potansiyelinizi ve bilinçaltının derinliklerini gösterir.' },
-    };
-
-    const SIGN_KEYWORDS: Record<string, string> = {
-      'Koç': 'cesur, inisiyatif alan, sabırsız ve enerjik bir üslupla',
-      'Boğa': 'sakin, kararlı, somut değerlere odaklı ve istikrarlı bir dille',
-      'İkizler': 'meraklı, konuşkan, çok yönlü ve rasyonel bir yaklaşımla',
-      'Yengeç': 'sezgisel, şefkatli, korumacı ve duygusal bir derinlikle',
-      'Aslan': 'cömert, gururlu, sahne alan ve yaratıcı bir özgüvenle',
-      'Başak': 'analitik, titiz, faydalı ve detaycı bir yaklaşımla',
-      'Terazi': 'diplomatik, uyumlu, estetiğe ve adalete önem veren bir biçimde',
-      'Akrep': 'tutkulu, gizemli, derin ve dönüştürücü bir güçle',
-      'Yay': 'iyimser, maceracı, inançlı ve felsefi bir bakış açısıyla',
-      'Oğlak': 'disiplinli, sabırlı, sorumluluk sahibi ve mesafeli bir ciddiyetle',
-      'Kova': 'özgün, bağımsız, yenilikçi ve toplumsal bir vizyonla',
-      'Balık': 'mistik, fedakar, hayal gücü yüksek ve teslimiyetçi bir hassasiyetle',
-    };
-
-    const HOUSE_KEYWORDS: Record<number, string> = {
-      1: 'kişisel imajınız, dış dünyaya verdiğiniz ilk izlenim ve fiziksel canlılık alanında kendini gösterir.',
-      2: 'maddi kaynaklarınız, kazanç yöntemleriniz ve kendi öz-değer duygunuz üzerinde etkili olur.',
-      3: 'yakın çevre ilişkileriniz, kardeşleriniz, kısa yolculuklar ve günlük iletişim süreçlerinizde rol oynar.',
-      4: 'yuvanız, aile kökleriniz, içsel sığınağınız ve bilinçaltı temelleriniz alanında çalışır.',
-      5: 'yaratıcılığınız, aşk hayatınız, hobileriniz, çocuklarınız ve hayattan aldığınız keyif sahasını etkiler.',
-      6: 'günlük rutinleriniz, çalışma ortamınız, sağlığınız ve başkalarına sunduğunuz hizmetler alanında belirleyicidir.',
       7: 'evlilik, ortaklıklar, yakın ikili ilişkileriniz ve açık düşmanlar evinde görünür hale gelir.',
       8: 'ortaklaşa kazançlar, miras, cinsellik, krizler ve küllerinden yeniden doğma süreçlerinde etkilidir.',
       9: 'yüksek öğrenim, yurt dışı seyahatler, felsefi inançlar ve yaşam vizyonu alanını aydınlatır.',
@@ -465,9 +534,54 @@ export default function ChartScreen() {
       return { x, y };
     };
 
+    const aspectLines: React.ReactNode[] = [];
+    const orb = 6;
+    const ASPECT_TYPES = [
+      { type: 'Conjunction', angle: 0, isHarmonious: true },
+      { type: 'Sextile', angle: 60, isHarmonious: true },
+      { type: 'Square', angle: 90, isHarmonious: false },
+      { type: 'Trine', angle: 120, isHarmonious: true },
+      { type: 'Opposition', angle: 180, isHarmonious: false },
+    ];
+
+    for (let i = 0; i < planets.length; i++) {
+      for (let j = i + 1; j < planets.length; j++) {
+        const p1 = planets[i];
+        const p2 = planets[j];
+        let diff = Math.abs(p1.longitude - p2.longitude);
+        if (diff > 180) diff = 360 - diff;
+
+        for (const aspectType of ASPECT_TYPES) {
+          if (Math.abs(diff - aspectType.angle) <= orb) {
+            // Calculate coordinates at the inner boundary for aspect line drawing
+            const p1AnglePos = getCoordinates(p1.longitude, RADIUS * 0.45);
+            const p2AnglePos = getCoordinates(p2.longitude, RADIUS * 0.45);
+
+            const isHarmonious = aspectType.isHarmonious;
+            const strokeColor = isHarmonious ? 'rgba(0, 191, 255, 0.4)' : 'rgba(220, 20, 60, 0.4)';
+            const isDashed = isHarmonious;
+
+            aspectLines.push(
+              <Line
+                key={`aspect-line-${i}-${j}`}
+                x1={p1AnglePos.x}
+                y1={p1AnglePos.y}
+                x2={p2AnglePos.x}
+                y2={p2AnglePos.y}
+                stroke={strokeColor}
+                strokeWidth="1.2"
+                strokeDasharray={isDashed ? "3,3" : undefined}
+              />
+            );
+          }
+        }
+      }
+    }
+
     const houseLines = houses.map((houseDegree, idx) => {
       const pInner = getCoordinates(houseDegree, RADIUS * 0.45);
       const pOuter = getCoordinates(houseDegree, RADIUS);
+      const isSelected = selectedHouse === idx + 1;
       return (
         <Line
           key={`house-${idx}`}
@@ -475,8 +589,12 @@ export default function ChartScreen() {
           y1={pInner.y}
           x2={pOuter.x}
           y2={pOuter.y}
-          stroke="rgba(255, 255, 255, 0.12)"
-          strokeWidth={idx === 0 || idx === 9 ? "2" : "1"}
+          stroke={isSelected ? "#D4AF37" : "rgba(255, 255, 255, 0.12)"}
+          strokeWidth={isSelected ? "3.5" : (idx === 0 || idx === 9 ? "2" : "1")}
+          onPress={() => {
+            setSelectedHouse(isSelected ? null : idx + 1);
+            setSelectedPlanet(null);
+          }}
         />
       );
     });
@@ -522,19 +640,36 @@ export default function ChartScreen() {
       const symbol = PLANET_SYMBOLS[p.name] || '?';
       const radOffset = (idx % 2 === 0) ? 0.65 : 0.55;
       const pos = getCoordinates(p.longitude, RADIUS * radOffset);
+      const isSelected = selectedPlanet === p.name;
 
       return (
-        <G key={`planet-${idx}`}>
+        <G 
+          key={`planet-${idx}`}
+          onPress={() => {
+            setSelectedPlanet(isSelected ? null : p.name);
+            setSelectedHouse(null);
+          }}
+        >
+          {isSelected && (
+            <Circle
+              cx={pos.x}
+              cy={pos.y}
+              r="14"
+              fill="rgba(212, 175, 55, 0.25)"
+              stroke="#D4AF37"
+              strokeWidth="1"
+            />
+          )}
           <Circle
             cx={pos.x}
             cy={pos.y}
-            r="4"
-            fill="#ffffff"
+            r="4.5"
+            fill={isSelected ? "#D4AF37" : "#ffffff"}
           />
           <SvgText
             x={pos.x}
-            y={pos.y - 8}
-            fill="#ffffff"
+            y={pos.y - 10}
+            fill={isSelected ? "#D4AF37" : "#ffffff"}
             fontSize="14"
             fontWeight="bold"
             textAnchor="middle"
@@ -554,10 +689,11 @@ export default function ChartScreen() {
         {zodiacLines}
         {houseLines}
         {zodiacSymbols}
+        {aspectLines}
         {planetPoints}
       </Svg>
     );
-  }, [computedChart]);
+  }, [computedChart, selectedPlanet, selectedHouse]);
 
   const interpretations = useMemo(() => {
     if (!computedChart) return null;
@@ -627,9 +763,7 @@ export default function ChartScreen() {
         ]}
       />
 
-      {Platform.OS === 'ios' && (
-        <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
-      )}
+      <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
 
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
@@ -643,6 +777,70 @@ export default function ChartScreen() {
               <View style={styles.wheelWrapper}>
                 {svgContent}
               </View>
+
+              {/* Interactive Detail Panel */}
+              {selectedPlanet && (() => {
+                const p = computedChart.planets.find(item => item.name === selectedPlanet);
+                if (!p) return null;
+                const symbol = PLANET_SYMBOLS[p.name] || '•';
+                const nameTR = PLANET_NAME_TR[p.name] || p.name;
+                
+                const kw = PLANET_KEYWORDS[p.name];
+                const themeText = kw ? kw.theme : 'yaşam yolculuğunuzda bu hayat alanını etkiler.';
+                const signText = SIGN_KEYWORDS[p.sign] || 'kendine has bir üslupla';
+                const houseText = HOUSE_KEYWORDS[p.house] || 'yaşam alanlarınızda etkili olur.';
+                
+                return (
+                  <GlassCard style={styles.interactiveDetailsCard}>
+                    <View style={styles.detailsHeader}>
+                      <View style={styles.detailsHeaderLeft}>
+                        <Text style={styles.detailsSymbol}>{symbol}</Text>
+                        <View>
+                          <Text style={styles.detailsTitle}>{nameTR} {p.sign} Burcunda</Text>
+                          <Text style={styles.detailsSubtitle}>{p.house}. Ev | {formatPlanetDegree(p.longitude, p.sign)}</Text>
+                        </View>
+                      </View>
+                      <Pressable onPress={() => setSelectedPlanet(null)} style={{ padding: 4 }}>
+                        <Ionicons name="close-circle" size={24} color="rgba(255,255,255,0.4)" />
+                      </Pressable>
+                    </View>
+                    <Text style={styles.detailsBody}>
+                      Astrolojide {nameTR}, {themeText} Gezegeninizin bu konumu, enerjisini {signText} yansıtır ve özellikle {houseText}
+                    </Text>
+                  </GlassCard>
+                );
+              })()}
+
+              {selectedHouse && (() => {
+                const houseNum = selectedHouse;
+                const houseText = HOUSE_KEYWORDS[houseNum] || 'bu yaşam alanındaki konuları simgeler.';
+                const houseTitle = houseNum === 1 ? '1. Ev (Yükselen / Ascendant)' :
+                                   houseNum === 10 ? '10. Ev (Başucu Noktası / Midheaven)' : `${houseNum}. Ev`;
+                
+                const cuspDegree = computedChart.houses[houseNum - 1];
+                const cuspSignInfo = getZodiacSign(cuspDegree);
+                const cuspSign = cuspSignInfo ? cuspSignInfo.turkish : 'Koç';
+                
+                return (
+                  <GlassCard style={styles.interactiveDetailsCard}>
+                    <View style={styles.detailsHeader}>
+                      <View style={styles.detailsHeaderLeft}>
+                        <Text style={styles.detailsSymbol}>🏠</Text>
+                        <View>
+                          <Text style={styles.detailsTitle}>{houseTitle}</Text>
+                          <Text style={styles.detailsSubtitle}>{cuspSign} Burcu Cusp Başlangıcı ({Math.floor(cuspDegree % 30)}°)</Text>
+                        </View>
+                      </View>
+                      <Pressable onPress={() => setSelectedHouse(null)} style={{ padding: 4 }}>
+                        <Ionicons name="close-circle" size={24} color="rgba(255,255,255,0.4)" />
+                      </Pressable>
+                    </View>
+                    <Text style={styles.detailsBody}>
+                      Bu ev başlangıcı yaşamınızda {houseText} Giriş derecesi {cuspSign} burcunda olduğu için bu hayat alanındaki deneyimlerinizi {cuspSign} enerjisiyle şekillendirirsiniz.
+                    </Text>
+                  </GlassCard>
+                );
+              })()}
 
               {/* AI Report Button */}
               <Pressable 
@@ -1233,5 +1431,46 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  interactiveDetailsCard: {
+    marginTop: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#D4AF37',
+    padding: 16,
+  },
+  detailsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  detailsHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  detailsSymbol: {
+    fontSize: 28,
+    color: '#D4AF37',
+    marginRight: 8,
+  },
+  detailsTitle: {
+    fontFamily: 'InterBold',
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#D4AF37',
+  },
+  detailsSubtitle: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: 2,
+  },
+  detailsBody: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    lineHeight: 22,
+    color: '#E6EDF0',
   },
 });

@@ -4,13 +4,14 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
 import { computeNatalChart, getPlanetLongitude, getJulianDaysSinceJ2000, calculatePlanetaryHours, PlanetaryHour } from '@/utils/astronomy';
-import { fetchDailyHoroscope, HoroscopeResponse } from '@/api/gemini';
+import { HoroscopeResponse } from '@/api/gemini';
 import GlassCard from '@/components/glass/GlassCard';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, withDelay, Easing } from 'react-native-reanimated';
 import { useCosmicCalendarStore } from '@/store/cosmicCalendarStore';
 import PaywallAdModal from '@/components/ui/PaywallAdModal';
+import { schedulePlanetaryHourNotifications } from '@/utils/notifications';
 
 // Determine Moon phase name and symbol based on Sun and Moon elongations
 function getMoonPhase(sunLon: number, moonLon: number) {
@@ -29,9 +30,8 @@ function getMoonPhase(sunLon: number, moonLon: number) {
 
 export default function HomeScreen() {
   const { profile, isPremium, hasUnlockedDailyShadow } = useAuthStore();
-  const { computedChart, setComputedChart } = useAppStore();
+  const { computedChart, setComputedChart, dailyHoroscope: horoscope, fetchHoroscope } = useAppStore();
   const [paywallVisible, setPaywallVisible] = useState(false);
-  const [horoscope, setHoroscope] = useState<HoroscopeResponse | null>(null);
   const [loadingHoroscope, setLoadingHoroscope] = useState(false);
   const router = useRouter();
 
@@ -50,6 +50,12 @@ export default function HomeScreen() {
   const color1 = useSharedValue('#B2F7EF');
   const color2 = useSharedValue('#EFF7F6');
 
+  // Breathing effect values
+  const breatheScale1 = useSharedValue(1);
+  const breatheOpacity1 = useSharedValue(0.12);
+  const breatheScale2 = useSharedValue(1.1);
+  const breatheOpacity2 = useSharedValue(0.09);
+
   useEffect(() => {
     if (auraColors && auraColors.length >= 2) {
       color1.value = withTiming(auraColors[0], { duration: 2500 });
@@ -57,15 +63,51 @@ export default function HomeScreen() {
     }
   }, [auraColors]);
 
+  useEffect(() => {
+    // Start repeating breathing loop for Aura 1
+    breatheScale1.value = withRepeat(
+      withTiming(1.35, { duration: 7000, easing: Easing.bezier(0.42, 0, 0.58, 1) }),
+      -1,
+      true
+    );
+    breatheOpacity1.value = withRepeat(
+      withTiming(0.24, { duration: 7000, easing: Easing.bezier(0.42, 0, 0.58, 1) }),
+      -1,
+      true
+    );
+
+    // Start repeating breathing loop for Aura 2 with a delay
+    breatheScale2.value = withDelay(
+      1800,
+      withRepeat(
+        withTiming(1.45, { duration: 8000, easing: Easing.bezier(0.42, 0, 0.58, 1) }),
+        -1,
+        true
+      )
+    );
+    breatheOpacity2.value = withDelay(
+      1800,
+      withRepeat(
+        withTiming(0.20, { duration: 8000, easing: Easing.bezier(0.42, 0, 0.58, 1) }),
+        -1,
+        true
+      )
+    );
+  }, []);
+
   const animatedAuraStyle1 = useAnimatedStyle(() => {
     return {
       backgroundColor: color1.value,
+      transform: [{ scale: breatheScale1.value }],
+      opacity: breatheOpacity1.value,
     };
   });
 
   const animatedAuraStyle2 = useAnimatedStyle(() => {
     return {
       backgroundColor: color2.value,
+      transform: [{ scale: breatheScale2.value }],
+      opacity: breatheOpacity2.value,
     };
   });
 
@@ -93,6 +135,9 @@ export default function HomeScreen() {
     const lon = profile?.longitude || 28.9784;
     const hours = calculatePlanetaryHours(lat, lon, new Date());
     setPlanetaryHours(hours);
+    if (hours.length > 0) {
+      schedulePlanetaryHourNotifications(hours);
+    }
   }, [profile]);
 
   const activeHour = useMemo(() => planetaryHours.find(h => h.isActive), [planetaryHours]);
@@ -204,13 +249,12 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
         const sun = computedChart.planets.find(p => p.name === 'Sun');
         const sunSign = sun ? sun.sign : 'Koç';
 
-        const data = await fetchDailyHoroscope(
+        await fetchHoroscope(
           profile.name || 'Gezgin',
           sunSign,
           profile.birth_date || '',
           profile.birth_place || ''
         );
-        setHoroscope(data);
       } catch (err) {
         console.warn('Error loading daily horoscope:', err);
       } finally {
@@ -219,7 +263,7 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
     };
 
     loadHoroscope();
-  }, [profile, computedChart]);
+  }, [profile, computedChart, fetchHoroscope]);
 
   // 3. Compute current Moon Phase offline (handled inline via useMemo)
 
@@ -258,9 +302,7 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
       />
       
       {/* BlurView to make the aura soft and ethereal */}
-      {Platform.OS === 'ios' && (
-        <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} />
-      )}
+      <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} />
 
       <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
         <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>

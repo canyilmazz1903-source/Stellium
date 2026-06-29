@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getJulianDaysSinceJ2000, getPlanetLongitude, getZodiacSign } from '@/utils/astronomy';
 import { ComputedChart } from '@/store/appStore';
 import { getLunarAlmanacAdvice } from '@/utils/lunarAlmanacHelper';
@@ -54,9 +55,20 @@ export const useCosmicCalendarStore = create<CosmicCalendarState>((set, get) => 
     if (!birthChart) return;
     const { moonSign, moonPhase } = get();
     
+    const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const cacheKey = `daily_shadows_advice_${todayStr}_${profileName}`;
+    
     set({ loadingShadows: true });
     try {
+      // Check cache first
+      const cached = await AsyncStorage.getItem(cacheKey);
+      if (cached) {
+        set({ shadowsAdvice: cached, loadingShadows: false });
+        return;
+      }
+      
       const shadows = await fetchDailyShadows(profileName, birthChart, moonSign, moonPhase);
+      await AsyncStorage.setItem(cacheKey, shadows);
       set({ shadowsAdvice: shadows, loadingShadows: false });
     } catch (error) {
       console.warn('Error fetching shadows advice:', error);
