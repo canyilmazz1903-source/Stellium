@@ -35,7 +35,7 @@ export default function EsmaScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <Text style={styles.title}>Ebced & Esma Saatleri</Text>
-          <Text style={styles.subtitle}>İsimlerin Sayısal Resonansı ve Zikir Saatleri</Text>
+          <Text style={styles.subtitle}>İsimlerin Sayısal Rezonansı ve Zikir Saatleri</Text>
         </View>
 
         {/* Input Card */}
@@ -113,19 +113,19 @@ export default function EsmaScreen() {
                     setTargetEsma(result.primaryEsma);
                     setZikirCount(0);
                   }}
-                  className="mt-3 py-2 rounded-xl bg-amber-400/10 border border-amber-400/20 active:bg-amber-400/20 items-center"
+                  style={styles.selectEsmaBtn}
                 >
-                  <Text className="text-amber-300 text-xs font-bold font-sans">Bu Esmayı Zikirmatik İçin Seç</Text>
+                  <Text style={styles.selectEsmaBtnText}>Bu Esmayı Zikirmatik İçin Seç</Text>
                 </Pressable>
               )}
             </GlassCard>
 
             {/* Kozmik Zikirmatik Panel */}
-            <GlassCard className="mt-4 p-5 rounded-3xl border border-white/10 bg-white/5 items-center">
-              <Text className="text-white font-bold text-base font-sans mb-3">🔮 Kozmik Zikirmatik</Text>
+            <View style={styles.zikirmatikCard}>
+              <Text style={styles.zikirmatikHeader}>🔮 Kozmik Zikirmatik</Text>
               
-              <Text className="text-white/60 text-xs font-semibold font-sans mb-4 text-center">
-                Seçili Esma: <Text className="text-amber-300 font-bold">{targetEsma?.name || 'Seçilmedi'}</Text> (Hedef: {targetEsma?.ebced || 0})
+              <Text style={styles.zikirmatikSub}>
+                Seçili Esma: <Text style={{ color: '#D4AF37', fontWeight: '700' }}>{targetEsma?.name || 'Seçilmedi'}</Text> (Hedef: {targetEsma?.ebced || 0})
               </Text>
 
               {/* Glowing Circle Button */}
@@ -134,32 +134,38 @@ export default function EsmaScreen() {
                   Vibration.vibrate(45);
                   setZikirCount(prev => prev + 1);
                 }}
-                className="w-32 h-32 rounded-full border-4 border-amber-400/40 bg-amber-400/5 items-center justify-center shadow-lg shadow-amber-400/20 active:bg-amber-400/10 mb-4"
+                style={({ pressed }) => [
+                  styles.circleButton,
+                  pressed && { backgroundColor: 'rgba(212, 175, 55, 0.12)' }
+                ]}
               >
-                <Text className="text-white text-3xl font-extrabold font-sans">{zikirCount}</Text>
-                <Text className="text-white/40 text-[9px] uppercase font-bold tracking-wider mt-1">Dokun</Text>
+                <Text style={styles.circleCount}>{zikirCount}</Text>
+                <Text style={styles.circleTapText}>Dokun</Text>
               </Pressable>
 
               {/* Progress and resets */}
-              <View className="w-full px-4 flex-row justify-between items-center mt-2">
+              <View style={styles.resetRow}>
                 <Pressable 
                   onPress={() => setZikirCount(0)}
-                  className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 active:bg-white/10"
+                  style={({ pressed }) => [
+                    styles.resetBtn,
+                    pressed && { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
+                  ]}
                 >
-                  <Text className="text-white/70 text-xs font-bold font-sans">Sıfırla</Text>
+                  <Text style={styles.resetBtnText}>Sıfırla</Text>
                 </Pressable>
 
-                <Text className="text-amber-300 text-xs font-bold font-sans">
+                <Text style={styles.progressPercentText}>
                   Tamamlanan: %{targetEsma?.ebced ? Math.min(100, Math.round((zikirCount / targetEsma.ebced) * 100)) : 0}
                 </Text>
               </View>
 
               {targetEsma?.ebced && zikirCount >= targetEsma.ebced && (
-                <View className="mt-4 bg-emerald-400/10 border border-emerald-400/30 px-4 py-2.5 rounded-2xl w-full items-center">
-                  <Text className="text-emerald-300 text-xs font-bold font-sans">✨ Zikir Tamamlandı! Ağzınıza Sağlık.</Text>
+                <View style={styles.completedBadge}>
+                  <Text style={styles.completedBadgeText}>✨ Zikir Tamamlandı! Ağzınıza Sağlık.</Text>
                 </View>
               )}
-            </GlassCard>
+            </View>
 
             {/* Alternative Esma List */}
             <Text style={styles.sectionSubTitle}>Resone Olan Diğer Esma Eşleşmeleri</Text>
@@ -200,7 +206,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontFamily: 'Cinzel',
+    fontFamily: 'Inter',
     fontSize: 26,
     color: '#D4AF37',
     fontWeight: '700',
@@ -238,7 +244,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   valueText: {
-    fontFamily: 'Cinzel',
+    fontFamily: 'Inter',
     fontSize: 28,
     color: '#D4AF37',
     fontWeight: '700',
@@ -249,7 +255,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(212, 175, 55, 0.15)',
   },
   archetypeTitle: {
-    fontFamily: 'Cinzel',
+    fontFamily: 'Inter',
     fontSize: 16,
     color: '#F0F6FC',
     fontWeight: '600',
@@ -259,7 +265,7 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
   },
   archetypePlanet: {
-    fontFamily: 'Cinzel',
+    fontFamily: 'Inter',
     fontSize: 18,
     color: '#D4AF37',
     fontWeight: '700',
@@ -277,14 +283,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   sectionTitle: {
-    fontFamily: 'Cinzel',
+    fontFamily: 'Inter',
     fontSize: 18,
     color: '#F0F6FC',
     fontWeight: '600',
     marginTop: 8,
   },
   sectionSubTitle: {
-    fontFamily: 'Cinzel',
+    fontFamily: 'Inter',
     fontSize: 16,
     color: '#F0F6FC',
     fontWeight: '600',
@@ -292,7 +298,7 @@ const styles = StyleSheet.create({
   },
   primaryEsmaCard: {
     padding: 20,
-    borderColor: '#D4AF37', // Highlight primary Esma with a solid gold border
+    borderColor: 'rgba(212, 175, 55, 0.25)',
   },
   esmaTitleRow: {
     flexDirection: 'row',
@@ -301,7 +307,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   esmaName: {
-    fontFamily: 'Cinzel',
+    fontFamily: 'Inter',
     fontSize: 22,
     color: '#D4AF37',
     fontWeight: '700',
@@ -321,7 +327,9 @@ const styles = StyleSheet.create({
   esmaDetailsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(22, 27, 34, 0.5)',
+    backgroundColor: '#161B22',
+    borderColor: 'rgba(212, 175, 55, 0.12)',
+    borderWidth: 1,
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
@@ -349,6 +357,119 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
   },
+  selectEsmaBtn: {
+    marginTop: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(212, 175, 55, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.2)',
+    alignItems: 'center',
+  },
+  selectEsmaBtnText: {
+    color: '#D4AF37',
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: 'Inter',
+  },
+
+  // Zikirmatik Card
+  zikirmatikCard: {
+    backgroundColor: '#161B22',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.12)',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  zikirmatikHeader: {
+    fontFamily: 'Inter',
+    fontSize: 16,
+    color: '#F0F6FC',
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  zikirmatikSub: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: '#8B949E',
+    fontWeight: '600',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  circleButton: {
+    width: 128,
+    height: 128,
+    borderRadius: 64,
+    borderWidth: 4,
+    borderColor: 'rgba(212, 175, 55, 0.4)',
+    backgroundColor: 'rgba(212, 175, 55, 0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  circleCount: {
+    color: '#FFFFFF',
+    fontSize: 32,
+    fontWeight: '800',
+    fontFamily: 'Inter',
+  },
+  circleTapText: {
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontSize: 9,
+    textTransform: 'uppercase',
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginTop: 2,
+  },
+  resetRow: {
+    width: '100%',
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  resetBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  resetBtnText: {
+    color: '#8B949E',
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: 'Inter',
+  },
+  progressPercentText: {
+    color: '#D4AF37',
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: 'Inter',
+  },
+  completedBadge: {
+    marginTop: 16,
+    backgroundColor: 'rgba(52, 211, 153, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.25)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    width: '100%',
+    alignItems: 'center',
+  },
+  completedBadgeText: {
+    color: '#34D399',
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: 'Inter',
+  },
+
+  // Alternatives
   alternativesList: {
     gap: 12,
   },
@@ -362,7 +483,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   alternativeName: {
-    fontFamily: 'Cinzel',
+    fontFamily: 'Inter',
     fontSize: 16,
     color: '#D4AF37',
     fontWeight: '700',

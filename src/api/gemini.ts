@@ -34,10 +34,10 @@ export async function fetchDailyHoroscope(
   
   const prompt = `
 [SYSTEM INSTRUCTION]
-Sen; İsviçre Efemerisi hassasiyetine vakıf, Carl Jung'un psikolojik astroloji ekolünü, Keldani numerolojisini ve klasik/modern astroloji metodolojilerini birleştiren elit bir Astroloji Profesörüsün. Görevin, kullanıcının natal harita verilerine dayanarak yüzeysel olmaktan uzak, edebi derinliği yüksek, felsefi, psikolojik ve son derece detaylı analizler üretmektir.
+Sen; İsviçre Efemerisi hassasiyetine vakıf, Keldani numerolojisini ve klasik/modern astroloji metodolojilerini birleştiren elit bir Astroloji Profesörüsün. Görevin, kullanıcının natal harita verilerine dayanarak yüzeysel olmaktan uzak, edebi derinliği yüksek, felsefi ve son derece detaylı analizler üretmektir.
 
 [STRICT OUTPUT FORMAT RULES]
-1. Asla "Bugün şanslısınız" veya "Para gelebilir" gibi klişe, falcı ağzı cümleler kurma. Bunun yerine transitlerin psikolojik izdüşümlerini, ev yerleşimlerinin gölge ve ışık yönlerini analiz et.
+1. Asla "Bugün şanslısınız" veya "Para gelebilir" gibi klişe, falcı ağzı cümleler kurma. Bunun yerine transitlerin ruhsal izdüşümlerini, ev yerleşimlerinin olumlu ve olumsuz yönlerini analiz et.
 2. Çıktı dilin mistik, bilge, sarmalayıcı ama aynı zamanda bilimsel ve analitik olmalıdır.
 3. Metin içi yapılandırmada başlıklar ve anahtar kelimeler için **kalın metin** kullan. Bölümler arasını net ayır.
 4. Çıktıyı kesinlikle aşağıdaki JSON şemasında belirtilen anahtarlarla eksiksiz döndür. Tek bir karakter bile şema dışına çıkmamalıdır.
@@ -278,11 +278,11 @@ export async function fetchDailyShadows(
   
   const prompt = `
 [SYSTEM INSTRUCTION]
-Sen; analitik psikoloji (Carl Jung) ve psikolojik astroloji konusunda uzmanlaşmış derinlikli bir psikolog ve astrologsun. Görevin, transit gök cisimlerinin gerilimli açılarını inceleyerek bireyin bugün yüzleşmesi gereken bastırılmış dürtüleri, gölge yönlerini (Shadow Work) ve projeksiyonlarını tahlil etmektir.
+Sen; geleneksel astroloji, ruhsal gelişim ve karma astrolojisi konusunda uzmanlaşmış derinlikli bir astrologsun. Görevin, transit gök cisimlerinin gerilimli açılarını inceleyerek bireyin bugün yüzleşmesi gereken içsel engelleri, ruhsal gelişim fırsatlarını ve dönüştürülmesi gereken enerjileri tahlil etmektir.
 
 [STRICT OUTPUT FORMAT RULES]
 1. Çıktıyı kesinlikle aşağıdaki JSON şemasında belirtilen anahtarlarla eksiksiz döndür. Tek bir karakter bile şema dışına çıkmamalıdır.
-2. Analiz dili akademik, Jungcu ve samimi olmalıdır. Bilinçaltı savunmalarını sarsıcı ama şefkatli bir şekilde açıkla.
+2. Analiz dili bilge, ruhsal ve samimi olmalıdır. Ruhsal direnç noktalarını şefkatli bir şekilde açıkla.
 
 Kullanıcı Adı: "${name}"
 Doğum Haritası Konumları:
@@ -294,12 +294,12 @@ Mevcut Transit Gökyüzü:
 
 JSON Çıktı Şeması:
 {
-  "shadow_core": "Bugünkü krizin veya içsel blokajın psikolojik kökeni.",
-  "jungian_analysis": "Bilinçaltı süreçleri açıklayan derin akademik metin (3 paragraf).",
+  "shadow_core": "Bugünkü krizin veya içsel blokajın ruhsal kökeni.",
+  "jungian_analysis": "Ruhsal gelişim süreçlerini ve göksel etkileri açıklayan derin analiz (3 paragraf).",
   "confrontation_questions": [
-    "Kullanıcının kendine sorması gereken sarsıcı ve dönüştürücü soru 1",
-    "Kullanıcının kendine sorması gereken sarsıcı ve dönüştürücü soru 2",
-    "Kullanıcının kendine sorması gereken sarsıcı ve dönüştürücü soru 3"
+    "Kullanıcının kendine sorması gereken farkındalık uyandırıcı soru 1",
+    "Kullanıcının kendine sorması gereken farkındalık uyandırıcı soru 2",
+    "Kullanıcının kendine sorması gereken farkındalık uyandırıcı soru 3"
   ]
 }
   `;
@@ -332,7 +332,7 @@ JSON Çıktı Şeması:
       ? parsed.confrontation_questions.map((q: string) => `• ${q}`).join('\n')
       : '';
 
-    return `### 🌌 Bugünkü Gölge Odağı\n${parsed.shadow_core}\n\n### 🧠 Jungcu Analiz\n${parsed.jungian_analysis}\n\n### 🔑 Kendinle Yüzleşme Soruları\n${questionsText}`;
+    return `### 🌌 Bugünkü Ruhsal Odak\n${parsed.shadow_core}\n\n### 🧠 Göksel & Ruhsal Analiz\n${parsed.jungian_analysis}\n\n### 🔑 Kendinle Yüzleşme Soruları\n${questionsText}`;
   } catch (error) {
     console.warn('Error fetching shadows analysis from Gemini:', error);
     return `Sevgili ${name}, bugün gökyüzünde transit yapan Ay'ın (${moonSign} burcunda) natal haritanızdaki Mars ve Satürn ile kurduğu kontaklar, bastırılmış dürtülerinizi veya yetersizlik korkularınızı yüzeye çıkarabilir. İçinizdeki direnç noktalarını gözlemleyin; öfkenizi dışa yansıtmak yerine, bu enerjiyi içsel sınırlarınızı belirlemek ve disiplin kazanmak için dönüştürün.`;
@@ -352,7 +352,7 @@ export async function fetchFullChartAnalysis(
   
   const prompt = `
 [SYSTEM INSTRUCTION]
-Sen; İsviçre Efemerisi hassasiyetine vakıf, Carl Jung'un psikolojik astroloji ekolünü, Keldani numerolojisini ve klasik/modern astroloji metodolojilerini birleştiren elit bir Astroloji Profesörüsün. Görevin, kullanıcının natal harita verilerini, element dağılımlarını, niteliklerini ve gezegen açılarını sentezleyerek adeta bir kitap bölümü niteliğinde, son derece kapsamlı ve derin bir yaşam yolculuğu raporu oluşturmaktır.
+Sen; İsviçre Efemerisi hassasiyetine vakıf, Keldani numerolojisini ve klasik/modern astroloji metodolojilerini birleştiren elit bir Astroloji Profesörüsün. Görevin, kullanıcının natal harita verilerini, element dağılımlarını, niteliklerini ve gezegen açılarını sentezleyerek adeta bir kitap bölümü niteliğinde, son derece kapsamlı ve derin bir yaşam yolculuğu raporu oluşturmaktır.
 
 [WRITING RULES]
 1. Analiz dili mistik, bilge, sarmalayıcı ama aynı zamanda bilimsel, analitik ve psikolojik olmalıdır.

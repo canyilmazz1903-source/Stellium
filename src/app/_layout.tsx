@@ -2,8 +2,10 @@ import React, { useEffect } from 'react';
 import { ThemeProvider, DarkTheme, Stack, useRouter, useSegments } from 'expo-router';
 import { ActivityIndicator, View, StyleSheet, StatusBar } from 'react-native';
 import { useAuthStore } from '@/store/authStore';
+import { useAppStore } from '@/store/appStore';
 import { supabase } from '@/api/supabase';
 import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import { computeNatalChart, getTimezoneOffset } from '@/utils/astronomy';
 
 export default function RootLayout() {
   const { session, isLoading, profile, setSession, setUser, initialize } = useAuthStore();
@@ -43,6 +45,30 @@ export default function RootLayout() {
       subscription.unsubscribe();
     };
   }, [initialize, setSession, setUser]);
+
+  // Calculate computedChart dynamically at RootLayout level so that all tabs have it instantly
+  useEffect(() => {
+    if (!profile || !profile.birth_date || !profile.birth_time) {
+      useAppStore.getState().setComputedChart(null);
+      return;
+    }
+
+    try {
+      const [year, month, day] = profile.birth_date.split('-').map(Number);
+      const [hour, minute] = profile.birth_time.split(':').map(Number);
+      const lat = profile.latitude || 41.0082;
+      const lon = profile.longitude || 28.9784;
+      const tzName = profile.timezone || 'Europe/Istanbul';
+
+      const birthDateLocal = new Date(year, month - 1, day, hour, minute);
+      const tzOffset = getTimezoneOffset(tzName, birthDateLocal);
+
+      const chart = computeNatalChart(year, month, day, hour, minute, lat, lon, tzOffset);
+      useAppStore.getState().setComputedChart(chart);
+    } catch (e) {
+      console.warn('Error calculating natal chart in RootLayout:', e);
+    }
+  }, [profile]);
 
   // 3. Handle navigation gating
   useEffect(() => {

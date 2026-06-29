@@ -511,11 +511,18 @@ function formatTime(d: Date): string {
 export function getTimezoneOffset(timezone: string, date: Date): number {
   try {
     const tzString = date.toLocaleString('en-US', { timeZone: timezone });
+    if (!tzString || tzString.includes('Invalid')) return 3;
     const localDate = new Date(tzString);
+    if (isNaN(localDate.getTime())) return 3;
+
     const utcString = date.toLocaleString('en-US', { timeZone: 'UTC' });
+    if (!utcString || utcString.includes('Invalid')) return 3;
     const utcDate = new Date(utcString);
+    if (isNaN(utcDate.getTime())) return 3;
+
     const diffMs = localDate.getTime() - utcDate.getTime();
-    return diffMs / (1000 * 60 * 60);
+    const offset = diffMs / (1000 * 60 * 60);
+    return isNaN(offset) ? 3 : offset;
   } catch (e) {
     return 3; // Fallback to GMT+3 (Turkey)
   }

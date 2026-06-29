@@ -117,7 +117,7 @@ export default function TransitScreen() {
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#D4AF37" />
         <Text style={styles.loadingText}>Gökyüzü transitleri hesaplanıyor...</Text>
-        <Text style={styles.loadingSubtext}>Carl Jung ekolü rehberiniz kaleme alınıyor.</Text>
+        <Text style={styles.loadingSubtext}>Derin astrolojik rehberiniz kaleme alınıyor.</Text>
       </SafeAreaView>
     );
   }

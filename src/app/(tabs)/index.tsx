@@ -241,7 +241,7 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
     }
   }, [profile, setComputedChart]);
 
-  // 2. Fetch daily Jungian horoscope from Gemini
+  // 2. Fetch daily horoscope from Gemini
   useEffect(() => {
     if (!profile || !computedChart) return;
 

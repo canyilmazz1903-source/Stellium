@@ -216,7 +216,7 @@ export default function PaywallAdModal({
   onClose,
   onSuccess,
   title = 'Zihinsel Gölge Analizi',
-  description = 'Kozmik haritanızdaki sert açılardan kaynaklanan gölge yönlerinizi ve derin Jungiyen analizinizi keşfetmek için kilidi açın.'
+  description = 'Kozmik haritanızdaki sert açılardan kaynaklanan etkileri ve derin astrolojik analizinizi keşfetmek için kilidi açın.'
 }: PaywallAdModalProps) {
   const { unlockDailyShadow } = useAuthStore();
   const router = useRouter();

@@ -30,7 +30,7 @@ export default function GlassCard({
       <BlurView
         intensity={intensity}
         tint={tint}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
       />
       <View style={styles.contentContainer}>
         {children}

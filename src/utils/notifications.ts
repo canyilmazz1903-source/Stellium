@@ -7,7 +7,7 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
-  }),
+  } as any),
 });
 
 const PLANET_NOTIF_DETAILS: Record<string, { title: string; body: string }> = {
@@ -97,7 +97,7 @@ export async function schedulePlanetaryHourNotifications(hours: any[]) {
           sound: true,
           priority: Notifications.AndroidNotificationPriority.HIGH,
         },
-        trigger: triggerDate,
+        trigger: triggerDate as any,
       });
     }
   } catch (error) {
