@@ -13,6 +13,9 @@
       "buildNumber": "14",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "aps-environment": "production"
       }
     },
     "android": {
@@ -43,6 +46,7 @@
         }
       ],
       "expo-secure-store",
+      "expo-notifications",
       "@react-native-community/datetimepicker",
       [
         "react-native-google-mobile-ads",
