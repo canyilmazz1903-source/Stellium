@@ -51,8 +51,8 @@ workflows:
       - name: Build IPA for App Store Connect
         script: |
           xcode-project build-ipa \
-            --workspace ios/Astrologic.xcworkspace \
-            --scheme Astrologic \
+            --workspace ios/Stellium.xcworkspace \
+            --scheme Stellium \
             --archive-flags="-destination 'generic/platform=iOS' PARALLELIZE_TARGETS=NO COMPILER_INDEX_STORE_ENABLE=NO SWIFT_USE_INTEGRATED_DRIVER=NO" \
             --disable-xcpretty \
             --ipa-directory build/ios/ipa \
