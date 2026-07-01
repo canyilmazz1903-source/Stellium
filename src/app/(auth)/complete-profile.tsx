@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, KeyboardAvoidingView, Platform, ScrollView, Pressable, Alert, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
@@ -8,6 +8,8 @@ import { searchLocation, getTimezoneForCoordinates, LocationSuggestion } from '@
 import CosmicInput from '@/components/ui/CosmicInput';
 import CosmicButton from '@/components/ui/CosmicButton';
 import GlassCard from '@/components/glass/GlassCard';
+import { BlurView } from 'expo-blur';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, Easing } from 'react-native-reanimated';
 
 export default function CompleteProfileScreen() {
   const { user, initialize } = useAuthStore();
@@ -32,6 +34,50 @@ export default function CompleteProfileScreen() {
   const [searchingLocation, setSearchingLocation] = useState(false);
   
   const router = useRouter();
+
+  // Reanimated shared values for background aura colors
+  const breatheScale1 = useSharedValue(1);
+  const breatheOpacity1 = useSharedValue(0.12);
+  const breatheScale2 = useSharedValue(1);
+  const breatheOpacity2 = useSharedValue(0.08);
+
+  useEffect(() => {
+    breatheScale1.value = withRepeat(
+      withTiming(1.2, { duration: 6000, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true
+    );
+    breatheOpacity1.value = withRepeat(
+      withTiming(0.2, { duration: 6000, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true
+    );
+
+    breatheScale2.value = withRepeat(
+      withTiming(1.3, { duration: 8000, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true
+    );
+    breatheOpacity2.value = withRepeat(
+      withTiming(0.16, { duration: 8000, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true
+    );
+  }, []);
+
+  const animatedAuraStyle1 = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: breatheScale1.value }],
+      opacity: breatheOpacity1.value,
+    };
+  });
+
+  const animatedAuraStyle2 = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: breatheScale2.value }],
+      opacity: breatheOpacity2.value,
+    };
+  });
 
   // Search birth place
   const handleLocationSearch = async (text: string) => {
@@ -74,7 +120,15 @@ export default function CompleteProfileScreen() {
       setShowDatePicker(false);
     }
     if (selectedDate) {
-      setBirthDate(selectedDate);
+      const safeDate = new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate(),
+        12,
+        0,
+        0
+      );
+      setBirthDate(safeDate);
     }
   };
 
@@ -166,11 +220,45 @@ export default function CompleteProfileScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      enabled={true}
-      style={styles.container}
-    >
+    <View style={styles.mainWrapper}>
+      {/* Dynamic Auric Gradient Background */}
+      <Animated.View 
+        style={[
+          styles.auricBackground,
+          {
+            backgroundColor: '#B2F7EF',
+            top: -150,
+            right: -150,
+            width: 400,
+            height: 400,
+            borderRadius: 200,
+          },
+          animatedAuraStyle1
+        ]}
+      />
+      <Animated.View 
+        style={[
+          styles.auricBackground,
+          {
+            backgroundColor: '#EFF7F6',
+            bottom: -100,
+            left: -100,
+            width: 360,
+            height: 360,
+            borderRadius: 180,
+          },
+          animatedAuraStyle2
+        ]}
+      />
+      
+      {/* BlurView to make the aura soft and ethereal */}
+      <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} />
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        enabled={true}
+        style={styles.container}
+      >
       <ScrollView 
         contentContainerStyle={styles.scrollContainer} 
         keyboardShouldPersistTaps="handled"
@@ -345,13 +433,22 @@ export default function CompleteProfileScreen() {
         )}
       </ScrollView>
     </KeyboardAvoidingView>
+  </View>
   );
 }
 
 const styles = StyleSheet.create({
+  mainWrapper: {
+    flex: 1,
+    backgroundColor: '#0B0F19',
+  },
+  auricBackground: {
+    position: 'absolute',
+    opacity: 0.12,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: 'transparent',
   },
   scrollContainer: {
     flexGrow: 1,

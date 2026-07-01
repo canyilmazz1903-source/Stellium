@@ -510,18 +510,36 @@ function formatTime(d: Date): string {
 
 export function getTimezoneOffset(timezone: string, date: Date): number {
   try {
-    const tzString = date.toLocaleString('en-US', { timeZone: timezone });
-    if (!tzString || tzString.includes('Invalid')) return 3;
-    const localDate = new Date(tzString);
-    if (isNaN(localDate.getTime())) return 3;
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+      hour12: false,
+    });
+    
+    const parts = formatter.formatToParts(date);
+    const partValues: Record<string, number> = {};
+    for (const part of parts) {
+      if (part.type !== 'literal') {
+        partValues[part.type] = Number(part.value);
+      }
+    }
+    
+    const targetUtc = Date.UTC(
+      partValues.year,
+      partValues.month - 1,
+      partValues.day,
+      partValues.hour === 24 ? 0 : partValues.hour,
+      partValues.minute,
+      partValues.second
+    );
 
-    const utcString = date.toLocaleString('en-US', { timeZone: 'UTC' });
-    if (!utcString || utcString.includes('Invalid')) return 3;
-    const utcDate = new Date(utcString);
-    if (isNaN(utcDate.getTime())) return 3;
-
-    const diffMs = localDate.getTime() - utcDate.getTime();
-    const offset = diffMs / (1000 * 60 * 60);
+    const diffMs = targetUtc - date.getTime();
+    const offset = Math.round(diffMs / (1000 * 60 * 60));
     return isNaN(offset) ? 3 : offset;
   } catch (e) {
     return 3; // Fallback to GMT+3 (Turkey)

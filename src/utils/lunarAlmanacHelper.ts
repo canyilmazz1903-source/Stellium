@@ -75,3 +75,156 @@ export function getLunarAlmanacAdvice(
 
   return { beauty, health, auraColors };
 }
+
+export interface CosmicCareRating {
+  stars: number;
+  label: string;
+  advice: string;
+}
+
+export interface CosmicCareRatings {
+  haircut: CosmicCareRating;
+  epilation: CosmicCareRating;
+  skincare: CosmicCareRating;
+  detox: CosmicCareRating;
+}
+
+export function calculateCosmicCare(
+  moonLongitude: number,
+  sunLongitude: number,
+  moonSignTurkish: string
+): CosmicCareRatings {
+  let elongation = moonLongitude - sunLongitude;
+  if (elongation < 0) elongation += 360;
+  const phase: 'waxing' | 'waning' = (elongation >= 0 && elongation < 180) ? 'waxing' : 'waning';
+  
+  const isWaterSign = ['Yengeç', 'Akrep', 'Balık'].includes(moonSignTurkish);
+  const isEarthSign = ['Boğa', 'Başak', 'Oğlak'].includes(moonSignTurkish);
+
+  // 1. Haircut
+  let haircutStars = 3;
+  let haircutLabel = 'Orta';
+  let haircutAdvice = 'Rutin saç kesimleri yapılabilir. Saçın yapısında belirgin bir değişim olmaz.';
+  if (isWaterSign) {
+    haircutStars = 1;
+    haircutLabel = 'Kaçının';
+    haircutAdvice = `Ay ${moonSignTurkish} (Su) burcundayken saç kesimi tavsiye edilmez, saçlar formunu kaybedebilir.`;
+  } else if (phase === 'waxing') {
+    if (moonSignTurkish === 'Aslan' || moonSignTurkish === 'Başak') {
+      haircutStars = 5;
+      haircutLabel = 'Mükemmel';
+      haircutAdvice = `Ay ${moonSignTurkish} burcunda ve Büyüyen fazda! Saç kesimi için en ideal gündesiniz. Saçı gürleştirir ve hızlı uzatır.`;
+    } else {
+      haircutStars = 4;
+      haircutLabel = 'Çok İyi';
+      haircutAdvice = 'Büyüyen Ay fazında yapılan saç kesimleri saçların daha hızlı ve canlı uzamasını sağlar.';
+    }
+  } else {
+    // waning phase
+    if (moonSignTurkish === 'Aslan' || moonSignTurkish === 'Başak') {
+      haircutStars = 4;
+      haircutLabel = 'İyi';
+      haircutAdvice = `Ay ${moonSignTurkish} burcunda küçülüyor. Saç kesimi için uygundur; saçları kalınlaştırır ve saç köklerini güçlendirir.`;
+    } else {
+      haircutStars = 3;
+      haircutLabel = 'Orta';
+      haircutAdvice = 'Küçülen Ay fazında saçlar daha yavaş uzar. Saç şeklini korumak ve uçları temizlemek için uygundur.';
+    }
+  }
+
+  // 2. Epilation
+  let epilationStars = 2;
+  let epilationLabel = 'Uygun Değil';
+  let epilationAdvice = 'Büyüyen Ay fazında kıl kökleri beslendiği için tüy alımı yapılması önerilmez, çabuk uzayabilir.';
+  if (phase === 'waning') {
+    if (moonSignTurkish === 'Oğlak' || moonSignTurkish === 'Başak') {
+      epilationStars = 5;
+      epilationLabel = 'Mükemmel';
+      epilationAdvice = `Ay ${moonSignTurkish} burcunda küçülüyor. Epilasyon için en etkili zaman! Tüyler çok daha geç çıkar ve kökler zayıflar.`;
+    } else if (isWaterSign) {
+      epilationStars = 3;
+      epilationLabel = 'Orta';
+      epilationAdvice = 'Küçülen Ay fazında tüy alımı yapılabilir ancak su burçlarında etki maksimum değildir.';
+    } else {
+      epilationStars = 4;
+      epilationLabel = 'Çok İyi';
+      epilationAdvice = 'Küçülen Ay fazındasınız. Kökten alınan epilasyon ve ağda işlemlerinin etkisi uzun sürecektir.';
+    }
+  } else {
+    // waxing phase
+    if (moonSignTurkish === 'Oğlak' || moonSignTurkish === 'Başak') {
+      epilationStars = 3;
+      epilationLabel = 'Orta';
+      epilationAdvice = 'Büyüyen faz olmasına rağmen Oğlak/Başak burçlarının kök kurutucu etkisi nedeniyle tüy alımı yapılabilir.';
+    }
+  }
+
+  // 3. Skincare
+  let skincareStars = 3;
+  let skincareLabel = 'Orta';
+  let skincareAdvice = 'Cildin genel temizliği ve günlük nemlendirici bakımı yapılabilir.';
+  if (phase === 'waxing') {
+    if (moonSignTurkish === 'Boğa' || moonSignTurkish === 'Terazi') {
+      skincareStars = 5;
+      skincareLabel = 'Mükemmel';
+      skincareAdvice = `Ay ${moonSignTurkish} (Venüs) burcunda ve Büyüyor. Cilde nem veren besleyici maskeler, serumlar ve bakımlar için en iyi zaman.`;
+    } else {
+      skincareStars = 4;
+      skincareLabel = 'Çok İyi';
+      skincareAdvice = 'Büyüyen Ay fazında cilt emilimi yüksektir. Nem maskeleri ve vitamin bakımları çok faydalı olur.';
+    }
+  } else {
+    // waning phase
+    if (moonSignTurkish === 'Başak' || moonSignTurkish === 'Oğlak' || moonSignTurkish === 'Boğa') {
+      skincareStars = 5;
+      skincareLabel = 'Mükemmel';
+      skincareAdvice = `Ay ${moonSignTurkish} burcunda küçülüyor. Sivilce temizliği, derin gözenek peelingi ve arındırma maskeleri için en iyi gün.`;
+    } else {
+      skincareStars = 4;
+      skincareLabel = 'Çok İyi';
+      skincareAdvice = 'Küçülen Ay fazı arınma enerjisidir. Ciltteki ölü hücreleri temizlemek ve peeling yapmak için idealdir.';
+    }
+  }
+
+  // 4. Detox
+  let detoxStars = 3;
+  let detoxLabel = 'Orta';
+  let detoxAdvice = 'Sindirim sistemini yormayacak hafif gıdalarla beslenmek yararlıdır.';
+  
+  const isFullMoon = Math.abs(elongation - 180) <= 12;
+  const isNewMoon = elongation <= 12 || elongation >= 348;
+
+  if (isNewMoon) {
+    detoxStars = 5;
+    detoxLabel = 'Mükemmel';
+    detoxAdvice = 'Yeni Ay enerjisiyle bedeni sıfırlama zamanı! Kısa süreli sıvı detoksu veya hafif sebze diyetiyle toksin atımı mükemmel çalışır.';
+  } else if (isFullMoon) {
+    detoxStars = 5;
+    detoxLabel = 'Mükemmel';
+    detoxAdvice = 'Dolunay enerjisi! Vücut su tutmaya eğilimlidir. Ödem atmak için tuzdan uzak durun, bol su ve sıvı ağırlıklı beslenin.';
+  } else if (phase === 'waning') {
+    if (moonSignTurkish === 'Başak' || moonSignTurkish === 'Akrep') {
+      detoxStars = 5;
+      detoxLabel = 'Mükemmel';
+      detoxAdvice = `Ay ${moonSignTurkish} burcunda ve Küçülüyor. Vücuttan ödem atma, sauna, ter atma ve detoks çayları için en iyi zaman.`;
+    } else {
+      detoxStars = 4;
+      detoxLabel = 'Çok İyi';
+      detoxAdvice = 'Küçülen Ay fazında beden toksinleri ve ödemi kolayca dışarı atar. Arınma kürleri ve diyetler hızla sonuç verir.';
+    }
+  } else {
+    // waxing
+    if (moonSignTurkish === 'Başak' || moonSignTurkish === 'Akrep') {
+      detoxStars = 4;
+      detoxLabel = 'Çok İyi';
+      detoxAdvice = 'Büyüyen faz olmasına rağmen Başak/Akrep burçlarının arındırıcı etkisiyle detoks çayları içilebilir.';
+    }
+  }
+
+  return {
+    haircut: { stars: haircutStars, label: haircutLabel, advice: haircutAdvice },
+    epilation: { stars: epilationStars, label: epilationLabel, advice: epilationAdvice },
+    skincare: { stars: skincareStars, label: skincareLabel, advice: skincareAdvice },
+    detox: { stars: detoxStars, label: detoxLabel, advice: detoxAdvice },
+  };
+}

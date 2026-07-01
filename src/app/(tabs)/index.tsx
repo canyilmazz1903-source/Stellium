@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { StyleSheet, Text, View, ScrollView, ActivityIndicator, SafeAreaView, Pressable, Alert, Modal, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
@@ -43,7 +43,8 @@ export default function HomeScreen() {
     shadowsAdvice,
     auraColors,
     calculateAlmanac,
-    fetchShadows
+    fetchShadows,
+    cosmicCare
   } = useCosmicCalendarStore();
 
   // Reanimated shared values for background aura colors
@@ -128,6 +129,7 @@ export default function HomeScreen() {
     advice?: string;
   } | null>(null);
 
+  const planetaryScrollRef = useRef<ScrollView>(null);
   const [planetaryHours, setPlanetaryHours] = useState<PlanetaryHour[]>([]);
 
   useEffect(() => {
@@ -139,6 +141,20 @@ export default function HomeScreen() {
       schedulePlanetaryHourNotifications(hours);
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (planetaryHours.length > 0) {
+      const activeIdx = planetaryHours.findIndex(h => h.isActive);
+      if (activeIdx !== -1) {
+        setTimeout(() => {
+          planetaryScrollRef.current?.scrollTo({
+            x: Math.max(0, activeIdx * 108 - 8), // 100 width + 8 gap
+            animated: true
+          });
+        }, 300);
+      }
+    }
+  }, [planetaryHours]);
 
   const activeHour = useMemo(() => planetaryHours.find(h => h.isActive), [planetaryHours]);
 
@@ -319,7 +335,7 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
           {/* Live Planetary Hours Timeline */}
           <View style={styles.planetarySection}>
             <Text style={styles.sectionLabel}>⏱️ Canlı Gezegen Saatleri</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            <ScrollView ref={planetaryScrollRef} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
               {planetaryHours.map((hour, idx) => (
                 <View 
                   key={idx} 
@@ -417,6 +433,103 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
               </View>
             </View>
           </View>
+
+          {/* Kozmik Bakım Rehberi Card */}
+          {cosmicCare && (
+            <View style={styles.careCard}>
+              <View style={styles.almanacHeaderRow}>
+                <Text style={styles.almanacTitle}>✨ Kozmik Bakım Rehberi</Text>
+                <View style={[styles.almanacBadge, { backgroundColor: 'rgba(212, 175, 55, 0.15)' }]}>
+                  <Text style={styles.almanacBadgeText}>Kozmik Bakım</Text>
+                </View>
+              </View>
+              <Text style={styles.almanacSubtitle}>
+                Güzellik ve Bakım Rutinleriniz İçin Kozmik Zamanlama
+              </Text>
+              
+              <View style={styles.careItemsList}>
+                {/* Saç Kesimi */}
+                <View style={styles.careItemRow}>
+                  <View style={styles.careItemHeader}>
+                    <Text style={styles.careItemTitle}>💇‍♀️ Saç Kesimi & Bakımı</Text>
+                    <View style={styles.starsContainer}>
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Ionicons 
+                          key={i} 
+                          name={i < cosmicCare.haircut.stars ? "star" : "star-outline"} 
+                          size={13} 
+                          color={i < cosmicCare.haircut.stars ? "#D4AF37" : "rgba(255, 255, 255, 0.2)"} 
+                          style={{ marginRight: 2 }}
+                        />
+                      ))}
+                      <Text style={styles.careLabelText}>{cosmicCare.haircut.label}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.careAdviceText}>{cosmicCare.haircut.advice}</Text>
+                </View>
+
+                {/* Epilasyon */}
+                <View style={styles.careItemRow}>
+                  <View style={styles.careItemHeader}>
+                    <Text style={styles.careItemTitle}>🪒 Epilasyon (Tüy Alımı)</Text>
+                    <View style={styles.starsContainer}>
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Ionicons 
+                          key={i} 
+                          name={i < cosmicCare.epilation.stars ? "star" : "star-outline"} 
+                          size={13} 
+                          color={i < cosmicCare.epilation.stars ? "#D4AF37" : "rgba(255, 255, 255, 0.2)"} 
+                          style={{ marginRight: 2 }}
+                        />
+                      ))}
+                      <Text style={styles.careLabelText}>{cosmicCare.epilation.label}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.careAdviceText}>{cosmicCare.epilation.advice}</Text>
+                </View>
+
+                {/* Cilt Bakımı */}
+                <View style={styles.careItemRow}>
+                  <View style={styles.careItemHeader}>
+                    <Text style={styles.careItemTitle}>🧴 Cilt Bakımı & Peeling</Text>
+                    <View style={styles.starsContainer}>
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Ionicons 
+                          key={i} 
+                          name={i < cosmicCare.skincare.stars ? "star" : "star-outline"} 
+                          size={13} 
+                          color={i < cosmicCare.skincare.stars ? "#D4AF37" : "rgba(255, 255, 255, 0.2)"} 
+                          style={{ marginRight: 2 }}
+                        />
+                      ))}
+                      <Text style={styles.careLabelText}>{cosmicCare.skincare.label}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.careAdviceText}>{cosmicCare.skincare.advice}</Text>
+                </View>
+
+                {/* Detoks */}
+                <View style={[styles.careItemRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
+                  <View style={styles.careItemHeader}>
+                    <Text style={styles.careItemTitle}>🥑 Detoks & Arınma</Text>
+                    <View style={styles.starsContainer}>
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Ionicons 
+                          key={i} 
+                          name={i < cosmicCare.detox.stars ? "star" : "star-outline"} 
+                          size={13} 
+                          color={i < cosmicCare.detox.stars ? "#D4AF37" : "rgba(255, 255, 255, 0.2)"} 
+                          style={{ marginRight: 2 }}
+                        />
+                      ))}
+                      <Text style={styles.careLabelText}>{cosmicCare.detox.label}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.careAdviceText}>{cosmicCare.detox.advice}</Text>
+                </View>
+              </View>
+            </View>
+          )}
 
           {/* Elite Services Section */}
           <Text style={styles.sectionTitle}>Elite Kozmik Servisler</Text>
@@ -983,5 +1096,53 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#E6EDF0',
     lineHeight: 20,
+  },
+  careCard: {
+    backgroundColor: '#161B22',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.12)',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+  },
+  careItemsList: {
+    gap: 16,
+  },
+  careItemRow: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(212, 175, 55, 0.05)',
+    paddingBottom: 12,
+  },
+  careItemHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  careItemTitle: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#8B949E',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  starsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  careLabelText: {
+    color: '#D4AF37',
+    fontSize: 10,
+    fontWeight: '700',
+    marginLeft: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  careAdviceText: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    color: '#F0F6FC',
+    lineHeight: 18,
   },
 });

@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, SafeAreaView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, Easing } from 'react-native-reanimated';
 
 interface LibrarySectionProps {
   title: string;
@@ -41,8 +43,86 @@ export default function ExploreScreen() {
     setOpenSection(openSection === index ? null : index);
   };
 
+  // Reanimated shared values for background aura colors
+  const breatheScale1 = useSharedValue(1);
+  const breatheOpacity1 = useSharedValue(0.12);
+  const breatheScale2 = useSharedValue(1);
+  const breatheOpacity2 = useSharedValue(0.08);
+
+  useEffect(() => {
+    breatheScale1.value = withRepeat(
+      withTiming(1.2, { duration: 6000, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true
+    );
+    breatheOpacity1.value = withRepeat(
+      withTiming(0.2, { duration: 6000, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true
+    );
+
+    breatheScale2.value = withRepeat(
+      withTiming(1.3, { duration: 8000, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true
+    );
+    breatheOpacity2.value = withRepeat(
+      withTiming(0.16, { duration: 8000, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      true
+    );
+  }, []);
+
+  const animatedAuraStyle1 = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: breatheScale1.value }],
+      opacity: breatheOpacity1.value,
+    };
+  });
+
+  const animatedAuraStyle2 = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: breatheScale2.value }],
+      opacity: breatheOpacity2.value,
+    };
+  });
+
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.mainWrapper}>
+      {/* Dynamic Auric Gradient Background */}
+      <Animated.View 
+        style={[
+          styles.auricBackground,
+          {
+            backgroundColor: '#B2F7EF',
+            top: -150,
+            right: -150,
+            width: 400,
+            height: 400,
+            borderRadius: 200,
+          },
+          animatedAuraStyle1
+        ]}
+      />
+      <Animated.View 
+        style={[
+          styles.auricBackground,
+          {
+            backgroundColor: '#EFF7F6',
+            bottom: -100,
+            left: -100,
+            width: 360,
+            height: 360,
+            borderRadius: 180,
+          },
+          animatedAuraStyle2
+        ]}
+      />
+      
+      {/* BlurView to make the aura soft and ethereal */}
+      <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} />
+
+      <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={styles.title}>Kozmik Kütüphane</Text>
@@ -271,13 +351,22 @@ export default function ExploreScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
+  </View>
   );
 }
 
 const styles = StyleSheet.create({
+  mainWrapper: {
+    flex: 1,
+    backgroundColor: '#0B0F19',
+  },
+  auricBackground: {
+    position: 'absolute',
+    opacity: 0.12,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: 'transparent',
   },
   scrollContainer: {
     padding: 20,

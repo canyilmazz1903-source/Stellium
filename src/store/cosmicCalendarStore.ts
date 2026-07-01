@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getJulianDaysSinceJ2000, getPlanetLongitude, getZodiacSign } from '@/utils/astronomy';
 import { ComputedChart } from '@/store/appStore';
-import { getLunarAlmanacAdvice } from '@/utils/lunarAlmanacHelper';
+import { getLunarAlmanacAdvice, calculateCosmicCare, CosmicCareRatings } from '@/utils/lunarAlmanacHelper';
 import { fetchDailyShadows } from '@/api/gemini';
 
 interface CosmicCalendarState {
@@ -12,6 +12,7 @@ interface CosmicCalendarState {
   healthAdvice: string;
   shadowsAdvice: string;
   auraColors: string[];
+  cosmicCare: CosmicCareRatings | null;
   loadingShadows: boolean;
   calculateAlmanac: (birthChart: ComputedChart | null) => void;
   fetchShadows: (profileName: string, birthChart: ComputedChart | null) => Promise<void>;
@@ -24,6 +25,7 @@ export const useCosmicCalendarStore = create<CosmicCalendarState>((set, get) => 
   healthAdvice: 'Yükleniyor...',
   shadowsAdvice: 'Gökyüzü transitleri ve zihinsel gölgeleriniz hesaplanıyor...',
   auraColors: ['#B2F7EF', '#EFF7F6'],
+  cosmicCare: null,
   loadingShadows: false,
 
   calculateAlmanac: (birthChart) => {
@@ -37,6 +39,7 @@ export const useCosmicCalendarStore = create<CosmicCalendarState>((set, get) => 
     const moonSignTurkish = moonSignInfo.turkish;
 
     const { beauty, health, auraColors } = getLunarAlmanacAdvice(moonLon, sunLon, moonSignTurkish);
+    const care = calculateCosmicCare(moonLon, sunLon, moonSignTurkish);
 
     let elongation = moonLon - sunLon;
     if (elongation < 0) elongation += 360;
@@ -48,6 +51,7 @@ export const useCosmicCalendarStore = create<CosmicCalendarState>((set, get) => 
       beautyAdvice: beauty,
       healthAdvice: health,
       auraColors: auraColors,
+      cosmicCare: care,
     });
   },
 
