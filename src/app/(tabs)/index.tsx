@@ -44,7 +44,8 @@ export default function HomeScreen() {
     auraColors,
     calculateAlmanac,
     fetchShadows,
-    cosmicCare
+    cosmicCare,
+    cosmicCareProjections
   } = useCosmicCalendarStore();
 
   // Reanimated shared values for background aura colors
@@ -466,6 +467,18 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
                     </View>
                   </View>
                   <Text style={styles.careAdviceText}>{cosmicCare.haircut.advice}</Text>
+                  {cosmicCareProjections?.haircut && cosmicCareProjections.haircut.length > 0 && (
+                    <View style={styles.projectionsContainer}>
+                      <Text style={styles.projectionsTitle}>🔮 En Uyumlu Gelecek Tarihler:</Text>
+                      <View style={styles.projectionTags}>
+                        {cosmicCareProjections.haircut.slice(0, 3).map((window, idx) => (
+                          <View key={idx} style={styles.projectionBadge}>
+                            <Text style={styles.projectionBadgeText}>{window.formattedRange} ({window.label})</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
                 </View>
 
                 {/* Epilasyon */}
@@ -486,6 +499,18 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
                     </View>
                   </View>
                   <Text style={styles.careAdviceText}>{cosmicCare.epilation.advice}</Text>
+                  {cosmicCareProjections?.epilation && cosmicCareProjections.epilation.length > 0 && (
+                    <View style={styles.projectionsContainer}>
+                      <Text style={styles.projectionsTitle}>🔮 En Uyumlu Gelecek Tarihler:</Text>
+                      <View style={styles.projectionTags}>
+                        {cosmicCareProjections.epilation.slice(0, 3).map((window, idx) => (
+                          <View key={idx} style={styles.projectionBadge}>
+                            <Text style={styles.projectionBadgeText}>{window.formattedRange} ({window.label})</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
                 </View>
 
                 {/* Cilt Bakımı */}
@@ -506,6 +531,18 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
                     </View>
                   </View>
                   <Text style={styles.careAdviceText}>{cosmicCare.skincare.advice}</Text>
+                  {cosmicCareProjections?.skincare && cosmicCareProjections.skincare.length > 0 && (
+                    <View style={styles.projectionsContainer}>
+                      <Text style={styles.projectionsTitle}>🔮 En Uyumlu Gelecek Tarihler:</Text>
+                      <View style={styles.projectionTags}>
+                        {cosmicCareProjections.skincare.slice(0, 3).map((window, idx) => (
+                          <View key={idx} style={styles.projectionBadge}>
+                            <Text style={styles.projectionBadgeText}>{window.formattedRange} ({window.label})</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
                 </View>
 
                 {/* Detoks */}
@@ -526,6 +563,18 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
                     </View>
                   </View>
                   <Text style={styles.careAdviceText}>{cosmicCare.detox.advice}</Text>
+                  {cosmicCareProjections?.detox && cosmicCareProjections.detox.length > 0 && (
+                    <View style={styles.projectionsContainer}>
+                      <Text style={styles.projectionsTitle}>🔮 En Uyumlu Gelecek Tarihler:</Text>
+                      <View style={styles.projectionTags}>
+                        {cosmicCareProjections.detox.slice(0, 3).map((window, idx) => (
+                          <View key={idx} style={styles.projectionBadge}>
+                            <Text style={styles.projectionBadgeText}>{window.formattedRange} ({window.label})</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
                 </View>
               </View>
             </View>
@@ -1144,5 +1193,39 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#F0F6FC',
     lineHeight: 18,
+  },
+  projectionsContainer: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  projectionsTitle: {
+    fontFamily: 'Inter',
+    fontSize: 10,
+    color: '#8B949E',
+    marginBottom: 6,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  projectionTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  projectionBadge: {
+    backgroundColor: 'rgba(212, 175, 55, 0.06)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.15)',
+  },
+  projectionBadgeText: {
+    fontFamily: 'Inter',
+    fontSize: 10,
+    color: '#D4AF37',
+    fontWeight: '500',
   },
 });

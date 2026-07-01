@@ -1,3 +1,5 @@
+import { getJulianDaysSinceJ2000, getPlanetLongitude, getZodiacSign } from './astronomy';
+
 export interface AlmanacAdvice {
   beauty: string;
   health: string;
@@ -226,5 +228,115 @@ export function calculateCosmicCare(
     epilation: { stars: epilationStars, label: epilationLabel, advice: epilationAdvice },
     skincare: { stars: skincareStars, label: skincareLabel, advice: skincareAdvice },
     detox: { stars: detoxStars, label: detoxLabel, advice: detoxAdvice },
+  };
+}
+
+export interface CosmicCareProjectionWindow {
+  formattedRange: string;
+  stars: number;
+  label: string;
+}
+
+export interface CosmicCareProjection {
+  haircut: CosmicCareProjectionWindow[];
+  epilation: CosmicCareProjectionWindow[];
+  skincare: CosmicCareProjectionWindow[];
+  detox: CosmicCareProjectionWindow[];
+}
+
+export function getCosmicCareProjections(): CosmicCareProjection {
+  const today = new Date();
+  
+  const dailyRatings: {
+    haircut: { date: Date; stars: number; label: string }[];
+    epilation: { date: Date; stars: number; label: string }[];
+    skincare: { date: Date; stars: number; label: string }[];
+    detox: { date: Date; stars: number; label: string }[];
+  } = {
+    haircut: [],
+    epilation: [],
+    skincare: [],
+    detox: []
+  };
+
+  // Calculate ratings for the next 30 days
+  for (let i = 0; i < 30; i++) {
+    const futureDate = new Date();
+    futureDate.setDate(today.getDate() + i);
+    futureDate.setHours(12, 0, 0, 0); // avoid dst boundary errors
+
+    const jd = getJulianDaysSinceJ2000(futureDate);
+    const sunLon = getPlanetLongitude('Sun', jd);
+    const moonLon = getPlanetLongitude('Moon', jd);
+    const moonSignInfo = getZodiacSign(moonLon);
+    const moonSignTurkish = moonSignInfo.turkish;
+
+    const care = calculateCosmicCare(moonLon, sunLon, moonSignTurkish);
+
+    dailyRatings.haircut.push({ date: futureDate, stars: care.haircut.stars, label: care.haircut.label });
+    dailyRatings.epilation.push({ date: futureDate, stars: care.epilation.stars, label: care.epilation.label });
+    dailyRatings.skincare.push({ date: futureDate, stars: care.skincare.stars, label: care.skincare.label });
+    dailyRatings.detox.push({ date: futureDate, stars: care.detox.stars, label: care.detox.label });
+  }
+
+  const formatTurkishDate = (date: Date): string => {
+    const day = date.getDate();
+    const monthNames = [
+      'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+      'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+    ];
+    const month = monthNames[date.getMonth()];
+    return `${day} ${month}`;
+  };
+
+  const groupWindows = (days: { date: Date; stars: number; label: string }[]): CosmicCareProjectionWindow[] => {
+    const windows: CosmicCareProjectionWindow[] = [];
+    const idealDays = days.filter(d => d.stars >= 4);
+
+    let currentWindow: { start: Date; end: Date; maxStars: number; label: string } | null = null;
+
+    for (const day of idealDays) {
+      if (!currentWindow) {
+        currentWindow = { start: day.date, end: day.date, maxStars: day.stars, label: day.label };
+      } else {
+        const diffTime = Math.abs(day.date.getTime() - currentWindow.end.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays <= 1) {
+          currentWindow.end = day.date;
+          if (day.stars > currentWindow.maxStars) {
+            currentWindow.maxStars = day.stars;
+            currentWindow.label = day.label;
+          }
+        } else {
+          windows.push({
+            formattedRange: currentWindow.start.getTime() === currentWindow.end.getTime()
+              ? formatTurkishDate(currentWindow.start)
+              : `${formatTurkishDate(currentWindow.start)} - ${formatTurkishDate(currentWindow.end)}`,
+            stars: currentWindow.maxStars,
+            label: currentWindow.label
+          });
+          currentWindow = { start: day.date, end: day.date, maxStars: day.stars, label: day.label };
+        }
+      }
+    }
+
+    if (currentWindow) {
+      windows.push({
+        formattedRange: currentWindow.start.getTime() === currentWindow.end.getTime()
+          ? formatTurkishDate(currentWindow.start)
+          : `${formatTurkishDate(currentWindow.start)} - ${formatTurkishDate(currentWindow.end)}`,
+        stars: currentWindow.maxStars,
+        label: currentWindow.label
+      });
+    }
+
+    return windows;
+  };
+
+  return {
+    haircut: groupWindows(dailyRatings.haircut),
+    epilation: groupWindows(dailyRatings.epilation),
+    skincare: groupWindows(dailyRatings.skincare),
+    detox: groupWindows(dailyRatings.detox)
   };
 }

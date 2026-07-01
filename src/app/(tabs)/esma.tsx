@@ -208,19 +208,18 @@ export default function EsmaScreen() {
                 Seçili Esma: <Text style={{ color: '#D4AF37', fontWeight: '700' }}>{targetEsma?.name || 'Seçilmedi'}</Text> (Hedef: {targetEsma?.ebced || 0})
               </Text>
 
-              {/* Glowing Circle Button */}
+              {/* Tap Box */}
               <Pressable
                 onPress={() => {
-                  Vibration.vibrate(45);
                   setZikirCount(prev => prev + 1);
                 }}
                 style={({ pressed }) => [
-                  styles.circleButton,
-                  pressed && { backgroundColor: 'rgba(212, 175, 55, 0.12)' }
+                  styles.tapBox,
+                  pressed && { backgroundColor: 'rgba(212, 175, 55, 0.16)' }
                 ]}
               >
-                <Text style={styles.circleCount}>{zikirCount}</Text>
-                <Text style={styles.circleTapText}>Dokun</Text>
+                <Text style={styles.tapBoxCount}>{zikirCount}</Text>
+                <Text style={styles.tapBoxTapText}>ARTIRMAK İÇİN DOKUNUN</Text>
               </Pressable>
 
               {/* Progress and resets */}
@@ -487,30 +486,35 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: 'center',
   },
-  circleButton: {
-    width: 128,
-    height: 128,
-    borderRadius: 64,
-    borderWidth: 4,
+  tapBox: {
+    width: '100%',
+    height: 140,
+    borderRadius: 16,
+    borderWidth: 1.5,
     borderColor: 'rgba(212, 175, 55, 0.4)',
-    backgroundColor: 'rgba(212, 175, 55, 0.05)',
+    backgroundColor: 'rgba(212, 175, 55, 0.08)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
+    shadowColor: '#D4AF37',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  circleCount: {
+  tapBoxCount: {
     color: '#FFFFFF',
-    fontSize: 32,
+    fontSize: 42,
     fontWeight: '800',
     fontFamily: 'Inter',
   },
-  circleTapText: {
-    color: 'rgba(255, 255, 255, 0.4)',
-    fontSize: 9,
+  tapBoxTapText: {
+    color: '#D4AF37',
+    fontSize: 11,
     textTransform: 'uppercase',
     fontWeight: '700',
-    letterSpacing: 0.5,
-    marginTop: 2,
+    letterSpacing: 1,
+    marginTop: 6,
   },
   resetRow: {
     width: '100%',

@@ -508,7 +508,62 @@ function formatTime(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+function getLastSundayOfMonth(year: number, month: number): number {
+  const lastDay = new Date(Date.UTC(year, month + 1, 0));
+  const dayOfWeek = lastDay.getUTCDay();
+  return lastDay.getUTCDate() - dayOfWeek;
+}
+
+export function getTurkeyHistoricalOffset(date: Date): number {
+  const year = date.getUTCFullYear();
+  
+  if (year > 2016) {
+    return 3;
+  }
+  
+  if (year === 2016) {
+    const dstStart = Date.UTC(2016, 2, 27, 1, 0, 0); // March 27, 2016 01:00 UTC
+    return (date.getTime() >= dstStart) ? 3 : 2;
+  }
+  
+  if (year >= 1985 && year <= 2015) {
+    const lastSundayMarch = getLastSundayOfMonth(year, 2);
+    const dstStart = Date.UTC(year, 2, lastSundayMarch, 1, 0, 0);
+    
+    let lastSundayOctober = getLastSundayOfMonth(year, 9);
+    let dstEndMonth = 9;
+    let dstEndDay = lastSundayOctober;
+    if (year === 2015) {
+      dstEndMonth = 10;
+      dstEndDay = 8;
+    }
+    
+    const dstEnd = Date.UTC(year, dstEndMonth, dstEndDay, 1, 0, 0);
+    
+    if (date.getTime() >= dstStart && date.getTime() < dstEnd) {
+      return 3;
+    } else {
+      return 2;
+    }
+  }
+
+  if (year >= 1973 && year < 1985) {
+    const lastSundayMarch = getLastSundayOfMonth(year, 2);
+    const dstStart = Date.UTC(year, 2, lastSundayMarch, 1, 0, 0);
+    const lastSundayOctober = getLastSundayOfMonth(year, 9);
+    const dstEnd = Date.UTC(year, 9, lastSundayOctober, 1, 0, 0);
+    return (date.getTime() >= dstStart && date.getTime() < dstEnd) ? 3 : 2;
+  }
+  
+  return 2;
+}
+
 export function getTimezoneOffset(timezone: string, date: Date): number {
+  const cleanTz = timezone ? timezone.trim() : '';
+  if (cleanTz === 'Europe/Istanbul' || cleanTz === 'Turkey' || !cleanTz) {
+    return getTurkeyHistoricalOffset(date);
+  }
+
   try {
     const formatter = new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
