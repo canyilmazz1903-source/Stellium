@@ -11,6 +11,16 @@ Notifications.setNotificationHandler({
   } as any),
 });
 
+const TURKISH_TO_ENGLISH_PLANET: Record<string, string> = {
+  'Güneş': 'Sun',
+  'Ay': 'Moon',
+  'Merkür': 'Mercury',
+  'Venüs': 'Venus',
+  'Mars': 'Mars',
+  'Jüpiter': 'Jupiter',
+  'Satürn': 'Saturn'
+};
+
 const PLANET_NOTIF_DETAILS: Record<string, { title: string; body: string }> = {
   Sun: {
     title: '☀️ Güneş Saati Başladı',
@@ -88,7 +98,8 @@ export async function schedulePlanetaryHourNotifications(hours: any[]) {
     // Filter hours starting in the future and matching enabled preferences
     const futureHours = hours.filter(h => {
       const startTime = new Date(h.startTime).getTime();
-      const isEnabled = preferences[h.planetName] !== false;
+      const englishName = TURKISH_TO_ENGLISH_PLANET[h.planetName] || 'Sun';
+      const isEnabled = preferences[englishName] !== false;
       return startTime > now && isEnabled;
     });
 
@@ -96,7 +107,8 @@ export async function schedulePlanetaryHourNotifications(hours: any[]) {
     const hoursToSchedule = futureHours.slice(0, 16);
 
     for (const hour of hoursToSchedule) {
-      const details = PLANET_NOTIF_DETAILS[hour.planetName] || {
+      const englishName = TURKISH_TO_ENGLISH_PLANET[hour.planetName] || 'Sun';
+      const details = PLANET_NOTIF_DETAILS[englishName] || {
         title: `${hour.planetSymbol} ${hour.planetName} Saati`,
         body: 'Gökyüzü transitleri ve gezegen enerjisiyle uyumlanma zamanı.'
       };

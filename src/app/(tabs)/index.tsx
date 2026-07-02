@@ -29,6 +29,16 @@ function getMoonPhase(sunLon: number, moonLon: number) {
   return { name: 'Balsamik Ay (Küçülen)', symbol: '🌘' };
 }
 
+const TURKISH_TO_ENGLISH_PLANET: Record<string, string> = {
+  'Güneş': 'Sun',
+  'Ay': 'Moon',
+  'Merkür': 'Mercury',
+  'Venüs': 'Venus',
+  'Mars': 'Mars',
+  'Jüpiter': 'Jupiter',
+  'Satürn': 'Saturn'
+};
+
 const PLANETARY_HOURS_DEEP_INFO: Record<string, {
   name: string;
   symbol: string;
@@ -519,7 +529,8 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
                 <Pressable 
                   key={idx} 
                   onPress={() => {
-                    setSelectedPlanetForDetail(hour.planetName);
+                    const englishPlanet = TURKISH_TO_ENGLISH_PLANET[hour.planetName] || 'Sun';
+                    setSelectedPlanetForDetail(englishPlanet);
                     setPlanetaryModalVisible(true);
                   }}
                   style={[
@@ -536,7 +547,8 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
             {activeHour && (
               <Pressable 
                 onPress={() => {
-                  setSelectedPlanetForDetail(activeHour.planetName);
+                  const englishPlanet = TURKISH_TO_ENGLISH_PLANET[activeHour.planetName] || 'Sun';
+                  setSelectedPlanetForDetail(englishPlanet);
                   setPlanetaryModalVisible(true);
                 }}
                 style={styles.activeHourBar}
@@ -948,9 +960,22 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
               {(() => {
                 const planet = PLANETARY_HOURS_DEEP_INFO[selectedPlanetForDetail] || PLANETARY_HOURS_DEEP_INFO.Sun;
                 const isNotificationEnabled = notifPreferences[selectedPlanetForDetail] !== false;
+                
+                // Calculate today's time range(s) for the selected planet
+                const matchingHours = planetaryHours.filter(h => h.planetName === planet.name);
+                const timesString = matchingHours.map(h => h.label).join('  |  ');
+                
                 return (
                   <View style={styles.planetDetailContent}>
                     
+                    {/* Time Range Card */}
+                    <View style={styles.timeRangeCard}>
+                      <Ionicons name="time-outline" size={18} color="#D4AF37" />
+                      <Text style={styles.timeRangeCardText}>
+                        ⏰ Bugünün Saatleri: <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>{timesString || 'Hesaplanıyor...'}</Text>
+                      </Text>
+                    </View>
+
                     {/* Notification Toggle Row for this specific planet */}
                     <View style={styles.planetNotifToggleRow}>
                       <View style={styles.planetNotifToggleTexts}>
@@ -1568,18 +1593,38 @@ const styles = StyleSheet.create({
   },
   planetaryModalContainer: {
     backgroundColor: '#0F1420',
-    width: '90%',
-    height: '80%',
-    borderRadius: 24,
+    width: '100%',
+    height: '92%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     borderWidth: 1,
+    borderBottomWidth: 0,
     borderColor: 'rgba(212, 175, 55, 0.25)',
     padding: 20,
     alignItems: 'stretch',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.5,
-    shadowRadius: 15,
+    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
     elevation: 10,
+  },
+  timeRangeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    gap: 8,
+    marginBottom: 8,
+  },
+  timeRangeCardText: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: '#8B949E',
   },
   planetaryModalHeader: {
     flexDirection: 'row',

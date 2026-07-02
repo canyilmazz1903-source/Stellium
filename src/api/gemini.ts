@@ -107,7 +107,16 @@ export async function fetchTransitAnalysis(
   houses: number[]
 ): Promise<string> {
   if (!GEMINI_API_KEY) {
-    return "Gökyüzü Transit Analizi: Şu anda gökyüzü transitleri natal yerleşimlerinizle uyumlu açılar oluşturuyor. Güneş'in 10. evinizden transiti, kariyer hedeflerinizde kendinizi daha net ifade etmenizi ve liderlik gücünüzü sergilemenizi desteklemekte. Jüpiter'in para evinize yaptığı olumlu temaslar ise önümüzdeki günlerde maddi kazanç kapılarını aralayabilir.";
+    return `**🪐 1. Harita Potansiyeliniz ve Güçlü/Zayıf Konumlar**\nHaritanızdaki Güneş ve Jüpiter yerleşimleri, kariyerinizde liderlik vasıflarınızı ve şans kanallarınızı aktif kılıyor. Merkür'ün konumu zihinsel kapasitenizin yüksek olduğunu gösterse de Satürn'ün zorlayıcı açıları bazı konularda sorumlulukların gecikmeyle gelebileceğine işaret ediyor.
+
+**🏠 2. Yaşam Alanlarındaki Ev Yansımaları**
+Güneş'in 10. evinizden transiti, kariyer hedeflerinizde kendinizi daha net ifade etmenizi ve liderlik gücünüzü sergilemenizi desteklemekte. Jüpiter'in para evinize yaptığı olumlu temaslar ise önümüzdeki günlerde maddi kazanç kapılarını aralayabilir.
+
+**⚠️ 3. Dikkat Edilmesi Gereken Riskler ve Gelişim Alanları**
+Mars'ın 12. ev transiti içsel gerilimlere ve uykusuzluğa neden olabilir. Bu süreçte aceleci kararlar almaktan, trafikte veya riskli fiziksel aktivitelerde dikkatsiz davranmaktan kaçınmalısınız.
+
+**🔮 4. Kozmik Fırsatlar ve Gelecek Projeksiyonu**
+Önümüzdeki yeni ay döngüsü, hayatınızda yepyeni niyetler ve başlangıçlar için mükemmel bir zemin hazırlıyor. Kararlılıkla atacağınız adımlar uzun vadede kalıcı meyveler verecektir.`;
   }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
@@ -119,13 +128,21 @@ export async function fetchTransitAnalysis(
     Doğum Haritası Ev Başlangıç Dereceleri: ${JSON.stringify(houses)}
     
     Kullanıcı için detaylı bir transit ve gezegen yerleşimleri analizi yap.
-    Bu analizde:
-    - Haritasındaki önemli gezegen yerleşimlerinin astrolojik anlamlarını, güçlü ve zayıf konumlarını açıkla.
-    - Ev yerleşimlerinin yaşam alanlarındaki yansımalarını detaylıca tahlil et.
-    - Ona bu harita doğrultusunda geleceğe yönelik astrolojik tavsiyeler ve fırsatlar sun.
-    - Jungcu veya psikolojik terimler (anima, animus, gölge, bireyleşme vb.) kullanmaktan tamamen kaçın. Tamamen geleneksel göksel ilimler, yıldız hareketleri ve pratik astroloji bilgisi ver.
+    Analizi şu net başlıklarla ve son derece derinlemesine, doyurucu bir şekilde yapılandır:
     
-    Yorumun akıcı, derin, merak uyandırıcı ve son derece kişiselleştirilmiş olsun. Maksimum 3 paragraf olsun.
+    **🪐 1. Harita Potansiyeliniz ve Güçlü/Zayıf Konumlar**
+    Gezegenlerinizin haritanızdaki konumlarını detaylıca tahlil et, hangi alanlarda doğal yeteneklere sahip olduğunuzu ve hangi alanların zayıf kaldığını açıkla.
+    
+    **🏠 2. Yaşam Alanlarındaki Ev Yansımaları**
+    Ev başlangıç çizgileri ve gezegenlerin ev yerleşimlerini yaşam alanları bazında detaylandır.
+    
+    **⚠️ 3. Dikkat Edilmesi Gereken Riskler ve Gelişim Alanları**
+    Gelecek dönemde nerede zorlanabileceğinizi, hangi konularda sabırlı ve temkinli olmanız gerektiğini anlat.
+    
+    **🔮 4. Kozmik Fırsatlar ve Gelecek Projeksiyonu**
+    Yükselen şanslarınızı, hangi dönemlerde eyleme geçmeniz gerektiğini ve hayatı nasıl optimize edebileceğinizi anlat.
+    
+    Jungcu veya psikolojik terimler (anima, animus, gölge, bireyleşme vb.) kullanmaktan tamamen kaçın. Tamamen geleneksel göksel ilimler, yıldız hareketleri ve pratik astroloji bilgisi ver. Türkçe yaz.
   `;
 
   try {
@@ -149,7 +166,16 @@ export async function fetchTransitAnalysis(
     return result.candidates?.[0]?.content?.parts?.[0]?.text || '';
   } catch (error) {
     console.warn('Error fetching transit analysis:', error);
-    return "Gökyüzü Transit Analizi: Şu anda gökyüzü transitleri natal yerleşimlerinizle uyumlu açılar oluşturuyor. Güneş'in 10. evinizden transiti, kariyer hedeflerinizde kendinizi daha net ifade etmenizi ve liderlik gücünüzü sergilemenizi desteklemekte. Jüpiter'in para evinize yaptığı olumlu temaslar ise önümüzdeki günlerde maddi kazanç kapılarını aralayabilir.";
+    return `**🪐 1. Harita Potansiyeliniz ve Güçlü/Zayıf Konumlar**\nHaritanızdaki Güneş ve Jüpiter yerleşimleri, kariyerinizde liderlik vasıflarınızı ve şans kanallarınızı aktif kılıyor. Merkür'ün konumu zihinsel kapasitenizin yüksek olduğunu gösterse de Satürn'ün zorlayıcı açıları bazı konularda sorumlulukların gecikmeyle gelebileceğine işaret ediyor.
+
+**🏠 2. Yaşam Alanlarındaki Ev Yansımaları**
+Güneş'in 10. evinizden transiti, kariyer hedeflerinizde kendinizi daha net ifade etmenizi ve liderlik gücünüzü sergilemenizi desteklemekte. Jüpiter'in para evinize yaptığı olumlu temaslar ise önümüzdeki günlerde maddi kazanç kapılarını aralayabilir.
+
+**⚠️ 3. Dikkat Edilmesi Gereken Riskler ve Gelişim Alanları**
+Mars'ın 12. ev transiti içsel gerilimlere ve uykusuzluğa neden olabilir. Bu süreçte aceleci kararlar almaktan, trafikte veya riskli fiziksel aktivitelerde dikkatsiz davranmaktan kaçınmalısınız.
+
+**🔮 4. Kozmik Fırsatlar ve Gelecek Projeksiyonu**
+Önümüzdeki yeni ay döngüsü, hayatınızda yepyeni niyetler ve başlangıçlar için mükemmel bir zemin hazırlıyor. Kararlılıkla atacağınız adımlar uzun vadede kalıcı meyveler verecektir.`;
   }
 }
 
@@ -161,7 +187,17 @@ export async function fetchSynastryAnalysis(
   p2Planets: any[]
 ): Promise<string> {
   if (!GEMINI_API_KEY) {
-    return `Sevgili ${p1Name} ve ${p2Name}, haritalarınız arasındaki uyum analizi çıkarıldı. Güneş ve Ay yerleşimleriniz ruhsal planda güçlü bir çekim yaratıyor. Venüs'ün karşılıklı uyumlu konumları sayesinde aranızdaki sevgi dili oldukça akıcı ve romantik. Merkür etkileşimleri ise zihinsel uyumunuzu ve sohbet kalitenizi üst seviyeye taşıyor.`;
+    return `**❤️ 1. Karşılıklı Çekim ve Aşk Uyumunuz**
+Sevgili ${p1Name} ve ${p2Name}, haritalarınız arasındaki uyum analizi çıkarıldı. Güneş ve Ay yerleşimleriniz ruhsal planda güçlü bir çekim yaratıyor. Venüs'ün karşılıklı uyumlu konumları sayesinde aranızdaki sevgi dili oldukça akıcı ve romantik.
+
+**🗣️ 2. İletişim ve Zihinsel Ortaklık**
+Merkür etkileşimleri ise zihinsel uyumunuzu ve sohbet kalitenizi üst seviyeye taşıyor. Birlikteyken zamanın nasıl geçtiğini anlamayacak kadar akıcı sohbetler yapabilirsiniz.
+
+**⚠️ 3. Uyuşmazlıklar ve Sürtüşme Noktaları (Farklılıklar)**
+Ancak Satürn ve Mars arasındaki gergin açılar, zaman zaman otorite savaşları ve sabırsızlık getirebilir. İnatlaşma ve birbirinizi kontrol etme isteği ilişkinin en büyük sınavıdır. Bazı konularda beklentilerinizin farklı olduğunu fark edebilirsiniz.
+
+**🔮 4. Uyum Artırma Rehberi (Nasıl Daha Uyumlu Olunur?)**
+Uyumunuzu artırmak için birbirinizin kişisel alanlarına saygı göstermeli ve öfkelendiğiniz anlarda sessiz kalmayı seçerek Mars'ın yıkıcı enerjisini yumuşatmalısınız. Venüs saatlerinde yapacağınız romantik jestler aranızdaki sevgiyi tazeleyecektir.`;
   }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
@@ -172,12 +208,21 @@ export async function fetchSynastryAnalysis(
     2. Kişi: "${p2Name}", Gezegenleri: ${JSON.stringify(p2Planets)}
     
     Bu iki kişinin haritası arasındaki sinastri (uyum) analizini yap.
-    - Gezegenlerin açısal temaslarını, aşk, iletişim, sadakat ve evlilik potansiyellerini tahlil et.
-    - Karşılıklı çekim güçlerini, birbirlerinin haritasındaki ev yerleşimlerinin etkilerini açıkla.
-    - İlişkinin güçlü ve zayıf/karmik yönlerini kozmik bir dille özetle.
-    - Jungcu veya psikolojik terimler (anima, animus, gölge vb.) kullanmaktan tamamen kaçın. Tamamen klasik aşk ve uyum astrolojisi tahlili yap.
+    Analizi şu net başlıklarla, son derece detaylı ve doyurucu bir şekilde yapılandır:
     
-    Yazacağın yorum akıcı, derin ve ilişki odaklı olsun. Maksimum 3 paragraf olsun. Türkçe yaz.
+    **❤️ 1. Karşılıklı Çekim ve Aşk Uyumunuz**
+    Güneş, Ay, Venüs ve Mars etkileşimleri üzerinden aranızdaki romantik çekimi, sadakat bağını ve ruhsal uyumu detaylandır. Neden uyumlu olduğunuzu açıklayan detaylar ver.
+    
+    **🗣️ 2. İletişim ve Zihinsel Ortaklık**
+    Merkür açılarının aranızdaki konuşma diline, fikir birliğine ve anlaşma kolaylığına etkisini yorumla.
+    
+    **⚠️ 3. Uyuşmazlıklar ve Sürtüşme Noktaları (Farklılıklar)**
+    Hangi gezegen etkileşimlerinin gerilim, kıskançlık, ego çatışması veya iletişim kopukluğu yaratabileceğini net bir şekilde açıkla. Hangi özelliklerinizin uyuşmadığını belirt.
+    
+    **🔮 4. Uyum Artırma Rehberi (Nasıl Daha Uyumlu Olunur?)**
+    Bu harita doğrultusunda, aranızdaki sevgiyi büyütmek ve pürüzleri gidermek için birbirinize nasıl yaklaşmanız gerektiğine dair pratik ve kozmik tavsiyeler ver.
+    
+    Jungcu veya psikolojik terimler (anima, animus, gölge vb.) kullanmaktan tamamen kaçın. Tamamen klasik aşk ve uyum astrolojisi tahlili yap. Türkçe yaz.
   `;
 
   try {
@@ -201,7 +246,17 @@ export async function fetchSynastryAnalysis(
     return result.candidates?.[0]?.content?.parts?.[0]?.text || '';
   } catch (error) {
     console.warn('Error fetching synastry analysis:', error);
-    return `Sevgili ${p1Name} ve ${p2Name}, haritalarınız arasındaki uyum analizi çıkarıldı. Güneş ve Ay yerleşimleriniz ruhsal planda güçlü bir çekim yaratıyor. Venüs'ün karşılıklı uyumlu konumları sayesinde aranızdaki sevgi dili oldukça akıcı ve romantik. Merkür etkileşimleri ise zihinsel uyumunuzu ve sohbet kalitenizi üst seviyeye taşıyor.`;
+    return `**❤️ 1. Karşılıklı Çekim ve Aşk Uyumunuz**
+Sevgili ${p1Name} ve ${p2Name}, haritalarınız arasındaki uyum analizi çıkarıldı. Güneş ve Ay yerleşimleriniz ruhsal planda güçlü bir çekim yaratıyor. Venüs'ün karşılıklı uyumlu konumları sayesinde aranızdaki sevgi dili oldukça akıcı ve romantik.
+
+**🗣️ 2. İletişim ve Zihinsel Ortaklık**
+Merkür etkileşimleri ise zihinsel uyumunuzu ve sohbet kalitenizi üst seviyeye taşıyor. Birlikteyken zamanın nasıl geçtiğini anlamayacak kadar akıcı sohbetler yapabilirsiniz.
+
+**⚠️ 3. Uyuşmazlıklar ve Sürtüşme Noktaları (Farklılıklar)**
+Ancak Satürn ve Mars arasındaki gergin açılar, zaman zaman otorite savaşları ve sabırsızlık getirebilir. İnatlaşma ve birbirinizi kontrol etme isteği ilişkinin en büyük sınavıdır. Bazı konularda beklentilerinizin farklı olduğunu fark edebilirsiniz.
+
+**🔮 4. Uyum Artırma Rehberi (Nasıl Daha Uyumlu Olunur?)**
+Uyumunuzu artırmak için birbirinizin kişisel alanlarına saygı göstermeli ve öfkelendiğiniz anlarda sessiz kalmayı seçerek Mars'ın yıkıcı enerjisini yumuşatmalısınız. Venüs saatlerinde yapacağınız romantik jestler aranızdaki sevgiyi tazeleyecektir.`;
   }
 }
 
@@ -213,7 +268,17 @@ export async function fetchYildiznameAnalysis(
   element: string
 ): Promise<string> {
   if (!GEMINI_API_KEY) {
-    return `Sevgili ${name}, anne adı ${motherName} ile hesaplanan geleneksel Yıldızname raporunuz oluşturuldu. Ebced değeriniz: ${totalEbced}, Yıldız burcunuz: ${sign}, Elementiniz: ${element}. Bu yerleşim, hayat yolculuğunuzda yıldızınızın yüksek olduğunu ve manevi korumanızın güçlü olduğunu gösteriyor. Uğurlu gününüz ve zikir esmanız yaşam kalitenizi artıracaktır.`;
+    return `**⭐ 1. İsim Ebced Şifresi ve Kader Temaları**
+Sevgili ${name}, anne adınız olan ${motherName} ile hesaplanan geleneksel Yıldızname raporunuz oluşturuldu. Ebced değeriniz: ${totalEbced}. Bu ebced rezonansı, hayat yolculuğunuzda önemli dönüm noktalarında ilahi yardımlar alacağınızı gösterir.
+
+**🔥 2. Yıldız Burcu ve Element Mizacı**
+Yıldız burcunuz: ${sign}, Elementiniz: ${element}. Bu yerleşim, karakterinizde güçlü bir liderlik arzusu ve kararlılık yaratırken, elementinizin sıcaklığı çevrenize ilham ve güven vermenizi sağlıyor.
+
+**⚠️ 3. Manevi Engeller ve Dikkat Edilmesi Gerekenler**
+Yıldızınız yüksek olduğu için nazara ve kem gözlerin negatif enerjilerine karşı oldukça hassassınız. Zaman zaman nedensiz yorgunluklar veya işlerinizde ani tıkanıklıklar yaşayabilirsiniz. Sağlıkta ise sindirim sistemi ve baş bölgelerinizi aşırı stresten korumalısınız.
+
+**🛡️ 4. Manevi Koruma ve Esma Rehberi**
+Bu tıkanıklıkları aşmak ve kendinizi korumak için her gün düzenli olarak Felak ve Nas surelerini okumanız, ayrıca adınıza özel rezonans sağlayan 'Ya Hafiz' ve 'Ya Latif' esmalarını zikretmeniz manevi koruma kalkanınızı maksimuma çıkaracaktır.`;
   }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
@@ -226,14 +291,22 @@ export async function fetchYildiznameAnalysis(
     Hesaplanan Yıldızname Burcu: "${sign}"
     Element: "${element}"
     
-    Bu parametreler doğrultusunda kapsamlı ve derin bir Yıldızname analizi yaz.
-    Analizde şunlara yer ver:
-    - İsmin enerjisi, Ebced kodlamasının getirdiği kader temaları, esmaları ve potansiyeller.
-    - Yıldız Burcu ve Elementin yarattığı mizaç özellikleri (Geleneksel ve mistik bir dille).
-    - Kullanıcının hayat yolculuğunda dikkat etmesi gereken nazar, manevi engeller ve bunlara karşı koruyucu dualar/esmalar/öneriler.
-    - Jungcu veya modern batı psikolojisi terimlerinden tamamen uzak dur.
+    Bu parametreler doğrultusunda kapsamlı, derin ve doyurucu bir Yıldızname analizi yaz.
+    Analizi şu net başlıklarla yapılandır:
     
-    Yazacağın yorum sürükleyici, mistik, saygın ve edebi bir tonda olsun. Maksimum 3 paragraf olsun. Türkçe yaz.
+    **⭐ 1. İsim Ebced Şifresi ve Kader Temaları**
+    Kullanıcının isminin ve anne isminin ebced rezonansının hayat yolculuğundaki etkilerini, kader çizgisine getirdiği şans ve sınavları açıkla.
+    
+    **🔥 2. Yıldız Burcu ve Element Mizacı**
+    Hesaplanan yıldız burcu ve elementin fiziksel, zihinsel ve ruhsal yapısına etkisini mistik bir dille tahlil et.
+    
+    **⚠️ 3. Manevi Engeller ve Dikkat Edilmesi Gerekenler**
+    Kişinin yaşamında karşılaşabileceği manevi engelleri, nazara açıklık durumunu, sağlıkta hassas olabilecek organlarını veya süreçlerini detaylandır.
+    
+    **🛡️ 4. Manevi Koruma ve Esma Rehberi**
+    Nazar, tıkanıklık ve engelleri aşmak için kullanıcının düzenli okuması gereken koruyucu esmaları, duaları ve ruhsal arınma tavsiyelerini belirt.
+    
+    Jungcu veya modern batı psikolojisi terimlerinden tamamen uzak dur. Türkçe yaz.
   `;
 
   try {
@@ -257,7 +330,17 @@ export async function fetchYildiznameAnalysis(
     return result.candidates?.[0]?.content?.parts?.[0]?.text || '';
   } catch (error) {
     console.warn('Error fetching yildizname analysis:', error);
-    return `Sevgili ${name}, anne adı ${motherName} ile hesaplanan geleneksel Yıldızname raporunuz oluşturuldu. Ebced değeriniz: ${totalEbced}, Yıldız burcunuz: ${sign}, Elementiniz: ${element}. Bu yerleşim, hayat yolculuğunuzda yıldızınızın yüksek olduğunu ve manevi korumanızın güçlü olduğunu gösteriyor. Uğurlu gününüz ve zikir esmanız yaşam kalitenizi artıracaktır.`;
+    return `**⭐ 1. İsim Ebced Şifresi ve Kader Temaları**
+Sevgili ${name}, anne adınız olan ${motherName} ile hesaplanan geleneksel Yıldızname raporunuz oluşturuldu. Ebced değeriniz: ${totalEbced}. Bu ebced rezonansı, hayat yolculuğunuzda önemli dönüm noktalarında ilahi yardımlar alacağınızı gösterir.
+
+**🔥 2. Yıldız Burcu ve Element Mizacı**
+Yıldız burcunuz: ${sign}, Elementiniz: ${element}. Bu yerleşim, karakterinizde güçlü bir liderlik arzusu ve kararlılık yaratırken, elementinizin sıcaklığı çevrenize ilham ve güven vermenizi sağlıyor.
+
+**⚠️ 3. Manevi Engeller ve Dikkat Edilmesi Gerekenler**
+Yıldızınız yüksek olduğu için nazara ve kem gözlerin negatif enerjilerine karşı oldukça hassassınız. Zaman zaman nedensiz yorgunluklar veya işlerinizde ani tıkanıklıklar yaşayabilirsiniz. Sağlıkta ise sindirim sistemi ve baş bölgelerinizi aşırı stresten korumalısınız.
+
+**🛡️ 4. Manevi Koruma ve Esma Rehberi**
+Bu tıkanıklıkları aşmak ve kendinizi korumak için her gün düzenli olarak Felak ve Nas surelerini okumanız, ayrıca adınıza özel rezonans sağlayan 'Ya Hafiz' ve 'Ya Latif' esmalarını zikretmeniz manevi koruma kalkanınızı maksimuma çıkaracaktır.`;
   }
 }
 
