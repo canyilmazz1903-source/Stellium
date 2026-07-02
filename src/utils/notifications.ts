@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -72,11 +73,23 @@ export async function schedulePlanetaryHourNotifications(hours: any[]) {
     // Clear previously scheduled notifications to prevent duplicate alerts
     await Notifications.cancelAllScheduledNotificationsAsync();
 
+    // Read preferences from AsyncStorage
+    let preferences: Record<string, boolean> = { Sun: true, Moon: true, Mercury: true, Venus: true, Mars: true, Jupiter: true, Saturn: true };
+    try {
+      const stored = await AsyncStorage.getItem('planetary_hour_notification_preferences');
+      if (stored) {
+        preferences = JSON.parse(stored);
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+
     const now = Date.now();
-    // Filter hours starting in the future
+    // Filter hours starting in the future and matching enabled preferences
     const futureHours = hours.filter(h => {
       const startTime = new Date(h.startTime).getTime();
-      return startTime > now;
+      const isEnabled = preferences[h.planetName] !== false;
+      return startTime > now && isEnabled;
     });
 
     // Schedule up to next 16 future hours to avoid hitting OS queuing limits

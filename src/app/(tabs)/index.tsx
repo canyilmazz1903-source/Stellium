@@ -12,6 +12,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, wit
 import { useCosmicCalendarStore } from '@/store/cosmicCalendarStore';
 import PaywallAdModal from '@/components/ui/PaywallAdModal';
 import { schedulePlanetaryHourNotifications } from '@/utils/notifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Determine Moon phase name and symbol based on Sun and Moon elongations
 function getMoonPhase(sunLon: number, moonLon: number) {
@@ -27,6 +28,140 @@ function getMoonPhase(sunLon: number, moonLon: number) {
   if (diff >= 262.5 && diff < 277.5) return { name: 'Son Dördün', symbol: '🌗' };
   return { name: 'Balsamik Ay (Küçülen)', symbol: '🌘' };
 }
+
+const PLANETARY_HOURS_DEEP_INFO: Record<string, {
+  name: string;
+  symbol: string;
+  energy: string;
+  activities: string[];
+  avoid: string[];
+  spiritual: string;
+  color: string;
+}> = {
+  Sun: {
+    name: 'Güneş',
+    symbol: '☀️',
+    energy: 'Liderlik, parlama, yaşamsal canlılık, otorite ve öz güven.',
+    activities: [
+      'Kariyerinizle ilgili önemli görüşmeler yapmak.',
+      'Yöneticilerden onay veya destek talep etmek.',
+      'Sunum yapmak, sahneye çıkmak ve görünür olmak.',
+      'Yeni ve büyük projelere ilk adımı atmak.'
+    ],
+    avoid: [
+      'Aşırı gururlu veya bencilce davranmak.',
+      'Eleştirilere tahammülsüzlük göstermek.',
+      'Gölgede kalmayı tercih etmek.'
+    ],
+    spiritual: 'Ruhun öz bilinciyle ve yüksek benlikle hizalanma zamanıdır. Kalbinizin sesini duymak ve gerçek potansiyelinizi niyet etmek için harika bir andır.',
+    color: '#F59E0B'
+  },
+  Moon: {
+    name: 'Ay',
+    symbol: '🌙',
+    energy: 'Duygular, sezgiler, bilinçdışı, besleme ve evsel huzur.',
+    activities: [
+      'Meditasyon yapmak, dua etmek ve iç sesinizi dinlemek.',
+      'Aile ziyaretleri yapmak, evinizi düzenlemek.',
+      'Ruhsal/duygusal şifa çalışmaları gerçekleştirmek.',
+      'Su ile ilgili arınma banyoları veya ritüelleri yapmak.'
+    ],
+    avoid: [
+      'Önemli ticari anlaşmalara imza atmak.',
+      'Mantıksal ve soğukkanlılık gerektiren riskli işlere girmek.',
+      'Duygusal tepkilerle ani kararlar almak.'
+    ],
+    spiritual: 'Dişil enerjinin, teslimiyetin ve alıcılığın en yüksek olduğu saattir. Evrenden gelen ilhamları almak ve rüyalarınızı kaydetmek için idealdir.',
+    color: '#60A5FA'
+  },
+  Mercury: {
+    name: 'Merkür',
+    symbol: '☿',
+    energy: 'Zihinsel keskinlik, iletişim, ticaret, eğitim ve hız.',
+    activities: [
+      'Ders çalışmak, kitap okumak, yazı yazmak ve kod geliştirmek.',
+      'E-postalar göndermek, önemli telefon görüşmeleri yapmak.',
+      'Ticari pazarlıklar, sözleşme imzalamaları yapmak.',
+      'Kısa seyahatleri organize etmek ve bilet almak.'
+    ],
+    avoid: [
+      'Kafa karışıklığı varken dedikodulara dahil olmak.',
+      'Detayları okumadan aceleyle onay vermek.',
+      'Aynı anda çok fazla işe bölünmek.'
+    ],
+    spiritual: 'Zihinsel ağların ve enerjisel bağların kurulduğu andır. Fikirlerinizin gerçeğe dönüşmesi için zihinsel odaklanma ve netlik meditasyonu yapın.',
+    color: '#34D399'
+  },
+  Venus: {
+    name: 'Venüs',
+    symbol: '♀',
+    energy: 'Aşk, ilişkiler, güzellik, estetik, uyum ve bolluk.',
+    activities: [
+      'Romantik buluşmalar yapmak, eşinizle vakit geçirmek.',
+      'Saç kesimi, cilt bakımı ve estetik müdahaleler yaptırmak.',
+      'Sanatla ilgilenmek, dekorasyon yapmak ve giyim alışverişi.',
+      'Kırgın olduğunuz kişilerle barışma adımları atmak.'
+    ],
+    avoid: [
+      'Parasal konularda aşırı savurganlık ve lüks harcamalar.',
+      'İlişkilerde aşırı alınganlık veya tembellik.'
+    ],
+    spiritual: 'Koşulsuz sevgi ve çekim yasasının en aktif çalıştığı andır. Hayatınıza sevgiyi, bolluğu ve güzelliği davet eden şükür ritüelleri için idealdir.',
+    color: '#F472B6'
+  },
+  Mars: {
+    name: 'Mars',
+    symbol: '♂',
+    energy: 'Cesaret, eylem, fiziksel güç, kararlılık ve mücadele.',
+    activities: [
+      'Ağır antrenmanlar, spor and fiziksel eylemler yapmak.',
+      'Ertelediğiniz, cesaret gerektiren zorlu işleri bitirmek.',
+      'Rekabetçi projelerde hakkınızı aramak veya hamle yapmak.',
+      'Evinizde derin temizlik veya güç gerektiren işleri yapmak.'
+    ],
+    avoid: [
+      'Öfke kontrolünü kaybedip tartışmalara girmek.',
+      'Trafikte veya riskli durumlarda aceleci davranmak.',
+      'Kazalara açık olabileceğiniz için dikkatsiz hareket etmek.'
+    ],
+    spiritual: 'İçsel savaşçıyı uyandırma ve ataleti (tembelliği) kırma vaktidir. Korkularınızın üzerine gitmek ve kararlılık göstermek için Mars enerjisini kullanın.',
+    color: '#EF4444'
+  },
+  Jupiter: {
+    name: 'Jüpiter',
+    symbol: '♃',
+    energy: 'Bolluk, şans, genişleme, maneviyat, felsefe ve bilgelik.',
+    activities: [
+      'Bolluk ve bereket duaları/ritüelleri yapmak.',
+      'İhtiyacı olanlara bağışta bulunmak veya yardım etmek.',
+      'Yeni bir eğitime başlamak, yabancı dillerle ilgilenmek.',
+      'Geleceğe dair büyük hedefler belirlemek ve vizyon tahtası yapmak.'
+    ],
+    avoid: [
+      'Aşırı iyimserlikle gereksiz finansal riskler almak.',
+      'Kibre kapılıp altından kalkamayacağınız sözler vermek.'
+    ],
+    spiritual: 'Büyük İyicil gezegenin saatidir. Evrensel lütuf ve bereket kapılarının açık olduğuna inanarak, niyetlerinizi en yüksek frekanstan yapın.',
+    color: '#FBBF24'
+  },
+  Saturn: {
+    name: 'Satürn',
+    symbol: '♄',
+    energy: 'Disiplin, sınırlar, zaman, dayanıklılık, sorumluluk ve karma.',
+    activities: [
+      'Uzun vadeli planlar yapmak, bütçe hazırlamak.',
+      'Yarım kalmış, sabır gerektiren idari işleri toparlamak.',
+      'Sınırlarınızı korumak ve hayır demeyi çalışmak.',
+      'Yaşça büyük veya deneyimli kişilerden rehberlik almak.'
+    ],
+    avoid: [
+      'Depresif ve karamsar düşünce kalıplarına girmek.',
+      'Yeni bir işletme kurmak veya borç para vermek.'
+    ],
+    spiritual: 'Zamanın efendisinin saatidir. Sabır, sınırlar ve olgunlaşma sınavlarını temsil eder. Bu saatte yapılan çalışmalar kalıcı temeller kurar.',
+    color: '#9CA3AF'
+  }
+};
 
 export default function HomeScreen() {
   const { profile, isPremium, hasUnlockedDailyShadow } = useAuthStore();
@@ -129,6 +264,49 @@ export default function HomeScreen() {
     content: string;
     advice?: string;
   } | null>(null);
+
+  // Planetary Hours Modal State
+  const [planetaryModalVisible, setPlanetaryModalVisible] = useState(false);
+  const [selectedPlanetForDetail, setSelectedPlanetForDetail] = useState<string>('Sun');
+  const [notifPreferences, setNotifPreferences] = useState<Record<string, boolean>>({
+    Sun: true,
+    Moon: true,
+    Mercury: true,
+    Venus: true,
+    Mars: true,
+    Jupiter: true,
+    Saturn: true,
+  });
+
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const stored = await AsyncStorage.getItem('planetary_hour_notification_preferences');
+        if (stored) {
+          setNotifPreferences(JSON.parse(stored));
+        }
+      } catch (e) {
+        console.warn('Error loading preferences:', e);
+      }
+    };
+    loadPreferences();
+  }, []);
+
+  const togglePreference = async (planetName: string) => {
+    const updated = {
+      ...notifPreferences,
+      [planetName]: !notifPreferences[planetName]
+    };
+    setNotifPreferences(updated);
+    try {
+      await AsyncStorage.setItem('planetary_hour_notification_preferences', JSON.stringify(updated));
+      if (planetaryHours.length > 0) {
+        await schedulePlanetaryHourNotifications(planetaryHours);
+      }
+    } catch (e) {
+      console.warn('Error saving preferences:', e);
+    }
+  };
 
   const planetaryScrollRef = useRef<ScrollView>(null);
   const [planetaryHours, setPlanetaryHours] = useState<PlanetaryHour[]>([]);
@@ -338,8 +516,12 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
             <Text style={styles.sectionLabel}>⏱️ Canlı Gezegen Saatleri</Text>
             <ScrollView ref={planetaryScrollRef} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
               {planetaryHours.map((hour, idx) => (
-                <View 
+                <Pressable 
                   key={idx} 
+                  onPress={() => {
+                    setSelectedPlanetForDetail(hour.planetName);
+                    setPlanetaryModalVisible(true);
+                  }}
                   style={[
                     styles.hourChip,
                     hour.isActive && styles.hourChipActive,
@@ -348,16 +530,22 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
                   <Text style={styles.hourChipSymbol}>{hour.planetSymbol}</Text>
                   <Text style={[styles.hourChipName, hour.isActive && { color: '#FCD34D' }]}>{hour.planetName}</Text>
                   <Text style={styles.hourChipTime}>{hour.label}</Text>
-                </View>
+                </Pressable>
               ))}
             </ScrollView>
             {activeHour && (
-              <View style={styles.activeHourBar}>
+              <Pressable 
+                onPress={() => {
+                  setSelectedPlanetForDetail(activeHour.planetName);
+                  setPlanetaryModalVisible(true);
+                }}
+                style={styles.activeHourBar}
+              >
                 <Text style={styles.activeHourSymbol}>{activeHour.planetSymbol}</Text>
                 <Text style={styles.activeHourText}>Şu An: {activeHour.planetName} Saati</Text>
                 <Text style={styles.activeHourDot}>•</Text>
                 <Text style={styles.activeHourMeaning} numberOfLines={1}>{activeHour.meaning}</Text>
-              </View>
+              </Pressable>
             )}
           </View>
 
@@ -701,6 +889,156 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
             </ScrollView>
           </View>
         </SafeAreaView>
+      </Modal>
+
+      {/* Gezegen Saatleri Detay ve Bildirim Modalı */}
+      <Modal
+        visible={planetaryModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setPlanetaryModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} />
+          <View style={styles.planetaryModalContainer}>
+            <View style={styles.planetaryModalHeader}>
+              <Text style={styles.planetaryModalTitle}>🪐 Gezegen Saatleri & Alarm</Text>
+              <Pressable 
+                onPress={() => setPlanetaryModalVisible(false)}
+                style={styles.planetaryModalCloseBtn}
+              >
+                <Ionicons name="close" size={24} color="#8B949E" />
+              </Pressable>
+            </View>
+
+            {/* Mode selection tabs */}
+            <View style={styles.planetaryModalTabs}>
+              <View style={[styles.planetaryModalTab, { borderBottomColor: '#D4AF37' }]}>
+                <Text style={[styles.planetaryModalTabText, { color: '#D4AF37' }]}>Saatlerin Anlamları & Projeksiyon</Text>
+              </View>
+            </View>
+
+            {/* Horizontal Planet selector inside modal */}
+            <View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.planetSelectorScroll}>
+                {Object.keys(PLANETARY_HOURS_DEEP_INFO).map((planetKey) => {
+                  const planet = PLANETARY_HOURS_DEEP_INFO[planetKey];
+                  const isSelected = selectedPlanetForDetail === planetKey;
+                  return (
+                    <Pressable 
+                      key={planetKey}
+                      onPress={() => setSelectedPlanetForDetail(planetKey)}
+                      style={[
+                        styles.planetSelectorChip,
+                        isSelected && { borderColor: planet.color, backgroundColor: 'rgba(255,255,255,0.06)' }
+                      ]}
+                    >
+                      <Text style={styles.planetSelectorChipSymbol}>{planet.symbol}</Text>
+                      <Text style={[styles.planetSelectorChipName, isSelected && { color: '#FFFFFF', fontWeight: '700' }]}>
+                        {planet.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {/* Main Content Area */}
+            <ScrollView style={styles.planetaryModalScroll} showsVerticalScrollIndicator={false}>
+              {(() => {
+                const planet = PLANETARY_HOURS_DEEP_INFO[selectedPlanetForDetail] || PLANETARY_HOURS_DEEP_INFO.Sun;
+                const isNotificationEnabled = notifPreferences[selectedPlanetForDetail] !== false;
+                return (
+                  <View style={styles.planetDetailContent}>
+                    
+                    {/* Notification Toggle Row for this specific planet */}
+                    <View style={styles.planetNotifToggleRow}>
+                      <View style={styles.planetNotifToggleTexts}>
+                        <Text style={styles.planetNotifToggleTitle}>{planet.name} Saati Bildirimi</Text>
+                        <Text style={styles.planetNotifToggleDesc}>Bu gezegen saati her başladığında bildirim al.</Text>
+                      </View>
+                      <Pressable 
+                        onPress={() => togglePreference(selectedPlanetForDetail)}
+                        style={styles.notifToggleSwitch}
+                      >
+                        <Ionicons 
+                          name={isNotificationEnabled ? "toggle" : "toggle-outline"} 
+                          size={36} 
+                          color={isNotificationEnabled ? "#D4AF37" : "rgba(255, 255, 255, 0.2)"} 
+                        />
+                      </Pressable>
+                    </View>
+
+                    {/* Energy description */}
+                    <View style={styles.detailSection}>
+                      <Text style={styles.detailSectionTitle}>✨ Kozmik Enerji Karakteri</Text>
+                      <Text style={styles.detailSectionText}>{planet.energy}</Text>
+                    </View>
+
+                    {/* Recommended Activities */}
+                    <View style={styles.detailSection}>
+                      <Text style={styles.detailSectionTitle}>✅ Değerlendirilmesi Önerilen Konular</Text>
+                      {planet.activities.map((act, idx) => (
+                        <View key={idx} style={styles.bulletRow}>
+                          <Text style={styles.bulletPoint}>•</Text>
+                          <Text style={styles.bulletText}>{act}</Text>
+                        </View>
+                      ))}
+                    </View>
+
+                    {/* Things to Avoid */}
+                    <View style={styles.detailSection}>
+                      <Text style={styles.detailSectionTitle}>⚠️ Kaçınılması Önerilen Durumlar</Text>
+                      {planet.avoid.map((av, idx) => (
+                        <View key={idx} style={styles.bulletRow}>
+                          <Text style={styles.bulletPoint}>•</Text>
+                          <Text style={styles.bulletText}>{av}</Text>
+                        </View>
+                      ))}
+                    </View>
+
+                    {/* Spiritual depth */}
+                    <View style={[styles.detailSection, { borderBottomWidth: 0, paddingBottom: 0 }]}>
+                      <Text style={styles.detailSectionTitle}>🧘 Manevi & Ezoterik Boyut</Text>
+                      <Text style={styles.detailSectionText}>{planet.spiritual}</Text>
+                    </View>
+
+                  </View>
+                );
+              })()}
+            </ScrollView>
+
+            {/* Global Notifications Checklist Panel */}
+            <View style={styles.globalNotificationsPanel}>
+              <Text style={styles.globalNotifTitle}>🔔 Tüm Gezegen Alarmları Hızlı Erişim</Text>
+              <View style={styles.globalNotifChecklist}>
+                {Object.keys(PLANETARY_HOURS_DEEP_INFO).map((planetKey) => {
+                  const planet = PLANETARY_HOURS_DEEP_INFO[planetKey];
+                  const isEnabled = notifPreferences[planetKey] !== false;
+                  return (
+                    <Pressable 
+                      key={planetKey} 
+                      onPress={() => togglePreference(planetKey)}
+                      style={[
+                        styles.globalNotifBadge,
+                        isEnabled && { backgroundColor: 'rgba(212, 175, 55, 0.1)', borderColor: 'rgba(212, 175, 55, 0.3)' }
+                      ]}
+                    >
+                      <Text style={styles.globalNotifBadgeSymbol}>{planet.symbol}</Text>
+                      <Ionicons 
+                        name={isEnabled ? "checkmark-circle" : "ellipse-outline"} 
+                        size={14} 
+                        color={isEnabled ? "#D4AF37" : "rgba(255, 255, 255, 0.3)"} 
+                        style={{ marginLeft: 2 }}
+                      />
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+
+          </View>
+        </View>
       </Modal>
 
       <PaywallAdModal
@@ -1227,5 +1565,186 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#D4AF37',
     fontWeight: '500',
+  },
+  planetaryModalContainer: {
+    backgroundColor: '#0F1420',
+    width: '90%',
+    height: '80%',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.25)',
+    padding: 20,
+    alignItems: 'stretch',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 15,
+    elevation: 10,
+  },
+  planetaryModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  planetaryModalTitle: {
+    fontFamily: 'Cinzel',
+    fontSize: 17,
+    color: '#D4AF37',
+    fontWeight: '700',
+  },
+  planetaryModalCloseBtn: {
+    padding: 4,
+  },
+  planetaryModalTabs: {
+    flexDirection: 'row',
+    marginBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  planetaryModalTab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  planetaryModalTabText: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  planetSelectorScroll: {
+    paddingVertical: 4,
+    gap: 8,
+    marginBottom: 14,
+  },
+  planetSelectorChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    gap: 6,
+  },
+  planetSelectorChipSymbol: {
+    fontSize: 14,
+  },
+  planetSelectorChipName: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: '#8B949E',
+  },
+  planetaryModalScroll: {
+    flex: 1,
+    marginBottom: 16,
+  },
+  planetDetailContent: {
+    gap: 16,
+  },
+  planetNotifToggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(212, 175, 55, 0.06)',
+    borderColor: 'rgba(212, 175, 55, 0.15)',
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+  },
+  planetNotifToggleTexts: {
+    flex: 1,
+    marginRight: 10,
+  },
+  planetNotifToggleTitle: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#F0F6FC',
+  },
+  planetNotifToggleDesc: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    color: '#8B949E',
+    marginTop: 2,
+  },
+  notifToggleSwitch: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  detailSection: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
+    paddingBottom: 14,
+  },
+  detailSectionTitle: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: '#D4AF37',
+    fontWeight: '700',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  detailSectionText: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    color: '#E6EDF0',
+    lineHeight: 20,
+  },
+  bulletRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+    paddingLeft: 4,
+  },
+  bulletPoint: {
+    fontSize: 14,
+    color: '#D4AF37',
+    marginRight: 6,
+    lineHeight: 18,
+  },
+  bulletText: {
+    flex: 1,
+    fontFamily: 'Inter',
+    fontSize: 13,
+    color: '#E6EDF0',
+    lineHeight: 18,
+  },
+  globalNotificationsPanel: {
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  globalNotifTitle: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    color: '#8B949E',
+    fontWeight: '600',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  globalNotifChecklist: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  globalNotifBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    gap: 4,
+  },
+  globalNotifBadgeSymbol: {
+    fontSize: 14,
   },
 });
