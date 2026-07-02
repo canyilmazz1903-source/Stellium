@@ -897,7 +897,7 @@ export default function ChartScreen() {
                   pressed && { opacity: 0.85 }
                 ]}
               >
-                <Ionicons name="sparkles" size={18} color="#000000" style={{ marginRight: 6 }} />
+                <Ionicons name="sparkles" size={18} color="#0B0F19" style={{ marginRight: 6 }} />
                 <Text style={styles.aiButtonText}>Kapsamlı Harita Analizi (Gemini AI)</Text>
               </Pressable>
 
@@ -1169,23 +1169,26 @@ const styles = StyleSheet.create({
   aiButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
-    paddingVertical: 14,
+    backgroundColor: '#D4AF37', // Premium Gold
+    paddingVertical: 15,
     paddingHorizontal: 20,
-    borderRadius: 20,
+    borderRadius: 25,
     width: '100%',
     justifyContent: 'center',
     marginBottom: 24,
-    shadowColor: '#ffffff',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
+    shadowColor: '#D4AF37',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
   },
   aiButtonText: {
-    color: '#000000',
+    color: '#0B0F19', // Deep dark navy theme color
     fontFamily: 'InterBold',
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   sectionDividerTitle: {
     fontFamily: 'InterBold',

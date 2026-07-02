@@ -325,7 +325,6 @@ Bu tıkanıklıkları aşmak ve kendinizi korumak için her gün düzenli olarak
     if (!response.ok) {
       throw new Error(`Gemini API returned code: ${response.status}`);
     }
-
     const result = await response.json();
     return result.candidates?.[0]?.content?.parts?.[0]?.text || '';
   } catch (error) {
@@ -361,11 +360,7 @@ export async function fetchDailyShadows(
   
   const prompt = `
 [SYSTEM INSTRUCTION]
-Sen; geleneksel astroloji, ruhsal gelişim ve karma astrolojisi konusunda uzmanlaşmış derinlikli bir astrologsun. Görevin, transit gök cisimlerinin gerilimli açılarını inceleyerek bireyin bugün yüzleşmesi gereken içsel engelleri, ruhsal gelişim fırsatlarını ve dönüştürülmesi gereken enerjileri tahlil etmektir.
-
-[STRICT OUTPUT FORMAT RULES]
-1. Çıktıyı kesinlikle aşağıdaki JSON şemasında belirtilen anahtarlarla eksiksiz döndür. Tek bir karakter bile şema dışına çıkmamalıdır.
-2. Analiz dili bilge, ruhsal ve samimi olmalıdır. Ruhsal direnç noktalarını şefkatli bir şekilde açıkla.
+Sen; geleneksel astroloji, ruhsal gelişim ve karma astrolojisi konusunda uzman bir astrologsun. Kullanıcının günlük gökyüzü transitlerini ve natal haritasındaki gezegen yerleşimlerini karşılaştırarak, bugün yüzleşmesi gereken olası gölge yanlarını ve ruhsal direnç noktalarını analiz et.
 
 Kullanıcı Adı: "${name}"
 Doğum Haritası Konumları:
@@ -374,116 +369,6 @@ Doğum Haritası Konumları:
 Mevcut Transit Gökyüzü:
 - Transit Ay: ${moonSign} burcunda
 - Ay Fazı: ${moonPhase === 'waxing' ? 'Büyüyen Ay' : 'Küçülen Ay'}
-
-JSON Çıktı Şeması:
-{
-  "shadow_core": "Bugünkü krizin veya içsel blokajın ruhsal kökeni.",
-  "jungian_analysis": "Ruhsal gelişim süreçlerini ve göksel etkileri açıklayan derin analiz (3 paragraf).",
-  "confrontation_questions": [
-    "Kullanıcının kendine sorması gereken farkındalık uyandırıcı soru 1",
-    "Kullanıcının kendine sorması gereken farkındalık uyandırıcı soru 2",
-    "Kullanıcının kendine sorması gereken farkındalık uyandırıcı soru 3"
-  ]
-}
-  `;
-
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }]
-        }],
-        generationConfig: {
-          responseMimeType: "application/json"
-        }
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Gemini API returned code: ${response.status}`);
-    }
-
-    const result = await response.json();
-    const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const parsed = JSON.parse(jsonText.trim());
-
-    const questionsText = Array.isArray(parsed.confrontation_questions)
-      ? parsed.confrontation_questions.map((q: string) => `• ${q}`).join('\n')
-      : '';
-
-    return `### 🌌 Bugünkü Ruhsal Odak\n${parsed.shadow_core}\n\n### 🧠 Göksel & Ruhsal Analiz\n${parsed.jungian_analysis}\n\n### 🔑 Kendinle Yüzleşme Soruları\n${questionsText}`;
-  } catch (error) {
-    console.warn('Error fetching shadows analysis from Gemini:', error);
-    return `Sevgili ${name}, bugün gökyüzünde transit yapan Ay'ın (${moonSign} burcunda) natal haritanızdaki Mars ve Satürn ile kurduğu kontaklar, bastırılmış dürtülerinizi veya yetersizlik korkularınızı yüzeye çıkarabilir. İçinizdeki direnç noktalarını gözlemleyin; öfkenizi dışa yansıtmak yerine, bu enerjiyi içsel sınırlarınızı belirlemek ve disiplin kazanmak için dönüştürün.`;
-  }
-}
-
-export async function fetchFullChartAnalysis(
-  name: string,
-  birthChart: ComputedChart,
-  aspects: any[]
-): Promise<string> {
-  if (!GEMINI_API_KEY) {
-    return `**🪐 1. Genel Mizaç, Kozmik Elementler ve Yaşam Yolu**
-Güneş, Ay ve Yükselen yerleşimleriniz, kendinizi ifade etme ve hayatı deneyimleme biçiminizde güçlü bir denge kurmanızı sağlıyor. Ateş elementinin yüksekliği size doğal bir cesaret verirken, su elementinin derinliği sezgilerinizi güçlendiriyor.
-
-**🧠 2. Zihinsel Yapı, Akıl ve İletişim**
-Zihniniz son derece aktif ve öğrenmeye açık. Fikirlerinizi aktarırken net ve doğrudan bir iletişim tarzını benimsiyorsunuz. Kararlarınızda analitik davranmaya özen gösteriyorsunuz.
-
-**❤️ 3. Aşk, Bağlar, Değerler ve Finansal Bereket**
-Venüs yerleşimi ve açılarına göre ilişkilerinizde güven ve derinliği ön planda tutuyorsunuz. Finansal konularda sezgileriniz size rehberlik ediyor ve kalıcı kazançlar üretme potansiyeline sahipsiniz.
-
-**🔥 4. Eylem, Tutku, Mücadele ve İrade Gücü**
-Mars konumunuz, hedeflerinize kararlılıkla yürüdüğünüzü gösteriyor. Zorluklarla karşılaştığınızda pes etmek yerine, stratejik ve dayanıklı bir şekilde mücadele etmeyi seçiyorsunuz.
-
-**⚠️ 5. Açı İlişkileri, Hayat Sınavları ve Olgunlaşma (Satürn)**
-Satürn yerleşiminiz, disiplin ve sabır gerektiren sınavlardan geçerek olgunlaşacağınızı vurguluyor. Hayatınızdaki engeller, aslında sizi kalıcı ve köklü başarılara hazırlayan manevi basamaklardır.
-
-**🗓️ 6. Kozmik Yaşam Planlama ve Günlük Strateji Rehberi**
-Önemli ticari anlaşmaları ve yeni başlangıçları Merkür'ün temiz açılarında yapmaya özen gösterin. Enerjinizi korumak için Ay'ın küçülen fazlarında içsel temizlik yapın ve yeni ay fazlarında yeni projelerinizin tohumlarını atın.`;
-  }
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-  
-  const prompt = `
-[SYSTEM INSTRUCTION]
-Sen; İsviçre Efemerisi hassasiyetine vakıf, Keldani numerolojisini ve klasik/modern astroloji metodolojilerini birleştiren elit bir Astroloji Profesörüsün. Görevin, kullanıcının natal harita verilerini, element dağılımlarını, niteliklerini ve gezegen açılarını sentezleyerek adeta bir kitap bölümü niteliğinde, son derece kapsamlı ve derin bir yaşam yolculuğu raporu oluşturmaktır.
-
-[WRITING RULES]
-1. Analiz dili mistik, bilge, sarmalayıcı ama aynı zamanda bilimsel, analitik ve psikolojik olmalıdır.
-2. Metin içi yapılandırmada başlıklar ve anahtar kelimeler için **kalın metin** kullan. Bölümler arasına çift satır boşluk ekle.
-3. Raporu net başlıklarla ve detaylı paragraflarla tam 6 bölüm halinde yapılandır.
-
-Kullanıcının Adı: "${name}"
-Doğum Haritası Gezegen Konumları ve Evleri:
-${JSON.stringify(birthChart.planets)}
-Doğum Haritası Ev Başlangıç Dereceleri:
-${JSON.stringify(birthChart.houses)}
-Haritadaki Gezegenler Arası Açı İlişkileri:
-${JSON.stringify(aspects)}
-
-Rapor Bölümleri:
-**🪐 1. Genel Mizaç, Kozmik Elementler ve Yaşam Yolu**
-Yükselen, Güneş ve Ay konumları ile element dengesinin sentezi. Temel karakter özellikleri, ruhsal potansiyeli ve dünyaya geliş amacı.
-
-**🧠 2. Zihinsel Yapı, Akıl ve İletişim**
-Merkür konumuna ve açılarına göre zekası, öğrenme ve karar verme yapısı, iletişim üslubu. Zihinsel tıkanıklıkları nasıl aşabileceği.
-
-**❤️ 3. Aşk, Bağlar, Değerler ve Finansal Bereket**
-Venüs yerleşimi ve açılarına göre ilişkilerdeki beklentileri, sevgi dili, finansal değerleri ve bereketi hayatına çekme potansiyeli.
-
-**🔥 4. Eylem, Tutku, Mücadele ve İrade Gücü**
-Mars konumuna göre motivasyon kaynakları, kriz anlarındaki tavrı, engelleri aşma tarzı ve fiziksel enerjiyi doğru kullanma biçimi.
-
-**⚠️ 5. Açı İlişkileri, Hayat Sınavları ve Olgunlaşma (Satürn)**
-Satürn yerleşimine ve gezegenler arasındaki majör açılara (kavuşum, kare, karşıt vb.) göre hayatındaki karmik zorluklar, aşması gereken engeller ve manevi olgunlaşma yolları.
-
-**🗓️ 6. Kozmik Yaşam Planlama ve Günlük Strateji Rehberi**
-Kullanıcının bu harita doğrultusunda hayatını, günlerini ve önemli kararlarını nasıl planlaması gerektiğine dair pratik astrolojik rehber. Eyleme geçme zamanları, imza atma, ortaklık kurma ve arınma dönemlerini belirleme stratejisi.
   `;
 
   try {
@@ -506,24 +391,139 @@ Kullanıcının bu harita doğrultusunda hayatını, günlerini ve önemli karar
     const result = await response.json();
     return result.candidates?.[0]?.content?.parts?.[0]?.text || '';
   } catch (error) {
-    console.warn('Error fetching full birth chart analysis:', error);
-    return `**🪐 1. Genel Mizaç, Kozmik Elementler ve Yaşam Yolu**
+    console.warn('Error fetching daily shadows:', error);
+    return `Sevgili ${name}, bugün gökyüzünde transit yapan Ay'ın (${moonSign} burcunda) natal haritanızdaki Mars ve Satürn ile kurduğu kontaklar, bastırılmış dürtülerinizi veya yetersizlik korkularınızı yüzeye çıkarabilir. İçinizdeki direnç noktalarını gözlemleyin; öfkenizi dışa yansıtmak yerine, bu enerjiyi içsel sınırlarınızı belirlemek ve disiplin kazanmak için dönüştürün.`;
+  }
+}
+
+export async function fetchFullChartAnalysis(
+  name: string,
+  birthChart: ComputedChart,
+  aspects: any[]
+): Promise<string> {
+  const fallbackReport = `**🪐 1. Genel Mizaç ve Element Dengesi**
 Güneş, Ay ve Yükselen yerleşimleriniz, kendinizi ifade etme ve hayatı deneyimleme biçiminizde güçlü bir denge kurmanızı sağlıyor. Ateş elementinin yüksekliği size doğal bir cesaret verirken, su elementinin derinliği sezgilerinizi güçlendiriyor.
 
-**🧠 2. Zihinsel Yapı, Akıl ve İletişim**
+**🧠 2. Zihinsel Kapasite ve İletişim Dili**
 Zihniniz son derece aktif ve öğrenmeye açık. Fikirlerinizi aktarırken net ve doğrudan bir iletişim tarzını benimsiyorsunuz. Kararlarınızda analitik davranmaya özen gösteriyorsunuz.
 
-**❤️ 3. Aşk, Bağlar, Değerler ve Finansal Bereket**
+**❤️ 3. İlişkiler, Sevgi Dili ve Finansal Bereket**
 Venüs yerleşimi ve açılarına göre ilişkilerinizde güven ve derinliği ön planda tutuyorsunuz. Finansal konularda sezgileriniz size rehberlik ediyor ve kalıcı kazançlar üretme potansiyeline sahipsiniz.
 
-**🔥 4. Eylem, Tutku, Mücadele ve İrade Gücü**
+**🔥 4. İrade Gücü, Tutku ve Mücadele Tarzı**
 Mars konumunuz, hedeflerinize kararlılıkla yürüdüğünüzü gösteriyor. Zorluklarla karşılaştığınızda pes etmek yerine, stratejik ve dayanıklı bir şekilde mücadele etmeyi seçiyorsunuz.
 
-**⚠️ 5. Açı İlişkileri, Hayat Sınavları ve Olgunlaşma (Satürn)**
+**⚠️ 5. Hayat Sınavları, Engeller ve Satürn Dersleri**
 Satürn yerleşiminiz, disiplin ve sabır gerektiren sınavlardan geçerek olgunlaşacağınızı vurguluyor. Hayatınızdaki engeller, aslında sizi kalıcı ve köklü başarılara hazırlayan manevi basamaklardır.
 
-**🗓️ 6. Kozmik Yaşam Planlama ve Günlük Strateji Rehberi**
-Önemli ticari anlaşmaları ve yeni başlangıçları Merkür'ün temiz açılarında yapmaya özen gösterin. Enerjinizi korumak için Ay'ın küçülen fazlarında içsel temizlik yapın ve yeni ay fazlarında yeni projelerinizin tohumlarını atın.`;
+**🗓️ 6. Yakın Dönem Projeksiyonu ve Önemli Kozmik Tarihler**
+Önümüzdeki 3 aylık süreçte (Ör: Temmuz - Eylül dönemi), özellikle yeni ay fazlarında (her ayın ilk haftası) yeni projelere odaklanın. Ay küçülürken (ayın son 10 günü) yeni anlaşmalardan ve riskli yatırımlardan kaçının.
+
+**🚨 7. Mevcut Dönemde Dikkat Edilmesi Gereken Riskler**
+Şu sıralar sabırsızlık ve aceleci iletişim nedeniyle ikili ilişkilerde gerginlikler yaşayabilirsiniz. Kararlarınızı alırken en az 24 saat düşünmeniz ve zihinsel sakinliği korumanız önerilir.
+
+**🔮 8. İlerisi İçin Stratejik Yaşam Planlama ve Uzun Vadeli Uyarılar**
+Uzun vadede kemik ve diş sağlığınıza özen göstermelisiniz. Finansal yatırımlarınızda gayrimenkul ve toprak gibi kalıcı değerlere yönelmek Satürn'ün zorlayıcı etkilerini koruyucu bir kalkana dönüştürecektir.`;
+
+  if (!GEMINI_API_KEY) {
+    return fallbackReport;
+  }
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  
+  const prompt1 = `
+[SYSTEM INSTRUCTION]
+Sen; İsviçre Efemerisi hassasiyetine vakıf, Keldani numerolojisini ve klasik/modern astroloji metodolojilerini birleştiren elit bir Astroloji Profesörüsün. Görevin, kullanıcının natal harita verilerini, element dağılımlarını, niteliklerini sentezleyerek adeta bir kitap bölümü niteliğinde, son derece kapsamlı ve derin bir mizaç raporu oluşturmaktır.
+
+[WRITING RULES]
+1. Analiz dili mistik, bilge, sarmalayıcı ama aynı zamanda bilimsel, analitik ve psikolojik olmalıdır.
+2. Metin içi yapılandırmada başlıklar ve anahtar kelimeler için **kalın metin** kullan. Bölümler arasına çift satır boşluk ekle.
+3. Raporu tam 4 ana bölüm halinde yapılandır.
+
+Kullanıcının Adı: "${name}"
+Doğum Haritası Gezegen Konumları ve Evleri:
+${JSON.stringify(birthChart.planets)}
+Doğum Haritası Ev Başlangıç Dereceleri:
+${JSON.stringify(birthChart.houses)}
+
+Rapor Bölümleri:
+**🪐 1. Genel Mizaç ve Element Dengesi**
+Yükselen, Güneş ve Ay konumları ile element dengesinin sentezi. Temel karakter özellikleri, ruhsal potansiyeli ve dünyaya geliş amacı.
+
+**🧠 2. Zihinsel Kapasite ve İletişim Dili**
+Merkür konumuna ve açılarına göre zekası, öğrenme ve karar verme yapısı, iletişim üslubu. Zihinsel tıkanıklıkları nasıl aşabileceği.
+
+**❤️ 3. İlişkiler, Sevgi Dili ve Finansal Bereket**
+Venüs yerleşimi ve açılarına göre ilişkilerdeki beklentileri, sevgi dili, finansal değerleri ve bereketi hayatına çekme potansiyeli.
+
+**🔥 4. İrade Gücü, Tutku ve Mücadele Tarzı**
+Mars konumuna göre motivasyon kaynakları, kriz anlarındaki tavrı, engelleri aşma tarzı ve fiziksel enerjiyi doğru kullanma biçim.
+  `;
+
+  const prompt2 = `
+[SYSTEM INSTRUCTION]
+Sen; İsviçre Efemerisi hassasiyetine vakıf, gökyüzü transitleri ve gezegen açı yerleşimleri konusunda uzman bir Astroloji Profesörüsün. Görevin, kullanıcının açı ilişkilerini ve Satürn konumunu tahlil ederek yakın ve uzun vadeli bir kozmik planlama stratejisi hazırlamaktır.
+
+[WRITING RULES]
+1. Analiz dili bilge, uyarıcı, pratik ve son derece yol gösterici olmalıdır.
+2. Metin içi yapılandırmada başlıklar ve anahtar kelimeler için **kalın metin** kullan. Bölümler arasına çift satır boşluk ekle.
+3. Raporu tam 4 ana bölüm halinde yapılandır.
+
+Kullanıcının Adı: "${name}"
+Doğum Haritası Gezegen Konumları:
+${JSON.stringify(birthChart.planets)}
+Haritadaki Gezegenler Arası Açı İlişkileri:
+${JSON.stringify(aspects)}
+
+Rapor Bölümleri:
+**⚠️ 5. Hayat Sınavları, Engeller ve Satürn Dersleri**
+Satürn yerleşimine ve gezegenler arasındaki majör açılara (kavuşum, kare, karşıt vb.) göre hayatındaki karmik zorluklar, aşması gereken engeller ve manevi olgunlaşma yolları.
+
+**🗓️ 6. Yakın Dönem Projeksiyonu ve Önemli Kozmik Tarihler**
+Önümüzdeki 6 aylık süreçte (Ör: Temmuz - Aralık 2026 dönemi) hangi dönemlerde, hangi tarihlerde eyleme geçmesi gerektiği, hangi günlerde imza, ortaklık veya büyük adımlardan kaçınması gerektiğine dair spesifik tarih aralıkları ve kozmik projeksiyon.
+
+**🚨 7. Mevcut Dönemde Dikkat Edilmesi Gereken Riskler**
+Kullanıcının bugünlerde hayatında en çok hangi konularda temkinli olması gerektiği (Ör: borçlanma, acele kararlar, öfke patlamaları, sakarlıklar vb.) ve koruyucu adımlar.
+
+**🔮 8. İlerisi İçin Stratejik Yaşam Planlama ve Uzun Vadeli Uyarılar**
+Gelecek yıllarda dikkat edilmesi gereken uzun vadeli kozmik riskler, sağlıkta hassas olabilecek organlar/dönemler ve hayatını planlarken kullanabileceği altın kurallar.
+  `;
+
+  try {
+    const [res1, res2] = await Promise.all([
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt1 }] }]
+        })
+      }).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      }),
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt2 }] }]
+        })
+      }).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+    ]);
+
+    const text1 = res1.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const text2 = res2.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    if (!text1 && !text2) {
+      return fallbackReport;
+    }
+
+    return `${text1.trim()}\n\n${text2.trim()}`;
+  } catch (error) {
+    console.warn('Error fetching full birth chart analysis concurrently:', error);
+    return fallbackReport;
   }
 }
 
