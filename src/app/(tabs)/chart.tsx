@@ -779,7 +779,7 @@ export default function ChartScreen() {
   }, [computedChart]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#000000' }}>
+    <View style={{ flex: 1, backgroundColor: '#0B0F19' }}>
       {/* Background Ethereal Auras */}
       <Animated.View
         style={[

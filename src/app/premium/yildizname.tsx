@@ -217,7 +217,7 @@ export default function YildiznameScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#0B0F19',
   },
   scrollContainer: {
     padding: 20,
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#0B0F19',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 30,

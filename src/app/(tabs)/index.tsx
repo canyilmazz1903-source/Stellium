@@ -479,7 +479,7 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
   const userSunSign = computedChart?.planets?.find(p => p.name === 'Sun')?.sign || 'Keşfedilmemiş';
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#000000' }}>
+    <View style={{ flex: 1, backgroundColor: '#0B0F19' }}>
       {/* Background Aura circles blurred */}
       <Animated.View
         style={[
@@ -1120,7 +1120,7 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#0B0F19',
   },
   scrollContainer: {
     padding: 20,
@@ -1473,11 +1473,11 @@ const styles = StyleSheet.create({
   // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#0B0F19',
   },
   modalContent: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#0B0F19',
     padding: 20,
     paddingTop: Platform.OS === 'ios' ? 20 : 10,
   },

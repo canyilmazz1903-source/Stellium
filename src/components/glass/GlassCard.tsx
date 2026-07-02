@@ -16,7 +16,7 @@ export default function GlassCard({
   style,
   intensity = 35,
   tint = 'dark',
-  borderColor = 'rgba(255, 255, 255, 0.08)',
+  borderColor = 'rgba(212, 175, 55, 0.12)',
   className,
 }: GlassCardProps) {
   const cardStyle = [

@@ -118,7 +118,7 @@ export default function RootLayout() {
           options={{ 
             headerShown: true, 
             title: 'TRANSİT ANALİZİ', 
-            headerStyle: { backgroundColor: '#000000' },
+            headerStyle: { backgroundColor: '#0B0F19' },
             headerTintColor: '#D4AF37',
             headerTitleStyle: { fontFamily: 'Inter', fontSize: 16, fontWeight: '700' },
             headerShadowVisible: false,
@@ -133,7 +133,7 @@ export default function RootLayout() {
           options={{ 
             headerShown: true, 
             title: 'SİNASTRİ UYUMU', 
-            headerStyle: { backgroundColor: '#000000' },
+            headerStyle: { backgroundColor: '#0B0F19' },
             headerTintColor: '#D4AF37',
             headerTitleStyle: { fontFamily: 'Inter', fontSize: 16, fontWeight: '700' },
             headerShadowVisible: false,
@@ -148,7 +148,7 @@ export default function RootLayout() {
           options={{ 
             headerShown: true, 
             title: 'YILDIZNAME RAPORU', 
-            headerStyle: { backgroundColor: '#000000' },
+            headerStyle: { backgroundColor: '#0B0F19' },
             headerTintColor: '#D4AF37',
             headerTitleStyle: { fontFamily: 'Inter', fontSize: 16, fontWeight: '700' },
             headerShadowVisible: false,
@@ -166,7 +166,7 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#0B0F19',
     justifyContent: 'center',
     alignItems: 'center',
   },
