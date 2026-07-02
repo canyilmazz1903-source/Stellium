@@ -106,8 +106,8 @@ export async function fetchTransitAnalysis(
   planets: any[],
   houses: number[]
 ): Promise<string> {
-  if (!GEMINI_API_KEY) {
-    return `**🪐 1. Harita Potansiyeliniz ve Güçlü/Zayıf Konumlar**\nHaritanızdaki Güneş ve Jüpiter yerleşimleri, kariyerinizde liderlik vasıflarınızı ve şans kanallarınızı aktif kılıyor. Merkür'ün konumu zihinsel kapasitenizin yüksek olduğunu gösterse de Satürn'ün zorlayıcı açıları bazı konularda sorumlulukların gecikmeyle gelebileceğine işaret ediyor.
+  const fallbackReport = `**🪐 1. Harita Potansiyeliniz ve Güçlü/Zayıf Konumlar**
+Haritanızdaki Güneş ve Jüpiter yerleşimleri, kariyerinizde liderlik vasıflarınızı ve şans kanallarınızı aktif kılıyor. Merkür'ün konumu zihinsel kapasitenizin yüksek olduğunu gösterse de Satürn'ün zorlayıcı açıları bazı konularda sorumlulukların gecikmeyle gelebileceğine işaret ediyor.
 
 **🏠 2. Yaşam Alanlarındaki Ev Yansımaları**
 Güneş'in 10. evinizden transiti, kariyer hedeflerinizde kendinizi daha net ifade etmenizi ve liderlik gücünüzü sergilemenizi desteklemekte. Jüpiter'in para evinize yaptığı olumlu temaslar ise önümüzdeki günlerde maddi kazanç kapılarını aralayabilir.
@@ -117,65 +117,85 @@ Mars'ın 12. ev transiti içsel gerilimlere ve uykusuzluğa neden olabilir. Bu s
 
 **🔮 4. Kozmik Fırsatlar ve Gelecek Projeksiyonu**
 Önümüzdeki yeni ay döngüsü, hayatınızda yepyeni niyetler ve başlangıçlar için mükemmel bir zemin hazırlıyor. Kararlılıkla atacağınız adımlar uzun vadede kalıcı meyveler verecektir.`;
+
+  if (!GEMINI_API_KEY) {
+    return fallbackReport;
   }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
   
-  const prompt = `
-    Sen geleneksel astroloji, gökyüzü transitleri ve gezegen ev konumları konusunda uzman bir astrologsun.
-    Kullanıcı: "${name}", Burç: "${zodiacSign}"
-    Doğum Haritası Gezegen Yerleşimleri: ${JSON.stringify(planets)}
-    Doğum Haritası Ev Başlangıç Dereceleri: ${JSON.stringify(houses)}
-    
-    Kullanıcı için detaylı bir transit ve gezegen yerleşimleri analizi yap.
-    Analizi şu net başlıklarla ve son derece derinlemesine, doyurucu bir şekilde yapılandır:
-    
-    **🪐 1. Harita Potansiyeliniz ve Güçlü/Zayıf Konumlar**
-    Gezegenlerinizin haritanızdaki konumlarını detaylıca tahlil et, hangi alanlarda doğal yeteneklere sahip olduğunuzu ve hangi alanların zayıf kaldığını açıkla.
-    
-    **🏠 2. Yaşam Alanlarındaki Ev Yansımaları**
-    Ev başlangıç çizgileri ve gezegenlerin ev yerleşimlerini yaşam alanları bazında detaylandır.
-    
-    **⚠️ 3. Dikkat Edilmesi Gereken Riskler ve Gelişim Alanları**
-    Gelecek dönemde nerede zorlanabileceğinizi, hangi konularda sabırlı ve temkinli olmanız gerektiğini anlat.
-    
-    **🔮 4. Kozmik Fırsatlar ve Gelecek Projeksiyonu**
-    Yükselen şanslarınızı, hangi dönemlerde eyleme geçmeniz gerektiğini ve hayatı nasıl optimize edebileceğinizi anlat.
-    
-    Jungcu veya psikolojik terimler (anima, animus, gölge, bireyleşme vb.) kullanmaktan tamamen kaçın. Tamamen geleneksel göksel ilimler, yıldız hareketleri ve pratik astroloji bilgisi ver. Türkçe yaz.
+  const prompt1 = `
+[SYSTEM INSTRUCTION]
+Sen geleneksel astroloji, gökyüzü transitleri ve gezegen ev konumları konusunda uzman kıdemli bir elit astrologsun. Görevin, kullanıcının doğum haritasındaki gezegen yerleşimlerini ve ev sistemini tahlil ederek detaylı bir karakter ve yaşam potansiyeli raporu oluşturmaktır.
+
+[WRITING RULES]
+1. Analiz dili mistik, bilge, son derece açıklayıcı ve pratik olmalıdır. Açı ve yerleşimlerin hayatta tam olarak neye sebep olduğunu (neden-sonuç ilişkilerini) derinlemesine açıkla.
+2. Metin içi yapılandırmada başlıklar ve anahtar kelimeler için **kalın metin** kullan. Bölümler arasına çift satır boşluk ekle.
+3. Raporu tam 2 ana bölüm halinde yapılandır.
+
+Kullanıcı: "${name}", Burç: "${zodiacSign}"
+Doğum Haritası Gezegen Yerleşimleri: ${JSON.stringify(planets)}
+Doğum Haritası Ev Başlangıç Dereceleri: ${JSON.stringify(houses)}
+
+Rapor Bölümleri:
+**🪐 1. Harita Potansiyeliniz ve Güçlü/Zayıf Konumlar**
+Gezegenlerinizin haritanızdaki konumlarını detaylıca tahlil et, hangi alanlarda doğal yeteneklere sahip olduğunuzu, hangi alanların zayıf kaldığını ve bunun hayatınızdaki pratik sonuçlarını açıkla.
+
+**🏠 2. Yaşam Alanlarındaki Ev Yansımaları**
+Ev başlangıç çizgileri ve gezegenlerin ev yerleşimlerini yaşam alanları bazında detaylandırarak bu enerjilerin kariyer, ilişkiler ve finansal hayatınıza yansımalarını yorumla.
+  `;
+
+  const prompt2 = `
+[SYSTEM INSTRUCTION]
+Sen geleneksel astroloji, gökyüzü transitleri ve gezegen ev konumları konusunda uzman kıdemli bir elit astrologsun. Görevin, kullanıcının doğum haritasındaki gezegen yerleşimlerini ve ev sistemini tahlil ederek gelecek dönem risklerini ve kozmik fırsatları içeren bir projeksiyon rehberi hazırlamaktır.
+
+[WRITING RULES]
+1. Analiz dili bilge, uyarıcı, pratik ve son derece yol gösterici olmalıdır. Yakın ve orta vadeli önemli tarihler, kaçınılması gereken zamanlar ve eylem planları içermelidir.
+2. Metin içi yapılandırmada başlıklar ve anahtar kelimeler için **kalın metin** kullan. Bölümler arasına çift satır boşluk ekle.
+3. Raporu tam 2 ana bölüm halinde yapılandır.
+
+Kullanıcı: "${name}", Burç: "${zodiacSign}"
+Doğum Haritası Gezegen Yerleşimleri: ${JSON.stringify(planets)}
+
+Rapor Bölümleri:
+**⚠️ 3. Dikkat Edilmesi Gereken Riskler ve Gelişim Alanları**
+Gelecek dönemde nerede zorlanabileceğinizi, hangi konularda sabırlı ve temkinli olmanız gerektiğini, retro ve zorlu transit dönemlerindeki riskleri detaylandır.
+
+**🔮 4. Kozmik Fırsatlar ve Gelecek Projeksiyonu**
+Yükselen şanslarınızı, önümüzdeki dönemde (özellikle önümüzdeki 3-6 aylık kritik tarih aralıkları vererek) hangi dönemlerde eyleme geçmeniz gerektiğini ve hayatı nasıl optimize edebileceğinizi anlat.
   `;
 
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }]
-        }]
+    const [res1, res2] = await Promise.all([
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt1 }] }] })
+      }).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      }),
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt2 }] }] })
+      }).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
       })
-    });
+    ]);
 
-    if (!response.ok) {
-      throw new Error(`Gemini API returned code: ${response.status}`);
+    const text1 = res1.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const text2 = res2.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    if (!text1 && !text2) {
+      return fallbackReport;
     }
 
-    const result = await response.json();
-    return result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return `${text1.trim()}\n\n${text2.trim()}`;
   } catch (error) {
-    console.warn('Error fetching transit analysis:', error);
-    return `**🪐 1. Harita Potansiyeliniz ve Güçlü/Zayıf Konumlar**\nHaritanızdaki Güneş ve Jüpiter yerleşimleri, kariyerinizde liderlik vasıflarınızı ve şans kanallarınızı aktif kılıyor. Merkür'ün konumu zihinsel kapasitenizin yüksek olduğunu gösterse de Satürn'ün zorlayıcı açıları bazı konularda sorumlulukların gecikmeyle gelebileceğine işaret ediyor.
-
-**🏠 2. Yaşam Alanlarındaki Ev Yansımaları**
-Güneş'in 10. evinizden transiti, kariyer hedeflerinizde kendinizi daha net ifade etmenizi ve liderlik gücünüzü sergilemenizi desteklemekte. Jüpiter'in para evinize yaptığı olumlu temaslar ise önümüzdeki günlerde maddi kazanç kapılarını aralayabilir.
-
-**⚠️ 3. Dikkat Edilmesi Gereken Riskler ve Gelişim Alanları**
-Mars'ın 12. ev transiti içsel gerilimlere ve uykusuzluğa neden olabilir. Bu süreçte aceleci kararlar almaktan, trafikte veya riskli fiziksel aktivitelerde dikkatsiz davranmaktan kaçınmalısınız.
-
-**🔮 4. Kozmik Fırsatlar ve Gelecek Projeksiyonu**
-Önümüzdeki yeni ay döngüsü, hayatınızda yepyeni niyetler ve başlangıçlar için mükemmel bir zemin hazırlıyor. Kararlılıkla atacağınız adımlar uzun vadede kalıcı meyveler verecektir.`;
+    console.warn('Error fetching transit analysis concurrently:', error);
+    return fallbackReport;
   }
 }
 
@@ -186,8 +206,7 @@ export async function fetchSynastryAnalysis(
   p2Name: string,
   p2Planets: any[]
 ): Promise<string> {
-  if (!GEMINI_API_KEY) {
-    return `**❤️ 1. Karşılıklı Çekim ve Aşk Uyumunuz**
+  const fallbackReport = `**❤️ 1. Karşılıklı Çekim ve Aşk Uyumunuz**
 Sevgili ${p1Name} ve ${p2Name}, haritalarınız arasındaki uyum analizi çıkarıldı. Güneş ve Ay yerleşimleriniz ruhsal planda güçlü bir çekim yaratıyor. Venüs'ün karşılıklı uyumlu konumları sayesinde aranızdaki sevgi dili oldukça akıcı ve romantik.
 
 **🗣️ 2. İletişim ve Zihinsel Ortaklık**
@@ -198,65 +217,84 @@ Ancak Satürn ve Mars arasındaki gergin açılar, zaman zaman otorite savaşlar
 
 **🔮 4. Uyum Artırma Rehberi (Nasıl Daha Uyumlu Olunur?)**
 Uyumunuzu artırmak için birbirinizin kişisel alanlarına saygı göstermeli ve öfkelendiğiniz anlarda sessiz kalmayı seçerek Mars'ın yıkıcı enerjisini yumuşatmalısınız. Venüs saatlerinde yapacağınız romantik jestler aranızdaki sevgiyi tazeleyecektir.`;
+
+  if (!GEMINI_API_KEY) {
+    return fallbackReport;
   }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-  
-  const prompt = `
-    Sen ilişki astrolojisi ve doğum haritası uyumu konusunda uzman bir astrologsun.
-    1. Kişi: "${p1Name}", Güneş Burcu: "${p1Sign}", Gezegenleri: ${JSON.stringify(p1Planets)}
-    2. Kişi: "${p2Name}", Gezegenleri: ${JSON.stringify(p2Planets)}
-    
-    Bu iki kişinin haritası arasındaki sinastri (uyum) analizini yap.
-    Analizi şu net başlıklarla, son derece detaylı ve doyurucu bir şekilde yapılandır:
-    
-    **❤️ 1. Karşılıklı Çekim ve Aşk Uyumunuz**
-    Güneş, Ay, Venüs ve Mars etkileşimleri üzerinden aranızdaki romantik çekimi, sadakat bağını ve ruhsal uyumu detaylandır. Neden uyumlu olduğunuzu açıklayan detaylar ver.
-    
-    **🗣️ 2. İletişim ve Zihinsel Ortaklık**
-    Merkür açılarının aranızdaki konuşma diline, fikir birliğine ve anlaşma kolaylığına etkisini yorumla.
-    
-    **⚠️ 3. Uyuşmazlıklar ve Sürtüşme Noktaları (Farklılıklar)**
-    Hangi gezegen etkileşimlerinin gerilim, kıskançlık, ego çatışması veya iletişim kopukluğu yaratabileceğini net bir şekilde açıkla. Hangi özelliklerinizin uyuşmadığını belirt.
-    
-    **🔮 4. Uyum Artırma Rehberi (Nasıl Daha Uyumlu Olunur?)**
-    Bu harita doğrultusunda, aranızdaki sevgiyi büyütmek ve pürüzleri gidermek için birbirinize nasıl yaklaşmanız gerektiğine dair pratik ve kozmik tavsiyeler ver.
-    
-    Jungcu veya psikolojik terimler (anima, animus, gölge vb.) kullanmaktan tamamen kaçın. Tamamen klasik aşk ve uyum astrolojisi tahlili yap. Türkçe yaz.
+
+  const prompt1 = `
+[SYSTEM INSTRUCTION]
+Sen ilişki astrolojisi ve doğum haritası uyumu konusunda uzman elit kıdemli bir astrologsun. Görevin, iki kişinin doğum haritası verilerini ve gezegen etkileşimlerini (sinastri) karşılaştırarak aşk, romantizm ve zihinsel uyum analizini çıkarmaktır.
+
+[WRITING RULES]
+1. Analiz dili bilge, derinlemesine açıklayıcı ve son derece doyurucu olmalıdır. Gezegen açılarının aralarında tam olarak neye sebep olduğunu (neden-sonuç ilişkilerini) detaylıca tahlil et.
+2. Metin içi yapılandırmada başlıklar ve anahtar kelimeler için **kalın metin** kullan. Bölümler arasına çift satır boşluk ekle.
+3. Raporu tam 2 ana bölüm halinde yapılandır.
+
+1. Kişi: "${p1Name}", Güneş Burcu: "${p1Sign}", Gezegenleri: ${JSON.stringify(p1Planets)}
+2. Kişi: "${p2Name}", Gezegenleri: ${JSON.stringify(p2Planets)}
+
+Rapor Bölümleri:
+**❤️ 1. Karşılıklı Çekim ve Aşk Uyumunuz**
+Güneş, Ay, Venüs ve Mars etkileşimleri üzerinden aranızdaki romantik çekimi, sadakat bağını ve ruhsal uyumu detaylandır. Neden uyumlu olduğunuzu açıklayan detaylar ver.
+
+**🗣️ 2. İletişim ve Zihinsel Ortaklık**
+Merkür açılarının aranızdaki konuşma diline, fikir birliğine, ortak ilgi alanlarına ve anlaşma kolaylığına etkisini derinlemesine yorumla.
+  `;
+
+  const prompt2 = `
+[SYSTEM INSTRUCTION]
+Sen ilişki astrolojisi ve doğum haritası uyumu konusunda uzman elit kıdemli bir astrologsun. Görevin, iki kişinin doğum haritası verilerini ve gezegen etkileşimlerini (sinastri) karşılaştırarak uyuşmazlıklar, ego savaşları ve uyum artırma stratejilerini içeren bir rehber hazırlamaktır.
+
+[WRITING RULES]
+1. Analiz dili yol gösterici, pratik ve son derece yapıcı olmalıdır. Gezegenlerin zorlayıcı açılarının nelere sebep olduğunu ve bunların nasıl iyileştirilebileceğini pratik tavsiyelerle açıkla.
+2. Metin içi yapılandırmada başlıklar ve anahtar kelimeler için **kalın metin** kullan. Bölümler arasına çift satır boşluk ekle.
+3. Raporu tam 2 ana bölüm halinde yapılandır.
+
+1. Kişi: "${p1Name}", Gezegenleri: ${JSON.stringify(p1Planets)}
+2. Kişi: "${p2Name}", Gezegenleri: ${JSON.stringify(p2Planets)}
+
+Rapor Bölümleri:
+**⚠️ 3. Uyuşmazlıklar ve Sürtüşme Noktaları (Farklılıklar)**
+Hangi gezegen etkileşimlerinin (Satürn kısıtlamaları, Plüton kontrol savaşları, Mars öfkesi vb.) gerilim, kıskançlık, ego çatışması veya iletişim kopukluğu yaratabileceğini net bir şekilde açıkla. Hangi özelliklerinizin uyuşmadığını belirt.
+
+**🔮 4. Uyum Artırma Rehberi (Nasıl Daha Uyumlu Olunur?)**
+Bu harita doğrultusunda, aranızdaki sevgiyi büyütmek ve pürüzleri gidermek için birbirinize nasıl yaklaşmanız gerektiğine dair pratik ve kozmik tavsiyeler ver.
   `;
 
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }]
-        }]
+    const [res1, res2] = await Promise.all([
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt1 }] }] })
+      }).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      }),
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt2 }] }] })
+      }).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
       })
-    });
+    ]);
 
-    if (!response.ok) {
-      throw new Error(`Gemini API returned code: ${response.status}`);
+    const text1 = res1.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const text2 = res2.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    if (!text1 && !text2) {
+      return fallbackReport;
     }
 
-    const result = await response.json();
-    return result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return `${text1.trim()}\n\n${text2.trim()}`;
   } catch (error) {
-    console.warn('Error fetching synastry analysis:', error);
-    return `**❤️ 1. Karşılıklı Çekim ve Aşk Uyumunuz**
-Sevgili ${p1Name} ve ${p2Name}, haritalarınız arasındaki uyum analizi çıkarıldı. Güneş ve Ay yerleşimleriniz ruhsal planda güçlü bir çekim yaratıyor. Venüs'ün karşılıklı uyumlu konumları sayesinde aranızdaki sevgi dili oldukça akıcı ve romantik.
-
-**🗣️ 2. İletişim ve Zihinsel Ortaklık**
-Merkür etkileşimleri ise zihinsel uyumunuzu ve sohbet kalitenizi üst seviyeye taşıyor. Birlikteyken zamanın nasıl geçtiğini anlamayacak kadar akıcı sohbetler yapabilirsiniz.
-
-**⚠️ 3. Uyuşmazlıklar ve Sürtüşme Noktaları (Farklılıklar)**
-Ancak Satürn ve Mars arasındaki gergin açılar, zaman zaman otorite savaşları ve sabırsızlık getirebilir. İnatlaşma ve birbirinizi kontrol etme isteği ilişkinin en büyük sınavıdır. Bazı konularda beklentilerinizin farklı olduğunu fark edebilirsiniz.
-
-**🔮 4. Uyum Artırma Rehberi (Nasıl Daha Uyumlu Olunur?)**
-Uyumunuzu artırmak için birbirinizin kişisel alanlarına saygı göstermeli ve öfkelendiğiniz anlarda sessiz kalmayı seçerek Mars'ın yıkıcı enerjisini yumuşatmalısınız. Venüs saatlerinde yapacağınız romantik jestler aranızdaki sevgiyi tazeleyecektir.`;
+    console.warn('Error fetching synastry analysis concurrently:', error);
+    return fallbackReport;
   }
 }
 
@@ -267,8 +305,7 @@ export async function fetchYildiznameAnalysis(
   sign: string,
   element: string
 ): Promise<string> {
-  if (!GEMINI_API_KEY) {
-    return `**⭐ 1. İsim Ebced Şifresi ve Kader Temaları**
+  const fallbackReport = `**⭐ 1. İsim Ebced Şifresi ve Kader Temaları**
 Sevgili ${name}, anne adınız olan ${motherName} ile hesaplanan geleneksel Yıldızname raporunuz oluşturuldu. Ebced değeriniz: ${totalEbced}. Bu ebced rezonansı, hayat yolculuğunuzda önemli dönüm noktalarında ilahi yardımlar alacağınızı gösterir.
 
 **🔥 2. Yıldız Burcu ve Element Mizacı**
@@ -279,67 +316,87 @@ Yıldızınız yüksek olduğu için nazara ve kem gözlerin negatif enerjilerin
 
 **🛡️ 4. Manevi Koruma ve Esma Rehberi**
 Bu tıkanıklıkları aşmak ve kendinizi korumak için her gün düzenli olarak Felak ve Nas surelerini okumanız, ayrıca adınıza özel rezonans sağlayan 'Ya Hafiz' ve 'Ya Latif' esmalarını zikretmeniz manevi koruma kalkanınızı maksimuma çıkaracaktır.`;
+
+  if (!GEMINI_API_KEY) {
+    return fallbackReport;
   }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-  
-  const prompt = `
-    Sen geleneksel Doğu mistisizmi, Ebced hesabı, yıldıznameler ve havas ilmi konusunda derin bilgi sahibi uzman bir yıldızname müneccimisin.
-    Kullanıcının adı: "${name}"
-    Annesinin adı: "${motherName}"
-    Toplam Ebced Değeri: ${totalEbced}
-    Hesaplanan Yıldızname Burcu: "${sign}"
-    Element: "${element}"
-    
-    Bu parametreler doğrultusunda kapsamlı, derin ve doyurucu bir Yıldızname analizi yaz.
-    Analizi şu net başlıklarla yapılandır:
-    
-    **⭐ 1. İsim Ebced Şifresi ve Kader Temaları**
-    Kullanıcının isminin ve anne isminin ebced rezonansının hayat yolculuğundaki etkilerini, kader çizgisine getirdiği şans ve sınavları açıkla.
-    
-    **🔥 2. Yıldız Burcu ve Element Mizacı**
-    Hesaplanan yıldız burcu ve elementin fiziksel, zihinsel ve ruhsal yapısına etkisini mistik bir dille tahlil et.
-    
-    **⚠️ 3. Manevi Engeller ve Dikkat Edilmesi Gerekenler**
-    Kişinin yaşamında karşılaşabileceği manevi engelleri, nazara açıklık durumunu, sağlıkta hassas olabilecek organlarını veya süreçlerini detaylandır.
-    
-    **🛡️ 4. Manevi Koruma ve Esma Rehberi**
-    Nazar, tıkanıklık ve engelleri aşmak için kullanıcının düzenli okuması gereken koruyucu esmaları, duaları ve ruhsal arınma tavsiyelerini belirt.
-    
-    Jungcu veya modern batı psikolojisi terimlerinden tamamen uzak dur. Türkçe yaz.
+
+  const prompt1 = `
+[SYSTEM INSTRUCTION]
+Sen geleneksel Doğu mistisizmi, Ebced hesabı, yıldıznameler ve Havas ilmi konusunda derin bilgi sahibi uzman kıdemli bir yıldızname müneccimisin. Görevin, kullanıcının isim ebced rezonansını ve yıldız burcu mizaç potansiyellerini detaylıca tahlil etmektir.
+
+[WRITING RULES]
+1. Analiz dili mistik, bilge, son derece edebi ve sarmalayıcı olmalıdır. Kader çizgilerini, element mizaçlarını, bu mizaçların hayattaki yansımalarını ve olayları detaylıca açıkla.
+2. Metin içi yapılandırmada başlıklar ve anahtar kelimeler için **kalın metin** kullan. Bölümler arasına çift satır boşluk ekle.
+3. Raporu tam 2 ana bölüm halinde yapılandır.
+
+Kullanıcının adı: "${name}"
+Annesinin adı: "${motherName}"
+Toplam Ebced Değeri: ${totalEbced}
+Hesaplanan Yıldızname Burcu: "${sign}"
+Element: "${element}"
+
+Rapor Bölümleri:
+**⭐ 1. İsim Ebced Şifresi ve Kader Temaları**
+Kullanıcının isminin ve anne isminin ebced rezonansının hayat yolculuğundaki etkilerini, kader çizgisine getirdiği şans ve sınavları açıkla.
+
+**🔥 2. Yıldız Burcu ve Element Mizacı**
+Hesaplanan yıldız burcu ve elementin fiziksel, zihinsel ve ruhsal yapısına etkisini mistik bir dille tahlil et.
+  `;
+
+  const prompt2 = `
+[SYSTEM INSTRUCTION]
+Sen geleneksel Doğu mistisizmi, Ebced hesabı, yıldıznameler ve Havas ilmi konusunda derin bilgi sahibi uzman kıdemli bir yıldızname müneccimisin. Görevin, kullanıcının yıldızname verilerine göre manevi engellerini, nazara yatkınlığını ve esma koruma reçetesini detaylandırmaktır.
+
+[WRITING RULES]
+1. Analiz dili bilge, koruyucu, yol gösterici ve son derece yapıcı olmalıdır. Önerilen esma ve duaların okuma sayıları ve şekillerini detaylıca belirt.
+2. Metin içi yapılandırmada başlıklar ve anahtar kelimeler için **kalın metin** kullan. Bölümler arasına çift satır boşluk ekle.
+3. Raporu tam 2 ana bölüm halinde yapılandır.
+
+Kullanıcının adı: "${name}"
+Hesaplanan Yıldızname Burcu: "${sign}"
+
+Rapor Bölümleri:
+**⚠️ 3. Manevi Engeller ve Dikkat Edilmesi Gerekenler**
+Kişinin yaşamında karşılaşabileceği manevi engelleri, yıldız düşüklüğü durumlarını, nazara açıklık durumunu, sağlıkta hassas olabilecek organlarını veya süreçlerini detaylandır.
+
+**🛡️ 4. Manevi Koruma ve Esma Rehberi**
+Nazar, tıkanıklık ve engelleri aşmak için kullanıcının düzenli okuması gereken koruyucu esmaları (ebced sayı rezonanslarına göre adetleriyle), duaları ve ruhsal arınma tavsiyelerini belirt.
   `;
 
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: prompt }]
-        }]
+    const [res1, res2] = await Promise.all([
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt1 }] }] })
+      }).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      }),
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt2 }] }] })
+      }).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
       })
-    });
+    ]);
 
-    if (!response.ok) {
-      throw new Error(`Gemini API returned code: ${response.status}`);
+    const text1 = res1.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const text2 = res2.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    if (!text1 && !text2) {
+      return fallbackReport;
     }
-    const result = await response.json();
-    return result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    return `${text1.trim()}\n\n${text2.trim()}`;
   } catch (error) {
-    console.warn('Error fetching yildizname analysis:', error);
-    return `**⭐ 1. İsim Ebced Şifresi ve Kader Temaları**
-Sevgili ${name}, anne adınız olan ${motherName} ile hesaplanan geleneksel Yıldızname raporunuz oluşturuldu. Ebced değeriniz: ${totalEbced}. Bu ebced rezonansı, hayat yolculuğunuzda önemli dönüm noktalarında ilahi yardımlar alacağınızı gösterir.
-
-**🔥 2. Yıldız Burcu ve Element Mizacı**
-Yıldız burcunuz: ${sign}, Elementiniz: ${element}. Bu yerleşim, karakterinizde güçlü bir liderlik arzusu ve kararlılık yaratırken, elementinizin sıcaklığı çevrenize ilham ve güven vermenizi sağlıyor.
-
-**⚠️ 3. Manevi Engeller ve Dikkat Edilmesi Gerekenler**
-Yıldızınız yüksek olduğu için nazara ve kem gözlerin negatif enerjilerine karşı oldukça hassassınız. Zaman zaman nedensiz yorgunluklar veya işlerinizde ani tıkanıklıklar yaşayabilirsiniz. Sağlıkta ise sindirim sistemi ve baş bölgelerinizi aşırı stresten korumalısınız.
-
-**🛡️ 4. Manevi Koruma ve Esma Rehberi**
-Bu tıkanıklıkları aşmak ve kendinizi korumak için her gün düzenli olarak Felak ve Nas surelerini okumanız, ayrıca adınıza özel rezonans sağlayan 'Ya Hafiz' ve 'Ya Latif' esmalarını zikretmeniz manevi koruma kalkanınızı maksimuma çıkaracaktır.`;
+    console.warn('Error fetching yildizname analysis concurrently:', error);
+    return fallbackReport;
   }
 }
 

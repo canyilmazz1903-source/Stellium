@@ -19,6 +19,41 @@ interface SynastryAspect {
   interpretation: string;
 }
 
+function getSynastryAspectDescription(p1Planet: string, p2Planet: string, aspectName: string): string {
+  const p1 = p1Planet === 'Sun' ? 'Güneş' :
+             p1Planet === 'Moon' ? 'Ay' :
+             p1Planet === 'Mercury' ? 'Merkür' :
+             p1Planet === 'Venus' ? 'Venüs' :
+             p1Planet === 'Mars' ? 'Mars' :
+             p1Planet === 'Jupiter' ? 'Jüpiter' :
+             p1Planet === 'Saturn' ? 'Satürn' : p1Planet;
+
+  const p2 = p2Planet === 'Sun' ? 'Güneş' :
+             p2Planet === 'Moon' ? 'Ay' :
+             p2Planet === 'Mercury' ? 'Merkür' :
+             p2Planet === 'Venus' ? 'Venüs' :
+             p2Planet === 'Mars' ? 'Mars' :
+             p2Planet === 'Jupiter' ? 'Jüpiter' :
+             p2Planet === 'Saturn' ? 'Satürn' : p2Planet;
+
+  if (aspectName === 'Kavuşum') {
+    return `Bu kavuşum iki kişinin enerjilerini güçlü bir şekilde birleştirir. Birbirinizi derinden anlar ve ortak amaçlar etrafında kolayca kenetlenirsiniz.`;
+  }
+  if (aspectName === 'Kare') {
+    return `Bu kare açı aranızda tatlı bir gerilim veya ego çatışması yaratabilir. Farklılıklarınızı kabul etmekte zorlanabilirsiniz; ilişkiyi büyütmek için esneklik gereklidir.`;
+  }
+  if (aspectName === 'Karşıt') {
+    return `Bu karşıt açı "zıt kutupların çekimi" gibidir. Birbirinizi tamamlayabileceğiniz gibi, zaman zaman karşıt görüşlere düşüp denge arayışına girebilirsiniz.`;
+  }
+  if (aspectName === 'Üçgen') {
+    return `Bu üçgen açı aranızdaki sevgiyi, hoşgörüyü ve akışı en doğal şekilde destekler. Zorlanmadan birbirinize ayak uydurabilir ve huzurlu bir bağ kurabilirsiniz.`;
+  }
+  if (aspectName === 'Sekstil') {
+    return `Bu sekstil açı aranızda uyumlu diyaloglar ve fırsatlar yaratır. Birbirinizi motive eder, birlikte üretmekten ve sosyal aktivitelerden keyif alırsınız.`;
+  }
+  return 'Bu iki gezegenin açısal bağlantısı ilişkinizde özel bir farkındalık ve gelişim kapısı aralıyor.';
+}
+
 export default function SynastryScreen() {
   const { profile } = useAuthStore();
   const { computedChart } = useAppStore();
@@ -340,6 +375,12 @@ export default function SynastryScreen() {
                 </View>
               </GlassCard>
 
+              {/* Gemini AI Synastry Report (Moved to the Top) */}
+              <Text style={styles.aspectsTitle}>Anima & Animus İlişki Rehberi</Text>
+              <GlassCard style={styles.reportCard}>
+                <Text style={styles.reportText}>{analysisReport}</Text>
+              </GlassCard>
+
               {/* Aspects */}
               <Text style={styles.aspectsTitle}>Öne Çıkan Gezegen Etkileşimleri</Text>
               <View style={styles.aspectsList}>
@@ -348,9 +389,14 @@ export default function SynastryScreen() {
                     <GlassCard key={idx} style={styles.aspectItemCard}>
                       <View style={styles.aspectHeader}>
                         <Text style={styles.aspectSymbol}>{asp.symbol}</Text>
-                        <Text style={styles.aspectHeaderText}>
-                          {asp.p1Planet} & {asp.p2Planet} {asp.aspectName} (Orb: {asp.exactDiff}°)
-                        </Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.aspectHeaderText}>
+                            {asp.p1Planet} & {asp.p2Planet} {asp.aspectName} (Orb: {asp.exactDiff}°)
+                          </Text>
+                          <Text style={styles.aspectDescText}>
+                            {getSynastryAspectDescription(asp.p1Planet, asp.p2Planet, asp.aspectName)}
+                          </Text>
+                        </View>
                       </View>
                     </GlassCard>
                   ))
@@ -360,12 +406,6 @@ export default function SynastryScreen() {
                   </GlassCard>
                 )}
               </View>
-
-              {/* Gemini AI Synastry Report */}
-              <Text style={styles.aspectsTitle}>Anima & Animus İlişki Rehberi</Text>
-              <GlassCard style={styles.reportCard}>
-                <Text style={styles.reportText}>{analysisReport}</Text>
-              </GlassCard>
 
               <CosmicButton
                 title="Yeni Bir Uyum Sorgula"
@@ -659,6 +699,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#E6EDF0',
     flex: 1,
+  },
+  aspectDescText: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: '#8B949E',
+    marginTop: 4,
+    lineHeight: 16,
   },
   noAspectText: {
     fontFamily: 'Inter',

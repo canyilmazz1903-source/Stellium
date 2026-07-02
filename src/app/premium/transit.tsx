@@ -27,6 +27,28 @@ interface Aspect {
   exactDiff: string;
 }
 
+function getTransitAspectDescription(transitPlanet: string, natalPlanet: string, aspectName: string): string {
+  const p1 = transitPlanet;
+  const p2 = natalPlanet;
+  
+  if (aspectName === 'Kavuşum') {
+    return `Bu kavuşum enerjileri birleştirir. Transit ${p1} ve Natal ${p2} odak alanlarınızda yeni bir döngü başlatıyor. Güçlü bir odaklanma ve harekete geçme isteği getirir.`;
+  }
+  if (aspectName === 'Kare') {
+    return `Bu kare açı içsel veya dışsal bir çatışma yaratır. Transit ${p1} ve Natal ${p2} konularında engeller, gecikmeler veya harekete geçmeye zorlayan baskılar yaşayabilirsiniz. Sabır ve disiplin gerektirir.`;
+  }
+  if (aspectName === 'Karşıt') {
+    return `Bu karşıt açı kutuplaşma ve denge sınavı getirir. Transit ${p1} ile Natal ${p2} arasında bir gerilim veya ilişkiler yoluyla yansıyan farkındalıklar yaşayabilirsiniz. Orta yolu bulmalısınız.`;
+  }
+  if (aspectName === 'Üçgen') {
+    return `Bu üçgen açı son derece destekleyici ve akıcı bir enerjidir. Transit ${p1} ile Natal ${p2} konularında şans kapılarını aralar, yeteneklerinizi sergilemenizi kolaylaştırır. Uyum ve genişleme getirir.`;
+  }
+  if (aspectName === 'Sekstil') {
+    return `Bu sekstil açı fırsatlar ve uyumlu olanaklar sunar. Kendinizi göstermeniz için Transit ${p1} ve Natal ${p2} alanlarında yeni imkanlar doğabilir. Çaba gösterildiğinde kalıcı kazançlar getirir.`;
+  }
+  return 'Gökyüzü transitleri hayatınızdaki bu iki konunun bir araya gelerek farkındalık oluşturmasını sağlıyor.';
+}
+
 export default function TransitScreen() {
   const { profile } = useAuthStore();
   const { computedChart } = useAppStore();
@@ -72,7 +94,16 @@ export default function TransitScreen() {
         for (const asp of aspectTypes) {
           if (Math.abs(diff - asp.angle) <= ORB) {
             aspectsList.push({
-              natalPlanet: np.name,
+              natalPlanet: np.name === 'Sun' ? 'Güneş' :
+                           np.name === 'Moon' ? 'Ay' :
+                           np.name === 'Mercury' ? 'Merkür' :
+                           np.name === 'Venus' ? 'Venüs' :
+                           np.name === 'Mars' ? 'Mars' :
+                           np.name === 'Jupiter' ? 'Jüpiter' :
+                           np.name === 'Saturn' ? 'Satürn' :
+                           np.name === 'Uranus' ? 'Uranüs' :
+                           np.name === 'Neptune' ? 'Neptün' :
+                           np.name === 'Pluto' ? 'Plüton' : np.name,
               transitPlanet: PLANET_TR[tp.name] || tp.name,
               aspectName: asp.name,
               symbol: asp.symbol,
@@ -129,8 +160,15 @@ export default function TransitScreen() {
         <GlassCard style={styles.introCard}>
           <Text style={styles.introTitle}>Kozmik Akış</Text>
           <Text style={styles.introDesc}>
-            Transit analiz, şu an gökyüzünde hareket eden gezegenlerin doğum anınızdaki gezegenlerle kurduğu açısal diyalogları inceler. Kendi bireyselleşme yolculuğunuzdaki (Individuation) güncel döngüleri fark etmenizi kolaylaştırır.
+            Transit analiz, şu an gökyüzünde hareket eden gezegenlerin doğum anınızdaki gezegenlerle kurduğu açısal diyalogları inceler. Kendi bireyselleşme yolculuğunuzdaki güncel döngüleri fark etmenizi kolaylaştırır.
           </Text>
+        </GlassCard>
+
+        {/* Gemini Report Section (Moved to the Top) */}
+        <Text style={styles.sectionTitle}>Derin Kozmik Transit Yorumu</Text>
+        <GlassCard style={styles.reportCard}>
+          <Text style={styles.reportTitle}>Rehberlik Raporu</Text>
+          <Text style={styles.reportText}>{report}</Text>
         </GlassCard>
 
         {/* Aspects Section */}
@@ -148,6 +186,9 @@ export default function TransitScreen() {
                     <Text style={styles.aspectType}>
                       {aspect.aspectName} Açısı (Orb: {aspect.exactDiff}°)
                     </Text>
+                    <Text style={styles.aspectDescText}>
+                      {getTransitAspectDescription(aspect.transitPlanet, aspect.natalPlanet, aspect.aspectName)}
+                    </Text>
                   </View>
                 </View>
               </GlassCard>
@@ -158,13 +199,6 @@ export default function TransitScreen() {
             </GlassCard>
           )}
         </View>
-
-        {/* Gemini Report Section */}
-        <Text style={styles.sectionTitle}>Derin Psikolojik Transit Yorumu</Text>
-        <GlassCard style={styles.reportCard}>
-          <Text style={styles.reportTitle}>Rehberlik Raporu</Text>
-          <Text style={styles.reportText}>{report}</Text>
-        </GlassCard>
       </ScrollView>
     </SafeAreaView>
   );
@@ -261,6 +295,13 @@ const styles = StyleSheet.create({
     color: '#8B949E',
     fontSize: 12,
     marginTop: 2,
+  },
+  aspectDescText: {
+    fontFamily: 'Inter',
+    color: '#8B949E',
+    fontSize: 12,
+    marginTop: 6,
+    lineHeight: 16,
   },
   noAspectText: {
     fontFamily: 'Inter',

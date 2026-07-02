@@ -146,6 +146,12 @@ export default function YildiznameScreen() {
                 <Text style={styles.signDesc}>{computedSign?.meaning}</Text>
               </GlassCard>
 
+              {/* Gemini Report (Moved to the Top) */}
+              <Text style={styles.aspectsTitle}>Manevi Yıldızname Rehberliği</Text>
+              <GlassCard style={styles.reportCard}>
+                <Text style={styles.reportText}>{analysisReport}</Text>
+              </GlassCard>
+
               {/* Ebced Details Grid */}
               <GlassCard style={styles.detailsCard}>
                 <Text style={styles.sectionTitle}>Ebced Ayrıntıları</Text>
@@ -191,12 +197,6 @@ export default function YildiznameScreen() {
                     <Text style={styles.rulerVal}>{computedSign?.color}</Text>
                   </View>
                 </View>
-              </GlassCard>
-
-              {/* Gemini Report */}
-              <Text style={styles.aspectsTitle}>Manevi Yıldızname Rehberliği</Text>
-              <GlassCard style={styles.reportCard}>
-                <Text style={styles.reportText}>{analysisReport}</Text>
               </GlassCard>
 
               <CosmicButton
