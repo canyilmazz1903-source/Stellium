@@ -892,13 +892,12 @@ export default function ChartScreen() {
               {/* AI Report Button */}
               <Pressable 
                 onPress={handleFetchAIAnalysis}
-                style={({ pressed }) => [
-                  styles.aiButton,
-                  pressed && { opacity: 0.85 }
-                ]}
+                style={styles.aiButtonPressable}
               >
-                <Ionicons name="sparkles" size={18} color="#0B0F19" style={{ marginRight: 6 }} />
-                <Text style={styles.aiButtonText}>Kapsamlı Harita Analizi (Gemini AI)</Text>
+                <View style={styles.aiButton}>
+                  <Ionicons name="sparkles" size={18} color="#0B0F19" style={{ marginRight: 6 }} />
+                  <Text style={styles.aiButtonText}>Kapsamlı Harita Analizi (Gemini AI)</Text>
+                </View>
               </Pressable>
 
               {/* Detailed Astrology Interpretations */}
@@ -1166,6 +1165,10 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.08)',
     marginBottom: 20,
   },
+  aiButtonPressable: {
+    width: '100%',
+    marginBottom: 24,
+  },
   aiButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1173,9 +1176,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderRadius: 25,
-    width: '100%',
     justifyContent: 'center',
-    marginBottom: 24,
     shadowColor: '#D4AF37',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
