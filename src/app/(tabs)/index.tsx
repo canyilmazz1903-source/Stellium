@@ -1035,11 +1035,18 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
 
             {/* Global Notifications Checklist Panel */}
             <View style={styles.globalNotificationsPanel}>
-              <Text style={styles.globalNotifTitle}>🔔 Tüm Gezegen Alarmları Hızlı Erişim</Text>
+              <Text style={styles.globalNotifTitle}>🔔 Gezegen Saatleri Bildirim Listesi (Aç/Kapat)</Text>
               <View style={styles.globalNotifChecklist}>
                 {Object.keys(PLANETARY_HOURS_DEEP_INFO).map((planetKey) => {
                   const planet = PLANETARY_HOURS_DEEP_INFO[planetKey];
                   const isEnabled = notifPreferences[planetKey] !== false;
+                  const planetNameTR = planetKey === 'Sun' ? 'Güneş' :
+                                       planetKey === 'Moon' ? 'Ay' :
+                                       planetKey === 'Mercury' ? 'Merkür' :
+                                       planetKey === 'Venus' ? 'Venüs' :
+                                       planetKey === 'Mars' ? 'Mars' :
+                                       planetKey === 'Jupiter' ? 'Jüpiter' :
+                                       planetKey === 'Saturn' ? 'Satürn' : planet.name;
                   return (
                     <Pressable 
                       key={planetKey} 
@@ -1049,12 +1056,16 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
                         isEnabled && { backgroundColor: 'rgba(212, 175, 55, 0.1)', borderColor: 'rgba(212, 175, 55, 0.3)' }
                       ]}
                     >
-                      <Text style={styles.globalNotifBadgeSymbol}>{planet.symbol}</Text>
+                      <Text style={[styles.globalNotifBadgeSymbol, { color: isEnabled ? '#D4AF37' : '#FFFFFF' }]}>
+                        {planet.symbol}
+                      </Text>
+                      <Text style={[styles.globalNotifBadgeName, { color: isEnabled ? '#D4AF37' : '#8B949E' }]} numberOfLines={1}>
+                        {planetNameTR}
+                      </Text>
                       <Ionicons 
                         name={isEnabled ? "checkmark-circle" : "ellipse-outline"} 
-                        size={14} 
-                        color={isEnabled ? "#D4AF37" : "rgba(255, 255, 255, 0.3)"} 
-                        style={{ marginLeft: 2 }}
+                        size={11} 
+                        color={isEnabled ? "#D4AF37" : "rgba(255, 255, 255, 0.2)"} 
                       />
                     </Pressable>
                   );
@@ -1603,6 +1614,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
     borderColor: 'rgba(212, 175, 55, 0.25)',
     padding: 20,
+    paddingTop: Platform.OS === 'ios' ? 36 : 20,
     alignItems: 'stretch',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -10 },
@@ -1779,17 +1791,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   globalNotifBadge: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 10,
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+    paddingVertical: 8,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
     backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    gap: 4,
+    width: 44,
+    gap: 3,
   },
   globalNotifBadgeSymbol: {
     fontSize: 14,
+    textAlign: 'center',
+  },
+  globalNotifBadgeName: {
+    fontFamily: 'Inter',
+    fontSize: 8,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });
