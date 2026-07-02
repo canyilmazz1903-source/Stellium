@@ -428,7 +428,23 @@ export async function fetchFullChartAnalysis(
   aspects: any[]
 ): Promise<string> {
   if (!GEMINI_API_KEY) {
-    return `Sevgili ${name}, doğum haritanızın detaylı analizi hazırlandı. Haritanızdaki Güneş, Ay ve Yükselen konumlarınız güçlü bir kişilik yapısına işaret ediyor. Kariyer ve ikili ilişkilerinizde kendi potansiyelinizi gerçekleştirmek için gezegenlerin uyumlu enerjilerini kullanabilir, Satürn'ün getirdiği sınavlarda olgunlaşarak kader yolunuzda emin adımlarla ilerleyebilirsiniz.`;
+    return `**🪐 1. Genel Mizaç, Kozmik Elementler ve Yaşam Yolu**
+Güneş, Ay ve Yükselen yerleşimleriniz, kendinizi ifade etme ve hayatı deneyimleme biçiminizde güçlü bir denge kurmanızı sağlıyor. Ateş elementinin yüksekliği size doğal bir cesaret verirken, su elementinin derinliği sezgilerinizi güçlendiriyor.
+
+**🧠 2. Zihinsel Yapı, Akıl ve İletişim**
+Zihniniz son derece aktif ve öğrenmeye açık. Fikirlerinizi aktarırken net ve doğrudan bir iletişim tarzını benimsiyorsunuz. Kararlarınızda analitik davranmaya özen gösteriyorsunuz.
+
+**❤️ 3. Aşk, Bağlar, Değerler ve Finansal Bereket**
+Venüs yerleşimi ve açılarına göre ilişkilerinizde güven ve derinliği ön planda tutuyorsunuz. Finansal konularda sezgileriniz size rehberlik ediyor ve kalıcı kazançlar üretme potansiyeline sahipsiniz.
+
+**🔥 4. Eylem, Tutku, Mücadele ve İrade Gücü**
+Mars konumunuz, hedeflerinize kararlılıkla yürüdüğünüzü gösteriyor. Zorluklarla karşılaştığınızda pes etmek yerine, stratejik ve dayanıklı bir şekilde mücadele etmeyi seçiyorsunuz.
+
+**⚠️ 5. Açı İlişkileri, Hayat Sınavları ve Olgunlaşma (Satürn)**
+Satürn yerleşiminiz, disiplin ve sabır gerektiren sınavlardan geçerek olgunlaşacağınızı vurguluyor. Hayatınızdaki engeller, aslında sizi kalıcı ve köklü başarılara hazırlayan manevi basamaklardır.
+
+**🗓️ 6. Kozmik Yaşam Planlama ve Günlük Strateji Rehberi**
+Önemli ticari anlaşmaları ve yeni başlangıçları Merkür'ün temiz açılarında yapmaya özen gösterin. Enerjinizi korumak için Ay'ın küçülen fazlarında içsel temizlik yapın ve yeni ay fazlarında yeni projelerinizin tohumlarını atın.`;
   }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
@@ -439,8 +455,8 @@ Sen; İsviçre Efemerisi hassasiyetine vakıf, Keldani numerolojisini ve klasik/
 
 [WRITING RULES]
 1. Analiz dili mistik, bilge, sarmalayıcı ama aynı zamanda bilimsel, analitik ve psikolojik olmalıdır.
-2. Metin içi yapılandırmada başlıklar ve anahtar kelimeler için **kalın metin** kullan.
-3. Raporu tam 5 paragraf halinde yapılandır ve her bir paragrafı aşağıdaki başlıklara göre derinlemesine tahlil et.
+2. Metin içi yapılandırmada başlıklar ve anahtar kelimeler için **kalın metin** kullan. Bölümler arasına çift satır boşluk ekle.
+3. Raporu net başlıklarla ve detaylı paragraflarla tam 6 bölüm halinde yapılandır.
 
 Kullanıcının Adı: "${name}"
 Doğum Haritası Gezegen Konumları ve Evleri:
@@ -451,11 +467,23 @@ Haritadaki Gezegenler Arası Açı İlişkileri:
 ${JSON.stringify(aspects)}
 
 Rapor Bölümleri:
-1. **Genel Mizaç, Kozmik Elementler ve Yaşam Yolu:** Yükselen, Güneş ve Ay konumları ile element dengesinin sentezi. Temel karakter ve yaşam amacı.
-2. **Zihinsel Yapı, Akıl ve İletişim:** Merkür konumuna ve açılarına göre zekası, karar verme yapısı ve iletişim üslubu.
-3. **Aşk, Bağlar, Değerler ve Finansal Bereket:** Venüs yerleşimi ve açılarına göre ilişkilerdeki beklentileri, sevgi dili ve maddi değerleri çekme potansiyeli.
-4. **Eylem, Tutku, Mücadele ve İrade Gücü:** Mars konumuna göre motivasyon kaynakları, engelleri aşma tarzı ve fiziksel enerjiyi kullanma biçimi.
-5. **Kader Haritasındaki Açılar, Sınavlar ve Olgunlaşma (Satürn):** Satürn yerleşimine ve gezegenler arasındaki majör açılara (kavuşum, kare, karşıt vb.) göre hayatındaki karmik zorluklar, aşması gereken engeller ve manevi olgunlaşma yolları.
+**🪐 1. Genel Mizaç, Kozmik Elementler ve Yaşam Yolu**
+Yükselen, Güneş ve Ay konumları ile element dengesinin sentezi. Temel karakter özellikleri, ruhsal potansiyeli ve dünyaya geliş amacı.
+
+**🧠 2. Zihinsel Yapı, Akıl ve İletişim**
+Merkür konumuna ve açılarına göre zekası, öğrenme ve karar verme yapısı, iletişim üslubu. Zihinsel tıkanıklıkları nasıl aşabileceği.
+
+**❤️ 3. Aşk, Bağlar, Değerler ve Finansal Bereket**
+Venüs yerleşimi ve açılarına göre ilişkilerdeki beklentileri, sevgi dili, finansal değerleri ve bereketi hayatına çekme potansiyeli.
+
+**🔥 4. Eylem, Tutku, Mücadele ve İrade Gücü**
+Mars konumuna göre motivasyon kaynakları, kriz anlarındaki tavrı, engelleri aşma tarzı ve fiziksel enerjiyi doğru kullanma biçimi.
+
+**⚠️ 5. Açı İlişkileri, Hayat Sınavları ve Olgunlaşma (Satürn)**
+Satürn yerleşimine ve gezegenler arasındaki majör açılara (kavuşum, kare, karşıt vb.) göre hayatındaki karmik zorluklar, aşması gereken engeller ve manevi olgunlaşma yolları.
+
+**🗓️ 6. Kozmik Yaşam Planlama ve Günlük Strateji Rehberi**
+Kullanıcının bu harita doğrultusunda hayatını, günlerini ve önemli kararlarını nasıl planlaması gerektiğine dair pratik astrolojik rehber. Eyleme geçme zamanları, imza atma, ortaklık kurma ve arınma dönemlerini belirleme stratejisi.
   `;
 
   try {
@@ -479,7 +507,23 @@ Rapor Bölümleri:
     return result.candidates?.[0]?.content?.parts?.[0]?.text || '';
   } catch (error) {
     console.warn('Error fetching full birth chart analysis:', error);
-    return `Sevgili ${name}, doğum haritanızın detaylı analizi hazırlandı. Haritanızdaki Güneş, Ay ve Yükselen konumlarınız güçlü bir kişilik yapısına işaret ediyor. Kariyer ve ikili ilişkilerinizde kendi potansiyelinizi gerçekleştirmek için gezegenlerin uyumlu enerjilerini kullanabilir, Satürn'ün getirdiği sınavlarda olgunlaşarak kader yolunuzda emin adımlarla ilerleyebilirsiniz.`;
+    return `**🪐 1. Genel Mizaç, Kozmik Elementler ve Yaşam Yolu**
+Güneş, Ay ve Yükselen yerleşimleriniz, kendinizi ifade etme ve hayatı deneyimleme biçiminizde güçlü bir denge kurmanızı sağlıyor. Ateş elementinin yüksekliği size doğal bir cesaret verirken, su elementinin derinliği sezgilerinizi güçlendiriyor.
+
+**🧠 2. Zihinsel Yapı, Akıl ve İletişim**
+Zihniniz son derece aktif ve öğrenmeye açık. Fikirlerinizi aktarırken net ve doğrudan bir iletişim tarzını benimsiyorsunuz. Kararlarınızda analitik davranmaya özen gösteriyorsunuz.
+
+**❤️ 3. Aşk, Bağlar, Değerler ve Finansal Bereket**
+Venüs yerleşimi ve açılarına göre ilişkilerinizde güven ve derinliği ön planda tutuyorsunuz. Finansal konularda sezgileriniz size rehberlik ediyor ve kalıcı kazançlar üretme potansiyeline sahipsiniz.
+
+**🔥 4. Eylem, Tutku, Mücadele ve İrade Gücü**
+Mars konumunuz, hedeflerinize kararlılıkla yürüdüğünüzü gösteriyor. Zorluklarla karşılaştığınızda pes etmek yerine, stratejik ve dayanıklı bir şekilde mücadele etmeyi seçiyorsunuz.
+
+**⚠️ 5. Açı İlişkileri, Hayat Sınavları ve Olgunlaşma (Satürn)**
+Satürn yerleşiminiz, disiplin ve sabır gerektiren sınavlardan geçerek olgunlaşacağınızı vurguluyor. Hayatınızdaki engeller, aslında sizi kalıcı ve köklü başarılara hazırlayan manevi basamaklardır.
+
+**🗓️ 6. Kozmik Yaşam Planlama ve Günlük Strateji Rehberi**
+Önemli ticari anlaşmaları ve yeni başlangıçları Merkür'ün temiz açılarında yapmaya özen gösterin. Enerjinizi korumak için Ay'ın küçülen fazlarında içsel temizlik yapın ve yeni ay fazlarında yeni projelerinizin tohumlarını atın.`;
   }
 }
 

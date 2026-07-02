@@ -409,6 +409,59 @@ export default function ChartScreen() {
     return `${deg}° ${sign} ${min}' ${String(sec).padStart(2, '0')}"`;
   };
 
+  const getAspectDescription = (p1Name: string, p2Name: string, type: string) => {
+    const isHarmonious = type === 'Trine' || type === 'Sextile';
+    const pair1 = `${p1Name}-${p2Name}`;
+    const pair2 = `${p2Name}-${p1Name}`;
+    
+    const harmoniousMap: Record<string, string> = {
+      'Ay-Güneş': 'Ruh ve beden uyumu. Karakter bütünlüğü ve dengeli yaşam amaçları.',
+      'Güneş-Merkür': 'Zihinsel yeteneklerini kendini ifade etmekte çok başarılı kullanır. Güçlü hitabet gücü.',
+      'Güneş-Venüs': 'Zarif, çekici ve uyumlu mizaç. Sosyal ilişkilerde ve sanatta doğal şans.',
+      'Güneş-Mars': 'Yüksek yaşam enerjisi, cesaret, kararlılık ve hedeflerine ulaşma gücü.',
+      'Güneş-Jüpiter': 'Büyük şans, iyimserlik, yaşam coşkusu ve manevi koruma.',
+      'Güneş-Satürn': 'Disiplin, olgunluk, uzun vadeli başarılar ve güçlü sorumluluk bilinci.',
+      'Ay-Venüs': 'Sevecenlik, popülerlik, sanata düşkünlük ve sıcak aile ilişkileri.',
+      'Ay-Mars': 'Duygusal cesaret, dürüstlük, yüksek tutku ve hızlı eyleme geçme gücü.',
+      'Ay-Jüpiter': 'Cömertlik, duygusal bolluk, şans ve çevresindekilere yardım etme arzusu.',
+      'Ay-Satürn': 'Duygusal olgunluk, sabır, sadakat ve güvenilirlik.',
+      'Merkür-Venüs': 'Diplomatik dil, güzel konuşma, yazarlık yeteneği ve tatlı dilli mizaç.',
+      'Merkür-Mars': 'Keskin zeka, hazırcevaplık, tartışma yeteneği ve hızlı düşünebilme.',
+      'Merkür-Jüpiter': 'Geniş vizyon, felsefi derinlik, yabancı dillerde ve akademide başarı.',
+      'Merkür-Satürn': 'Mantıklı, sistemli düşünme yeteneği, derin konsantrasyon ve kararlılık.',
+      'Venüs-Mars': 'Tutkulu aşk ilişkileri, yüksek çekim gücü ve sanatsal üretim.',
+      'Venüs-Jüpiter': 'Aşkta ve parada şans, cömertlik ve lüks yaşam sevgisi.',
+      'Venüs-Satürn': 'İlişkilerde sadakat, ciddiyet, kalıcı evlilikler ve olgun partnerler.',
+      'Jüpiter-Mars': 'Girişimcilik cesareti, risk alabilme yeteneği ve yüksek motivasyon.',
+      'Mars-Satürn': 'Kontrollü güç, sabırlı eylem, dayanıklılık ve mühendislik yeteneği.'
+    };
+
+    const challengingMap: Record<string, string> = {
+      'Ay-Güneş': 'İçsel çatışmalar, ebeveynler arası anlaşmazlıklar veya istekler ile duygular arası ikilem.',
+      'Güneş-Mars': 'Öfke kontrolü sorunları, sabırsızlık ve otoriteyle çatışma eğilimi.',
+      'Güneş-Jüpiter': 'Aşırı gurur, israf, abartılı beklentiler ve riskli adımlar.',
+      'Güneş-Satürn': 'Öz güven eksikliği, hayat yolunda engellerle karşılaşma ve geciken başarılar.',
+      'Ay-Merkür': 'Duygular ile mantık arasında sürekli gel-git yaşama. Kararsızlık.',
+      'Ay-Mars': 'Çabuk sinirlenme, alınganlık, ani duygusal patlamalar ve sabırsızlık.',
+      'Ay-Jüpiter': 'Duygusal israf, aşırı iyimserlik nedeniyle aldatılma veya aşırı yeme eğilimi.',
+      'Ay-Satürn': 'Melankoli, yalnızlık hissi, anne ile soğuk ilişkiler ve duygularını bastırma.',
+      'Merkür-Mars': 'Sivri dilli olmak, kalp kırma eğilimi, tartışmacı mizaç ve aceleci kararlar.',
+      'Merkür-Jüpiter': 'Detayları gözden kaçırma, abartılı konuşmalar ve tutulmayan sözler.',
+      'Merkür-Satürn': 'Kötümser düşünce yapısı, depresif eğilimler ve zihinsel blokajlar.',
+      'Venüs-Mars': 'Aşkta kıskançlık, fırtınalı ve çatışmalı ilişkiler, ani ayrılıklar.',
+      'Venüs-Jüpiter': 'İlişkilerde aşırı beklentiler, sadakatsizlik riskleri ve kontrolsüz harcamalar.',
+      'Venüs-Satürn': 'Aşkta değersizlik hissi, soğuk ilişkiler, sevgiyi ifade edememe ve geciken evlilik.',
+      'Jüpiter-Mars': 'Kontrolsüz öfke, aşırı risk alma ve yasalarla/otoritelerle sorun yaşama potansiyeli.',
+      'Mars-Satürn': 'Baskılanmış öfke, zamanlama problemleri, kemik/eklem sağlığına dikkat etme gereği.'
+    };
+
+    const details = isHarmonious
+      ? (harmoniousMap[pair1] || harmoniousMap[pair2])
+      : (challengingMap[pair1] || challengingMap[pair2]);
+
+    return details || `${p1Name} ile ${p2Name} arasındaki bu açı, iki gezegenin enerjilerinin hayat yolculuğunuzdaki etkileşimini gösterir.`;
+  };
+
   // 3. Calculate natal aspects (conjunction, sextile, square, trine, opposition)
   const aspects = useMemo(() => {
     if (!computedChart) return [];
@@ -848,97 +901,6 @@ export default function ChartScreen() {
                 <Text style={styles.aiButtonText}>Kapsamlı Harita Analizi (Gemini AI)</Text>
               </Pressable>
 
-              {/* Element Percentages Panel */}
-              <Text style={styles.sectionDividerTitle}>Element Dengesi</Text>
-              <GlassCard style={styles.elementCard}>
-                {elementPercentages && Object.entries(elementPercentages).map(([el, pct], idx) => {
-                  const colors: Record<string, string> = {
-                    Ateş: '#FF9E9E',
-                    Toprak: '#A3E4D7',
-                    Hava: '#AED6F1',
-                    Su: '#D7BDE2'
-                  };
-                  const barColor = colors[el] || '#ffffff';
-                  return (
-                    <View key={idx} style={styles.elementRow}>
-                      <View style={styles.elementLabelRow}>
-                        <Text style={styles.elementLabel}>{el}</Text>
-                        <Text style={[styles.elementPct, { color: barColor }]}>%{pct}</Text>
-                      </View>
-                      <View style={styles.progressBarBg}>
-                        <View style={[styles.progressBarFill, { width: `${pct}%`, backgroundColor: barColor }]} />
-                      </View>
-                    </View>
-                  );
-                })}
-              </GlassCard>
-
-              {/* Planets Degrees List */}
-              <Text style={styles.sectionDividerTitle}>Gezegen Konumları</Text>
-              <View style={styles.table}>
-                {computedChart.planets.map((p, idx) => {
-                  const symbol = PLANET_SYMBOLS[p.name] || '•';
-                  return (
-                    <GlassCard key={idx} style={styles.tableRow}>
-                      <View style={styles.rowMain}>
-                        <Text style={styles.planetSymbol}>{symbol}</Text>
-                        <Text style={styles.planetName}>
-                          {p.name === 'Sun' ? 'Güneş' :
-                           p.name === 'Moon' ? 'Ay' :
-                           p.name === 'Mercury' ? 'Merkür' :
-                           p.name === 'Venus' ? 'Venüs' :
-                           p.name === 'Mars' ? 'Mars' :
-                           p.name === 'Jupiter' ? 'Jüpiter' :
-                           p.name === 'Saturn' ? 'Satürn' :
-                           p.name === 'Uranus' ? 'Uranüs' :
-                           p.name === 'Neptune' ? 'Neptün' :
-                           p.name === 'Pluto' ? 'Plüton' : p.name}
-                        </Text>
-                      </View>
-                      <View style={styles.rowRight}>
-                        <Text style={styles.planetSign}>
-                          {formatPlanetDegree(p.longitude, p.sign)}
-                        </Text>
-                        <Text style={styles.planetHouse}>{p.house}. Ev</Text>
-                        {p.retrograde && <Text style={styles.retroBadge}>R</Text>}
-                      </View>
-                    </GlassCard>
-                  );
-                })}
-              </View>
-
-              {/* Natal Aspects Calculation Section */}
-              <Text style={styles.sectionDividerTitle}>Açı İlişkileri (Aspects)</Text>
-              <GlassCard style={styles.aspectsCard}>
-                {isPremium ? (
-                  aspects.length > 0 ? (
-                    <View style={styles.aspectsList}>
-                      {aspects.map((aspect, idx) => (
-                        <View key={idx} style={styles.aspectRow}>
-                          <View style={styles.aspectLeft}>
-                            <Text style={[styles.aspectSymbol, { color: aspect.color }]}>{aspect.symbol}</Text>
-                            <Text style={styles.aspectText}>
-                              {aspect.p1Name} <Text style={{ color: aspect.color }}>{aspect.label}</Text> {aspect.p2Name}
-                            </Text>
-                          </View>
-                          <Text style={styles.aspectDiff}>({aspect.diff}°)</Text>
-                        </View>
-                      ))}
-                    </View>
-                  ) : (
-                    <Text style={styles.noAspectsText}>Haritanızda majör açı ilişkisi bulunmuyor.</Text>
-                  )
-                ) : (
-                  <View style={styles.lockedContainer}>
-                    <Ionicons name="lock-closed" size={20} color="#ffffff" style={{ marginBottom: 6 }} />
-                    <Text style={styles.lockedText}>Açı İlişkileri Stellium Elite Üyelerine Özeldir.</Text>
-                    <Pressable onPress={() => router.push('/settings')} style={styles.unlockInlineBtn}>
-                      <Text style={styles.unlockInlineText}>Elite Üyeliğe Geç →</Text>
-                    </Pressable>
-                  </View>
-                )}
-              </GlassCard>
-
               {/* Detailed Astrology Interpretations */}
               <Text style={styles.sectionDividerTitle}>Derinlikli Astroloji Analizleri</Text>
               {interpretations && (
@@ -1018,6 +980,106 @@ export default function ChartScreen() {
                   )}
                 </View>
               )}
+
+              {/* Natal Aspects Calculation Section */}
+              <Text style={styles.sectionDividerTitle}>Açı İlişkileri (Aspects)</Text>
+              <GlassCard style={styles.aspectsCard}>
+                {isPremium ? (
+                  aspects.length > 0 ? (
+                    <View style={styles.aspectsList}>
+                      {aspects.map((aspect, idx) => (
+                        <View key={idx} style={styles.aspectItem}>
+                          <View style={styles.aspectRow}>
+                            <View style={styles.aspectLeft}>
+                              <Text style={[styles.aspectSymbol, { color: aspect.color }]}>{aspect.symbol}</Text>
+                              <Text style={styles.aspectText}>
+                                {aspect.p1Name} <Text style={{ color: aspect.color }}>{aspect.label}</Text> {aspect.p2Name}
+                              </Text>
+                            </View>
+                            <Text style={styles.aspectDiff}>({aspect.diff}°)</Text>
+                          </View>
+                          <Text style={styles.aspectDescriptionText}>
+                            {getAspectDescription(aspect.p1Name, aspect.p2Name, aspect.aspectType || aspect.type)}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={styles.noAspectsText}>Haritanızda majör açı ilişkisi bulunmuyor.</Text>
+                  )
+                ) : (
+                  <View style={styles.lockedContainer}>
+                    <Ionicons name="lock-closed" size={20} color="#ffffff" style={{ marginBottom: 6 }} />
+                    <Text style={styles.lockedText}>Açı İlişkileri Stellium Elite Üyelerine Özeldir.</Text>
+                    <Pressable onPress={() => router.push('/settings')} style={styles.unlockInlineBtn}>
+                      <Text style={styles.unlockInlineText}>Elite Üyeliğe Geç →</Text>
+                    </Pressable>
+                  </View>
+                )}
+              </GlassCard>
+
+              {/* Planets Degrees List (3-Column Table) */}
+              <Text style={styles.sectionDividerTitle}>Gezegen Konumları</Text>
+              <GlassCard style={styles.planetTableCard}>
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.tableHeaderCell, { flex: 1.2 }]}>Gezegen</Text>
+                  <Text style={[styles.tableHeaderCell, { flex: 1.6 }]}>Burç & Derece</Text>
+                  <Text style={[styles.tableHeaderCell, { flex: 1, textAlign: 'right' }]}>Ev</Text>
+                </View>
+                {computedChart.planets.map((p, idx) => {
+                  const symbol = PLANET_SYMBOLS[p.name] || '•';
+                  const planetNameTR = p.name === 'Sun' ? 'Güneş' :
+                                       p.name === 'Moon' ? 'Ay' :
+                                       p.name === 'Mercury' ? 'Merkür' :
+                                       p.name === 'Venus' ? 'Venüs' :
+                                       p.name === 'Mars' ? 'Mars' :
+                                       p.name === 'Jupiter' ? 'Jüpiter' :
+                                       p.name === 'Saturn' ? 'Satürn' :
+                                       p.name === 'Uranus' ? 'Uranüs' :
+                                       p.name === 'Neptune' ? 'Neptün' :
+                                       p.name === 'Pluto' ? 'Plüton' : p.name;
+                  return (
+                    <View key={idx} style={[styles.tableRowGrid, idx % 2 === 1 && styles.tableRowGridAlt]}>
+                      <View style={{ flex: 1.2, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={styles.tablePlanetSymbol}>{symbol}</Text>
+                        <Text style={styles.tablePlanetName}>{planetNameTR}</Text>
+                        {p.retrograde && <Text style={styles.tableRetro}>R</Text>}
+                      </View>
+                      <Text style={[styles.tableCellGrid, styles.tablePlanetSign, { flex: 1.6 }]}>
+                        {formatPlanetDegree(p.longitude, p.sign)}
+                      </Text>
+                      <Text style={[styles.tableCellGrid, styles.tablePlanetHouse, { flex: 1, textAlign: 'right' }]}>
+                        {p.house}. Ev
+                      </Text>
+                    </View>
+                  );
+                })}
+              </GlassCard>
+
+              {/* Element Percentages Panel */}
+              <Text style={styles.sectionDividerTitle}>Element Dengesi</Text>
+              <GlassCard style={styles.elementCard}>
+                {elementPercentages && Object.entries(elementPercentages).map(([el, pct], idx) => {
+                  const colors: Record<string, string> = {
+                    Ateş: '#FF9E9E',
+                    Toprak: '#A3E4D7',
+                    Hava: '#AED6F1',
+                    Su: '#D7BDE2'
+                  };
+                  const barColor = colors[el] || '#ffffff';
+                  return (
+                    <View key={idx} style={styles.elementRow}>
+                      <View style={styles.elementLabelRow}>
+                        <Text style={styles.elementLabel}>{el}</Text>
+                        <Text style={[styles.elementPct, { color: barColor }]}>%{pct}</Text>
+                      </View>
+                      <View style={styles.progressBarBg}>
+                        <View style={[styles.progressBarFill, { width: `${pct}%`, backgroundColor: barColor }]} />
+                      </View>
+                    </View>
+                  );
+                })}
+              </GlassCard>
             </View>
           ) : (
             <GlassCard style={styles.errorCard}>
@@ -1263,6 +1325,79 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: 'rgba(255, 255, 255, 0.5)',
     textAlign: 'center',
+  },
+  aspectItem: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  aspectDescriptionText: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: '#8B949E',
+    marginTop: 4,
+    paddingLeft: 30,
+    lineHeight: 16,
+  },
+  planetTableCard: {
+    width: '100%',
+    padding: 12,
+    borderRadius: 16,
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    paddingBottom: 6,
+    marginBottom: 6,
+  },
+  tableHeaderCell: {
+    fontFamily: 'InterBold',
+    fontSize: 12,
+    color: '#D4AF37',
+    fontWeight: '700',
+  },
+  tableRowGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  tableRowGridAlt: {
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+  },
+  tableCellGrid: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: '#E6EDF0',
+  },
+  tablePlanetSymbol: {
+    fontSize: 14,
+  },
+  tablePlanetName: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  tableRetro: {
+    fontFamily: 'InterBold',
+    fontSize: 9,
+    color: '#FF7B72',
+    backgroundColor: 'rgba(255, 123, 114, 0.15)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255, 123, 114, 0.25)',
+    borderRadius: 3,
+    paddingHorizontal: 3,
+    paddingVertical: 0.5,
+    fontWeight: '700',
+  },
+  tablePlanetSign: {
+    color: '#8B949E',
+  },
+  tablePlanetHouse: {
+    color: '#D4AF37',
   },
   errorCard: {
     padding: 24,
