@@ -6,6 +6,8 @@ module.exports = function (api) {
       "nativewind/babel",
     ],
     plugins: [
+      // react-native-worklets/plugin MUST be listed last.
+      "react-native-worklets/plugin",
     ],
   };
 };

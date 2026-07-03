@@ -18,8 +18,6 @@ export interface ComputedChart {
 }
 
 interface AppState {
-  isPremium: boolean;
-  setPremium: (isPremium: boolean) => void;
   computedChart: ComputedChart | null;
   setComputedChart: (chart: ComputedChart | null) => void;
   dailyHoroscope: HoroscopeResponse | null;
@@ -33,10 +31,6 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
-  isPremium: false,
-  setPremium: (isPremium) => {
-    set({ isPremium });
-  },
   computedChart: null,
   setComputedChart: (computedChart) => set({ computedChart }),
   dailyHoroscope: null,

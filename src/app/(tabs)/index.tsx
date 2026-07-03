@@ -11,6 +11,8 @@ import { BlurView } from 'expo-blur';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, withDelay, Easing } from 'react-native-reanimated';
 import { useCosmicCalendarStore } from '@/store/cosmicCalendarStore';
 import PaywallAdModal from '@/components/ui/PaywallAdModal';
+import BannerAdSlot from '@/components/ads/BannerAdSlot';
+import { showInterstitial } from '@/services/ads';
 import { schedulePlanetaryHourNotifications } from '@/utils/notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -174,11 +176,26 @@ const PLANETARY_HOURS_DEEP_INFO: Record<string, {
 };
 
 export default function HomeScreen() {
-  const { profile, isPremium, hasUnlockedDailyShadow } = useAuthStore();
+  const { profile, isPremium, hasUnlockedDailyShadow, unlockDailyShadow } = useAuthStore();
   const { computedChart, setComputedChart, dailyHoroscope: horoscope, fetchHoroscope } = useAppStore();
   const [paywallVisible, setPaywallVisible] = useState(false);
   const [loadingHoroscope, setLoadingHoroscope] = useState(false);
   const router = useRouter();
+  const interstitialShownRef = useRef(false);
+  const modalCloseCountRef = useRef(0);
+
+  // Shows a single interstitial per session for free users, the second time
+  // they close a detail modal, so ads never interrupt Elite subscribers.
+  const handleCloseDetailModal = () => {
+    setModalVisible(false);
+    if (!isPremium) {
+      modalCloseCountRef.current += 1;
+      if (modalCloseCountRef.current === 2 && !interstitialShownRef.current) {
+        interstitialShownRef.current = true;
+        showInterstitial();
+      }
+    }
+  };
 
   const {
     moonPhase,
@@ -769,6 +786,8 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
           ) : (
             <Text style={styles.errorText}>Yorumlar yüklenirken bir sorun oluştu.</Text>
           )}
+
+          <BannerAdSlot />
         </ScrollView>
 
       {/* Full Screen Details Modal overlay */}
@@ -776,7 +795,7 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
         visible={modalVisible}
         transparent={false}
         animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={handleCloseDetailModal}
       >
         <SafeAreaView style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -786,7 +805,7 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
                 <Text style={styles.modalTitle}>{selectedModalContent?.title}</Text>
                 <Text style={styles.modalSubtitle}>{selectedModalContent?.subtitle}</Text>
               </View>
-              <Pressable style={styles.modalCloseButton} onPress={() => setModalVisible(false)}>
+              <Pressable style={styles.modalCloseButton} onPress={handleCloseDetailModal}>
                 <Ionicons name="close" size={26} color="#D4AF37" />
               </Pressable>
             </View>
@@ -984,6 +1003,10 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
       <PaywallAdModal
         visible={paywallVisible}
         onClose={() => setPaywallVisible(false)}
+        title="Zihinsel Gölgeler"
+        description="Günlük gölge analizinizi görmek için bir reklam izleyerek ücretsiz açabilir veya Stellium Elite'e geçerek tüm kilitleri kaldırabilirsiniz."
+        allowAdUnlock
+        onAdUnlock={unlockDailyShadow}
         onSuccess={() => {
           Alert.alert("Başarılı", "Günlük gölge analizi kilidi açıldı!");
         }}

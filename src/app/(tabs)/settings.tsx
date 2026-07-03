@@ -9,6 +9,7 @@ import CosmicButton from '@/components/ui/CosmicButton';
 import CosmicInput from '@/components/ui/CosmicInput';
 import { BlurView } from 'expo-blur';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, Easing } from 'react-native-reanimated';
+import { fetchEliteOffering, isPurchasesConfigured, purchasePackage, restorePurchases } from '@/services/purchases';
 
 export default function SettingsScreen() {
   const { user, profile, signOut, isPremium, setPremium } = useAuthStore();
@@ -228,18 +229,61 @@ export default function SettingsScreen() {
     setIsEditing(false);
   };
 
-  const handlePurchase = () => {
+  const handlePurchase = async () => {
     setLoading(true);
-    // Simulate RevenueCat billing trigger
-    setTimeout(() => {
-      setPremium(true);
+    try {
+      if (isPurchasesConfigured()) {
+        const offering = await fetchEliteOffering();
+        const pkg = offering?.availablePackages?.[0];
+        if (!pkg) throw new Error('NO_PACKAGE');
+        const entitled = await purchasePackage(pkg);
+        setLoading(false);
+        if (entitled) {
+          setPremium(true);
+          Alert.alert(
+            'Elite Üyelik Aktif',
+            'Tebrikler! Stellium Elite ailesine başarıyla katıldınız. Tüm kısıtlamalar kaldırıldı.',
+            [{ text: 'Mistisizm Yolculuğuna Başla' }]
+          );
+        }
+      } else {
+        // Demo mode: no RevenueCat product connected yet, so the upgrade is simulated.
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+        setPremium(true);
+        setLoading(false);
+        Alert.alert(
+          'Deneme Modu',
+          'Ödeme altyapısı henüz bağlanmadı; Elite özellikleri deneme amaçlı açıldı. Gerçek abonelik App Store bağlantısı tamamlanınca aktif olacak.',
+          [{ text: 'Devam Et' }]
+        );
+      }
+    } catch (e: any) {
       setLoading(false);
+      if (e?.userCancelled) return;
+      Alert.alert('Hata', 'Satın alma işlemi tamamlanamadı. Lütfen daha sonra tekrar deneyin.');
+    }
+  };
+
+  const handleRestorePurchases = async () => {
+    if (!isPurchasesConfigured()) {
+      Alert.alert('Kullanılamıyor', 'Satın alma altyapısı henüz bağlanmadı.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const entitled = await restorePurchases();
+      setLoading(false);
+      setPremium(entitled);
       Alert.alert(
-        'Elite Üyelik Aktif',
-        'Tebrikler! Stellium Elite ailesine başarıyla katıldınız. Tüm kısıtlamalar kaldırıldı.',
-        [{ text: 'Mistisizm Yolculuğuna Başla' }]
+        entitled ? 'Geri Yüklendi' : 'Abonelik Bulunamadı',
+        entitled
+          ? 'Stellium Elite aboneliğiniz başarıyla geri yüklendi.'
+          : 'Bu hesaba bağlı aktif bir abonelik bulunamadı.'
       );
-    }, 1500);
+    } catch (e) {
+      setLoading(false);
+      Alert.alert('Hata', 'Satın alımlar geri yüklenemedi. Lütfen daha sonra tekrar deneyin.');
+    }
   };
 
   const handleCancelSubscription = () => {
@@ -490,6 +534,10 @@ export default function SettingsScreen() {
                   onPress={isPremium ? handleCancelSubscription : handlePurchase}
                   style={styles.payButton}
                 />
+
+                <Pressable onPress={handleRestorePurchases} style={{ marginTop: 12, alignItems: 'center' }}>
+                  <Text style={styles.restoreLink}>Satın Alımları Geri Yükle</Text>
+                </Pressable>
               </GlassCard>
 
               {/* Account Actions and App Store Compliance */}
@@ -694,6 +742,12 @@ const styles = StyleSheet.create({
   },
   payButton: {
     marginTop: 10,
+  },
+  restoreLink: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.5)',
+    textDecorationLine: 'underline',
   },
   actionGroup: {
     gap: 12,

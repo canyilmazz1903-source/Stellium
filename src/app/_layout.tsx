@@ -8,6 +8,7 @@ import { useAppStore } from '@/store/appStore';
 import { supabase } from '@/api/supabase';
 import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { computeNatalChart, getTimezoneOffset } from '@/utils/astronomy';
+import { initAds } from '@/services/ads';
 
 export default function RootLayout() {
   const { session, isLoading, profile, setSession, setUser, initialize } = useAuthStore();
@@ -25,6 +26,11 @@ export default function RootLayout() {
     CormorantGaramond: Inter_400Regular,
     CormorantGaramondSemiBold: Inter_600SemiBold,
   });
+
+  // 0. Initialize AdMob in the background (never blocks startup on failure)
+  useEffect(() => {
+    initAds();
+  }, []);
 
   // 1. Initialize Supabase session on startup
   useEffect(() => {

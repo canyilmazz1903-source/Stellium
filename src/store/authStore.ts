@@ -1,6 +1,15 @@
 import { create } from 'zustand';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../api/supabase';
 import { Session, User } from '@supabase/supabase-js';
+import { getCurrentEntitlement, initPurchases } from '../services/purchases';
+
+const PREMIUM_CACHE_KEY = 'stellium_is_premium';
+const SHADOW_UNLOCK_DATE_KEY = 'stellium_shadow_unlock_date';
+
+function todayStr() {
+  return new Date().toISOString().split('T')[0];
+}
 
 export interface Profile {
   id: string;
@@ -41,13 +50,28 @@ export const useAuthStore = create<AuthState>((set) => ({
   setProfile: (profile) => set({ profile }),
   setPremium: (isPremium) => {
     set({ isPremium });
+    AsyncStorage.setItem(PREMIUM_CACHE_KEY, isPremium ? '1' : '0').catch(() => {});
   },
-  unlockDailyShadow: () => set({ hasUnlockedDailyShadow: true }),
+  unlockDailyShadow: () => {
+    set({ hasUnlockedDailyShadow: true });
+    AsyncStorage.setItem(SHADOW_UNLOCK_DATE_KEY, todayStr()).catch(() => {});
+  },
   initialize: async () => {
     try {
+      // Hydrate premium/shadow-unlock state from local cache first so the UI
+      // doesn't flash "free" on every cold start while the network settles.
+      const [cachedPremium, unlockDate] = await Promise.all([
+        AsyncStorage.getItem(PREMIUM_CACHE_KEY),
+        AsyncStorage.getItem(SHADOW_UNLOCK_DATE_KEY),
+      ]);
+      set({
+        isPremium: cachedPremium === '1',
+        hasUnlockedDailyShadow: unlockDate === todayStr(),
+      });
+
       const { data: { session } } = await supabase.auth.getSession();
       set({ session, user: session?.user ?? null });
-      
+
       if (session?.user) {
         const { data: profile } = await supabase
           .from('profiles')
@@ -57,6 +81,15 @@ export const useAuthStore = create<AuthState>((set) => ({
         if (profile) {
           set({ profile });
         }
+      }
+
+      // Reconcile with RevenueCat once it's configured; falls back silently
+      // to the cached/demo value when no API key has been set up yet.
+      await initPurchases();
+      const entitled = await getCurrentEntitlement();
+      if (entitled !== null) {
+        set({ isPremium: entitled });
+        AsyncStorage.setItem(PREMIUM_CACHE_KEY, entitled ? '1' : '0').catch(() => {});
       }
     } catch (e) {
       console.warn('Supabase auth initialization warning:', e);

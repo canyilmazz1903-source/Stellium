@@ -3,6 +3,8 @@ import { StyleSheet, Text, View, Modal, Pressable, ActivityIndicator, Alert } fr
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useAuthStore } from '@/store/authStore';
+import { fetchEliteOffering, isPurchasesConfigured, purchasePackage } from '@/services/purchases';
+import { showRewarded } from '@/services/ads';
 
 const LAVENDER = '#D7BDE2';
 
@@ -12,6 +14,10 @@ interface PaywallAdModalProps {
   onSuccess: () => void;
   title?: string;
   description?: string;
+  // When true, shows a secondary "watch an ad to unlock for free" option
+  // instead of forcing a full Elite subscription.
+  allowAdUnlock?: boolean;
+  onAdUnlock?: () => void;
 }
 
 export default function PaywallAdModal({
@@ -19,25 +25,67 @@ export default function PaywallAdModal({
   onClose,
   onSuccess,
   title = 'Elite Kozmik Rehberlik',
-  description = 'Kozmik haritanızın derinliklerine inmek ve tüm astrolojik analizlerin kilidini açmak için Stellium Elite üyesi olun.'
+  description = 'Kozmik haritanızın derinliklerine inmek ve tüm astrolojik analizlerin kilidini açmak için Stellium Elite üyesi olun.',
+  allowAdUnlock = false,
+  onAdUnlock,
 }: PaywallAdModalProps) {
   const { setPremium } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  const [adLoading, setAdLoading] = useState(false);
 
-  const handleSubscribe = () => {
+  const handleSubscribe = async () => {
     setLoading(true);
-    // Simüle edilmiş satın alma işlemi (App Store / RevenueCat bağlanana kadar)
-    setTimeout(() => {
+    try {
+      if (isPurchasesConfigured()) {
+        const offering = await fetchEliteOffering();
+        const pkg = offering?.availablePackages?.[0];
+        if (!pkg) {
+          throw new Error('NO_PACKAGE');
+        }
+        const entitled = await purchasePackage(pkg);
+        setLoading(false);
+        if (entitled) {
+          setPremium(true);
+          onSuccess();
+          onClose();
+          Alert.alert(
+            'Tebrikler!',
+            'Stellium Elite aboneliğiniz başarıyla başlatıldı. Sınırsız kozmik rehberliğin tadını çıkarın.',
+            [{ text: 'Devam Et' }]
+          );
+        }
+      } else {
+        // Demo mode: RevenueCat hasn't been connected to a real product yet,
+        // so we simulate the upgrade so the app remains fully testable.
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+        setLoading(false);
+        setPremium(true);
+        onSuccess();
+        onClose();
+        Alert.alert(
+          'Deneme Modu',
+          'Ödeme altyapısı henüz bağlanmadı, bu yüzden Elite özellikleri deneme amaçlı açıldı. Gerçek abonelik App Store bağlantısı tamamlanınca aktif olacak.',
+          [{ text: 'Devam Et' }]
+        );
+      }
+    } catch (e: any) {
       setLoading(false);
-      setPremium(true);
+      if (e?.userCancelled) return;
+      Alert.alert('Hata', 'Satın alma işlemi tamamlanamadı. Lütfen daha sonra tekrar deneyin.');
+    }
+  };
+
+  const handleWatchAd = async () => {
+    setAdLoading(true);
+    const earned = await showRewarded(() => {});
+    setAdLoading(false);
+    if (earned) {
+      onAdUnlock?.();
       onSuccess();
       onClose();
-      Alert.alert(
-        'Tebrikler!',
-        'Stellium Elite aboneliğiniz başarıyla başlatıldı. Sınırsız kozmik rehberliğin tadını çıkarın.',
-        [{ text: 'Devam Et' }]
-      );
-    }, 1500);
+    } else {
+      Alert.alert('Reklam Tamamlanmadı', 'Ödülü almak için reklamı sonuna kadar izlemeniz gerekir.');
+    }
   };
 
   return (
@@ -65,10 +113,12 @@ export default function PaywallAdModal({
             <Text style={styles.title}>{title}</Text>
             <Text style={styles.description}>{description}</Text>
 
-            {loading ? (
+            {loading || adLoading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="small" color="#D4AF37" />
-                <Text style={styles.loadingText}>Abonelik işleminiz gerçekleştiriliyor...</Text>
+                <Text style={styles.loadingText}>
+                  {adLoading ? 'Reklam yükleniyor...' : 'Abonelik işleminiz gerçekleştiriliyor...'}
+                </Text>
               </View>
             ) : (
               <View style={styles.actions}>
@@ -82,7 +132,20 @@ export default function PaywallAdModal({
                   <Ionicons name="star" size={16} color="#000000" style={{ marginRight: 6 }} />
                   <Text style={styles.primaryBtnText}>Stellium Elite'e Geç (₺99/ay)</Text>
                 </Pressable>
-                
+
+                {allowAdUnlock && (
+                  <Pressable
+                    onPress={handleWatchAd}
+                    style={({ pressed }) => [
+                      styles.secondaryBtn,
+                      pressed && { opacity: 0.85 }
+                    ]}
+                  >
+                    <Ionicons name="play-circle-outline" size={16} color="#ffffff" style={{ marginRight: 6 }} />
+                    <Text style={styles.secondaryBtnText}>Reklam İzle, Bugünlük Ücretsiz Aç</Text>
+                  </Pressable>
+                )}
+
                 <Text style={styles.footerText}>
                   İstediğiniz zaman iptal edebilirsiniz. Tüm elit analizler ve günlük transit yorumları sınırsız açılır.
                 </Text>
