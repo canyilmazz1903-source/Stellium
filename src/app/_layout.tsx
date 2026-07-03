@@ -9,6 +9,33 @@ import { supabase } from '@/api/supabase';
 import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { computeNatalChart, getTimezoneOffset } from '@/utils/astronomy';
 import { initAds } from '@/services/ads';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Persist the last uncaught JS error so it survives the fatal abort that
+// follows -- native crash logs (.ips) never include the actual JS message
+// or stack, only the generic native reporting call chain. Read this back
+// with: AsyncStorage.getItem('stellium_last_fatal_error').
+declare const ErrorUtils: {
+  getGlobalHandler: () => (error: any, isFatal?: boolean) => void;
+  setGlobalHandler: (handler: (error: any, isFatal?: boolean) => void) => void;
+} | undefined;
+
+if (typeof ErrorUtils !== 'undefined') {
+  const previousHandler = ErrorUtils.getGlobalHandler?.();
+  ErrorUtils.setGlobalHandler((error, isFatal) => {
+    AsyncStorage.setItem(
+      'stellium_last_fatal_error',
+      JSON.stringify({
+        message: error?.message ?? String(error),
+        stack: error?.stack ?? null,
+        isFatal: !!isFatal,
+        timestamp: new Date().toISOString(),
+      })
+    ).finally(() => {
+      previousHandler?.(error, isFatal);
+    });
+  });
+}
 
 export default function RootLayout() {
   const { session, isLoading, profile, setSession, setUser, initialize } = useAuthStore();

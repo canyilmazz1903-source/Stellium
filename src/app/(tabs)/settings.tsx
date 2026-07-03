@@ -10,10 +10,18 @@ import CosmicInput from '@/components/ui/CosmicInput';
 import { BlurView } from 'expo-blur';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, Easing } from 'react-native-reanimated';
 import { fetchEliteOffering, isPurchasesConfigured, purchasePackage, restorePurchases } from '@/services/purchases';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SettingsScreen() {
   const { user, profile, signOut, isPremium, setPremium } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  const [lastFatalError, setLastFatalError] = useState<string | null>(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem('stellium_last_fatal_error').then((raw) => {
+      if (raw) setLastFatalError(raw);
+    });
+  }, []);
 
   // Profile editing states
   const [isEditing, setIsEditing] = useState(false);
@@ -557,6 +565,24 @@ export default function SettingsScreen() {
                   style={styles.actionButton}
                 />
               </View>
+
+              {lastFatalError && (
+                <GlassCard style={styles.card}>
+                  <Text style={styles.cardTitle}>Son Uygulama Hatası</Text>
+                  <Text style={[styles.description, { fontSize: 11 }]} selectable>
+                    {lastFatalError}
+                  </Text>
+                  <CosmicButton
+                    title="Kaydı Temizle"
+                    onPress={() => {
+                      AsyncStorage.removeItem('stellium_last_fatal_error');
+                      setLastFatalError(null);
+                    }}
+                    variant="outline"
+                    style={styles.actionButton}
+                  />
+                </GlassCard>
+              )}
 
             </View>
           )}

@@ -1,5 +1,16 @@
 import { Platform } from 'react-native';
-import Purchases from 'react-native-purchases';
+
+// Same reasoning as services/ads.ts: react-native-purchases resolves its
+// native module the moment this file is imported. Guard it with require()
+// inside a try/catch (never a static import) so a missing/broken native
+// module can't crash the whole app before configure() is even attempted.
+let Purchases: typeof import('react-native-purchases').default | null = null;
+try {
+  const purchasesModule = require('react-native-purchases');
+  Purchases = purchasesModule.default || purchasesModule;
+} catch (e) {
+  console.warn('react-native-purchases native module unavailable, staying in demo mode:', e);
+}
 
 // Stellium Elite entitlement identifier as configured in RevenueCat.
 export const ELITE_ENTITLEMENT_ID = 'elite';
@@ -17,13 +28,13 @@ function getApiKey() {
 // (EXPO_PUBLIC_REVENUECAT_API_KEY_IOS / _ANDROID), same as the Supabase/Gemini keys.
 // Until then the app runs in demo mode so the UI can be built/tested without a RevenueCat account.
 export function isPurchasesConfigured() {
-  return getApiKey().length > 0;
+  return !!Purchases && getApiKey().length > 0;
 }
 
 export async function initPurchases() {
   if (!isPurchasesConfigured() || configured) return;
   try {
-    await Purchases.configure({ apiKey: getApiKey() });
+    await Purchases!.configure({ apiKey: getApiKey() });
     configured = true;
   } catch (e) {
     console.warn('RevenueCat init failed, staying in demo mode:', e);
@@ -31,7 +42,7 @@ export async function initPurchases() {
 }
 
 export async function fetchEliteOffering() {
-  if (!configured) return null;
+  if (!configured || !Purchases) return null;
   try {
     const offerings = await Purchases.getOfferings();
     return offerings.current;
@@ -43,19 +54,19 @@ export async function fetchEliteOffering() {
 
 // Throws 'DEMO_MODE' when RevenueCat isn't configured yet so callers can fall back gracefully.
 export async function purchasePackage(pkg: any): Promise<boolean> {
-  if (!configured) throw new Error('DEMO_MODE');
+  if (!configured || !Purchases) throw new Error('DEMO_MODE');
   const { customerInfo } = await Purchases.purchasePackage(pkg);
   return !!customerInfo.entitlements.active[ELITE_ENTITLEMENT_ID];
 }
 
 export async function restorePurchases(): Promise<boolean> {
-  if (!configured) throw new Error('DEMO_MODE');
+  if (!configured || !Purchases) throw new Error('DEMO_MODE');
   const customerInfo = await Purchases.restorePurchases();
   return !!customerInfo.entitlements.active[ELITE_ENTITLEMENT_ID];
 }
 
 export async function getCurrentEntitlement(): Promise<boolean | null> {
-  if (!configured) return null;
+  if (!configured || !Purchases) return null;
   try {
     const customerInfo = await Purchases.getCustomerInfo();
     return !!customerInfo.entitlements.active[ELITE_ENTITLEMENT_ID];
