@@ -234,6 +234,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 2,
   },
+  loadingContainer: {
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: 20,
+    gap: 10,
+  },
+  loadingText: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.6)',
+    textAlign: 'center',
+  },
   actions: {
     width: '100%',
     gap: 10,

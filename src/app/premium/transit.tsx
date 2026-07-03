@@ -126,12 +126,13 @@ export default function TransitScreen() {
       try {
         const sun = computedChart.planets.find(p => p.name === 'Sun');
         const sunSign = sun ? sun.sign : 'Koç';
+        const todayStr = new Date().toISOString().split('T')[0];
 
         const data = await fetchTransitAnalysis(
           profile.name || 'Kozmik Ruh',
           sunSign,
           computedChart.planets,
-          computedChart.houses
+          profile.id ? `${profile.id}_${todayStr}` : undefined
         );
         setReport(data);
       } catch (err) {
