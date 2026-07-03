@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, ScrollView, ActivityIndicator, SafeAreaView } f
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
 import { getJulianDaysSinceJ2000, getPlanetLongitude, getZodiacSign } from '@/utils/astronomy';
-import { fetchTransitAnalysis } from '@/api/gemini';
+import { fetchTransitAnalysis, TransitAnalysisResult } from '@/api/gemini';
 import GlassCard from '@/components/glass/GlassCard';
 
 const PLANET_TR: Record<string, string> = {
@@ -52,8 +52,9 @@ function getTransitAspectDescription(transitPlanet: string, natalPlanet: string,
 export default function TransitScreen() {
   const { profile } = useAuthStore();
   const { computedChart } = useAppStore();
-  const [report, setReport] = useState<string>('');
+  const [report, setReport] = useState<TransitAnalysisResult | string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'potentials' | 'houseReflections' | 'risks' | 'opportunities'>('potentials');
 
   // 1. Calculate transit planets for "now"
   const transitPlanets = useMemo(() => {
@@ -167,8 +168,47 @@ export default function TransitScreen() {
         {/* Gemini Report Section (Moved to the Top) */}
         <Text style={styles.sectionTitle}>Derin Kozmik Transit Yorumu</Text>
         <GlassCard style={styles.reportCard}>
-          <Text style={styles.reportTitle}>Rehberlik Raporu</Text>
-          <Text style={styles.reportText}>{report}</Text>
+          {report && typeof report === 'object' ? (
+            <View>
+              <View style={styles.tabContainer}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 5 }}>
+                  <Text 
+                    style={[styles.tabButton, activeTab === 'potentials' && styles.tabButtonActive]} 
+                    onPress={() => setActiveTab('potentials')}
+                  >Güç & Potansiyel</Text>
+                  <Text 
+                    style={[styles.tabButton, activeTab === 'houseReflections' && styles.tabButtonActive]} 
+                    onPress={() => setActiveTab('houseReflections')}
+                  >Ev Yansımaları</Text>
+                  <Text 
+                    style={[styles.tabButton, activeTab === 'risks' && styles.tabButtonActive]} 
+                    onPress={() => setActiveTab('risks')}
+                  >Riskler</Text>
+                  <Text 
+                    style={[styles.tabButton, activeTab === 'opportunities' && styles.tabButtonActive]} 
+                    onPress={() => setActiveTab('opportunities')}
+                  >Fırsatlar</Text>
+                </ScrollView>
+              </View>
+
+              <View style={styles.reportSection}>
+                {activeTab === 'potentials' && (
+                  <Text style={styles.reportText}>{report.potentials}</Text>
+                )}
+                {activeTab === 'houseReflections' && (
+                  <Text style={styles.reportText}>{report.houseReflections}</Text>
+                )}
+                {activeTab === 'risks' && (
+                  <Text style={styles.reportText}>{report.risks}</Text>
+                )}
+                {activeTab === 'opportunities' && (
+                  <Text style={styles.reportText}>{report.opportunities}</Text>
+                )}
+              </View>
+            </View>
+          ) : (
+            <Text style={styles.reportText}>{typeof report === 'string' ? report : 'Hata oluştu'}</Text>
+          )}
         </GlassCard>
 
         {/* Aspects Section */}
@@ -325,8 +365,34 @@ const styles = StyleSheet.create({
   },
   reportText: {
     fontFamily: 'Inter',
-    color: '#E6EDF0',
-    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.95)',
+    fontSize: 14,
     lineHeight: 24,
+  },
+  tabContainer: {
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    paddingBottom: 8,
+  },
+  tabButton: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.6)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginRight: 8,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    overflow: 'hidden',
+  },
+  tabButtonActive: {
+    backgroundColor: '#D4AF37',
+    color: '#000000',
+    fontFamily: 'InterBold',
+    fontWeight: '700',
+  },
+  reportSection: {
+    marginTop: 4,
   },
 });

@@ -277,8 +277,6 @@ export default function HomeScreen() {
 
   // Planetary Hours Modal State
   const [planetaryModalVisible, setPlanetaryModalVisible] = useState(false);
-  const [almanacExpanded, setAlmanacExpanded] = useState(false);
-  const [careExpanded, setCareExpanded] = useState(false);
   const [selectedPlanetForDetail, setSelectedPlanetForDetail] = useState<string>('Sun');
   const [notifPreferences, setNotifPreferences] = useState<Record<string, boolean>>({
     Sun: true,
@@ -415,14 +413,28 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
         content: horoscope.career,
         advice: '🔮 Bolluk & Bereket Ritüeli:\nİşlerinizin rast gitmesi ve bereketinizin artması için cüzdanınızda bir adet defne yaprağı taşıyın. Bolluk kapılarını açmak adına bugün 489 defa "Ya Fettah" (Kapıları Açan) ve 308 defa "Ya Rezzak" (Rızık Veren) esmasını zikredin.'
       });
-    } else if (type === 'shadow' && horoscope) {
+    } else if (type === 'shadow') {
       setSelectedModalContent({
-        title: '✨ GÜNLÜK RİTÜEL & ÖZEL ESMA',
-        subtitle: 'Ay Döngüsü Rutinleri ve Günün Zikri',
-        content: horoscope.shadowSelf,
-        advice: '🔮 Kozmik Esma Ritüeli:\nGökyüzünün bugünkü titreşimleriyle rezonansa girmek, negatif gözlerden (nazar) ve enerjilerden korunmak adına bugün 129 defa "Ya Latif" (Lütufkar) zikrini çekin. Zikir çekerken sessiz bir alanda gözlerinizi kapatıp derin nefesler alın.'
+        title: '✨ ZİHİNSEL GÖLGELER & KOZMİK RİTÜEL',
+        subtitle: 'Bilinçdışı Dirençler ve Günün Zikri',
+        content: horoscope?.shadowSelf ? horoscope.shadowSelf : shadowsAdvice,
+        advice: '🔮 Kozmik Esma Ritüeli:\nGökyüzünün bugünkü titreşimleriyle rezonansa girmek, negatif gözlerden ve enerjilerden korunmak adına bugün sessiz bir alanda meditasyon yapın.'
       });
     }
+    setModalVisible(true);
+  };
+
+  const openCareDetailModal = (title: string, advice: string, projections?: any[]) => {
+    let projectionText = '';
+    if (projections && projections.length > 0) {
+      projectionText = '\n\n🔮 En Uyumlu Gelecek Tarihler:\n' + projections.map(p => `• ${p.formattedRange} (${p.label})`).join('\n');
+    }
+    setSelectedModalContent({
+      title: title,
+      subtitle: 'Kozmik Bakım ve Güzellik Rehberliği',
+      content: advice + projectionText,
+      advice: 'Tavsiyeleri Ayın ritmine ve burç geçişlerine göre uygulayarak en yüksek kozmik verimi alabilirsiniz.'
+    });
     setModalVisible(true);
   };
 
@@ -579,232 +591,104 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
             </Pressable>
           </View>
 
-          {/* Lunar Lifestyle Almanac Card */}
-          <View style={styles.almanacCard}>
-            <View style={styles.almanacHeaderRow}>
-              <Text style={styles.almanacTitle}>🌙 Kozmik Yaşam Takvimi</Text>
-              <View style={styles.almanacBadge}>
-                <Text style={styles.almanacBadgeText}>Almanak</Text>
-              </View>
-            </View>
-            
-            <Text style={styles.almanacSubtitle}>
-              Ay {moonSign} Burcunda • {moonPhase === 'waxing' ? 'Büyüyen Ay Evresi' : 'Küçülen Ay Evresi'}
-            </Text>
-
-            <View style={styles.almanacBody}>
-              <View style={styles.almanacItemRow}>
-                <Text style={styles.almanacEmoji}>💇‍♀️</Text>
-                <View style={styles.almanacItemContent}>
-                  <Text style={styles.almanacSectionHeader}>Saç & Güzellik</Text>
-                  {isPremium ? (
-                    <Text style={styles.almanacAdviceText}>{beautyAdvice}</Text>
-                  ) : (
-                    <Pressable onPress={() => router.push('/settings')}>
-                      <Text style={styles.almanacUnlockText}>🔒 Stellium Elite ile Kilidi Aç →</Text>
-                    </Pressable>
-                  )}
-                </View>
-              </View>
-
-              {almanacExpanded && (
-                <>
-                  <View style={styles.almanacItemRow}>
-                    <Text style={styles.almanacEmoji}>🍏</Text>
-                    <View style={styles.almanacItemContent}>
-                      <Text style={styles.almanacSectionHeader}>Sağlık & Detoks</Text>
-                      {isPremium ? (
-                        <Text style={styles.almanacAdviceText}>{healthAdvice}</Text>
-                      ) : (
-                        <Pressable onPress={() => router.push('/settings')}>
-                          <Text style={styles.almanacUnlockText}>🔒 Stellium Elite ile Kilidi Aç →</Text>
-                        </Pressable>
-                      )}
-                    </View>
-                  </View>
-
-                  <View style={styles.almanacItemRow}>
-                    <Text style={styles.almanacEmoji}>🌓</Text>
-                    <View style={styles.almanacItemContent}>
-                      <Text style={styles.almanacSectionHeader}>Zihinsel Gölgeler</Text>
-                      {isPremium || hasUnlockedDailyShadow ? (
-                        <Text style={styles.almanacAdviceText}>{shadowsAdvice}</Text>
-                      ) : (
-                        <Pressable onPress={() => setPaywallVisible(true)}>
-                          <Text style={styles.almanacUnlockText}>🔑 Reklam İzle veya Elite Olup Aç →</Text>
-                        </Pressable>
-                      )}
-                    </View>
-                  </View>
-                </>
-              )}
-            </View>
-
-            <Pressable 
-              onPress={() => setAlmanacExpanded(!almanacExpanded)} 
-              style={styles.expandCardBtn}
-            >
-              <Text style={styles.expandCardBtnText}>
-                {almanacExpanded ? 'Daha Az Göster ▲' : 'Devamını Oku (Sağlık & Zihinsel Gölgeler) ▼'}
-              </Text>
-            </Pressable>
-          </View>
-
           {/* Kozmik Bakım Rehberi Card */}
           {cosmicCare && (
             <View style={styles.careCard}>
               <View style={styles.almanacHeaderRow}>
                 <Text style={styles.almanacTitle}>✨ Kozmik Bakım Rehberi</Text>
-                <View style={[styles.almanacBadge, { backgroundColor: 'rgba(212, 175, 55, 0.15)' }]}>
-                  <Text style={styles.almanacBadgeText}>Kozmik Bakım</Text>
-                </View>
               </View>
-              <Text style={styles.almanacSubtitle}>
-                Güzellik ve Bakım Rutinleriniz İçin Kozmik Zamanlama
-              </Text>
+              <Text style={styles.almanacSubtitle}>Güzellik ve Bakım Rutinleriniz İçin Kozmik Zamanlama</Text>
               
               <View style={styles.careItemsList}>
                 {/* Saç Kesimi */}
-                <View style={[styles.careItemRow, !careExpanded && { borderBottomWidth: 0, paddingBottom: 0 }]}>
+                <Pressable style={styles.careClickableItem} onPress={() => openCareDetailModal('💇‍♀️ Saç Kesimi & Bakımı', cosmicCare.haircut.advice, cosmicCareProjections?.haircut)}>
                   <View style={styles.careItemHeader}>
                     <Text style={styles.careItemTitle}>💇‍♀️ Saç Kesimi & Bakımı</Text>
                     <View style={styles.starsContainer}>
                       {Array.from({ length: 5 }).map((_, i) => (
-                        <Ionicons 
-                          key={i} 
-                          name={i < cosmicCare.haircut.stars ? "star" : "star-outline"} 
-                          size={13} 
-                          color={i < cosmicCare.haircut.stars ? "#D4AF37" : "rgba(255, 255, 255, 0.2)"} 
-                          style={{ marginRight: 2 }}
-                        />
+                        <Ionicons key={i} name={i < cosmicCare.haircut.stars ? "star" : "star-outline"} size={13} color={i < cosmicCare.haircut.stars ? "#D4AF37" : "rgba(255, 255, 255, 0.2)"} style={{ marginRight: 2 }} />
                       ))}
                       <Text style={styles.careLabelText}>{cosmicCare.haircut.label}</Text>
                     </View>
                   </View>
-                  <Text style={styles.careAdviceText}>{cosmicCare.haircut.advice}</Text>
-                  {cosmicCareProjections?.haircut && cosmicCareProjections.haircut.length > 0 && (
-                    <View style={styles.projectionsContainer}>
-                      <Text style={styles.projectionsTitle}>🔮 En Uyumlu Gelecek Tarihler:</Text>
-                      <View style={styles.projectionTags}>
-                        {cosmicCareProjections.haircut.slice(0, 3).map((window, idx) => (
-                          <View key={idx} style={styles.projectionBadge}>
-                            <Text style={styles.projectionBadgeText}>{window.formattedRange} ({window.label})</Text>
-                          </View>
-                        ))}
-                      </View>
-                    </View>
-                  )}
-                </View>
+                  <Text style={styles.viewDetailText}>Detaylı görünüm için tıkla →</Text>
+                </Pressable>
 
-                {careExpanded && (
-                  <>
-                    {/* Epilasyon */}
-                    <View style={styles.careItemRow}>
-                      <View style={styles.careItemHeader}>
-                        <Text style={styles.careItemTitle}>🪒 Epilasyon (Tüy Alımı)</Text>
-                        <View style={styles.starsContainer}>
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Ionicons 
-                              key={i} 
-                              name={i < cosmicCare.epilation.stars ? "star" : "star-outline"} 
-                              size={13} 
-                              color={i < cosmicCare.epilation.stars ? "#D4AF37" : "rgba(255, 255, 255, 0.2)"} 
-                              style={{ marginRight: 2 }}
-                            />
-                          ))}
-                          <Text style={styles.careLabelText}>{cosmicCare.epilation.label}</Text>
-                        </View>
-                      </View>
-                      <Text style={styles.careAdviceText}>{cosmicCare.epilation.advice}</Text>
-                      {cosmicCareProjections?.epilation && cosmicCareProjections.epilation.length > 0 && (
-                        <View style={styles.projectionsContainer}>
-                          <Text style={styles.projectionsTitle}>🔮 En Uyumlu Gelecek Tarihler:</Text>
-                          <View style={styles.projectionTags}>
-                            {cosmicCareProjections.epilation.slice(0, 3).map((window, idx) => (
-                              <View key={idx} style={styles.projectionBadge}>
-                                <Text style={styles.projectionBadgeText}>{window.formattedRange} ({window.label})</Text>
-                              </View>
-                            ))}
-                          </View>
-                        </View>
+                {/* Epilasyon */}
+                <Pressable style={styles.careClickableItem} onPress={() => openCareDetailModal('🪒 Epilasyon', cosmicCare.epilation.advice, cosmicCareProjections?.epilation)}>
+                  <View style={styles.careItemHeader}>
+                    <Text style={styles.careItemTitle}>🪒 Epilasyon (Tüy Alımı)</Text>
+                    <View style={styles.starsContainer}>
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Ionicons key={i} name={i < cosmicCare.epilation.stars ? "star" : "star-outline"} size={13} color={i < cosmicCare.epilation.stars ? "#D4AF37" : "rgba(255, 255, 255, 0.2)"} style={{ marginRight: 2 }} />
+                      ))}
+                      <Text style={styles.careLabelText}>{cosmicCare.epilation.label}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.viewDetailText}>Detaylı görünüm için tıkla →</Text>
+                </Pressable>
+
+                {/* Cilt Bakımı */}
+                <Pressable style={styles.careClickableItem} onPress={() => openCareDetailModal('🧴 Cilt Bakımı', cosmicCare.skincare.advice, cosmicCareProjections?.skincare)}>
+                  <View style={styles.careItemHeader}>
+                    <Text style={styles.careItemTitle}>🧴 Cilt Bakımı & Peeling</Text>
+                    <View style={styles.starsContainer}>
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Ionicons key={i} name={i < cosmicCare.skincare.stars ? "star" : "star-outline"} size={13} color={i < cosmicCare.skincare.stars ? "#D4AF37" : "rgba(255, 255, 255, 0.2)"} style={{ marginRight: 2 }} />
+                      ))}
+                      <Text style={styles.careLabelText}>{cosmicCare.skincare.label}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.viewDetailText}>Detaylı görünüm için tıkla →</Text>
+                </Pressable>
+
+                {/* Tırnak Bakımı */}
+                <Pressable style={styles.careClickableItem} onPress={() => openCareDetailModal('💅 Tırnak Bakımı', cosmicCare.nails.advice, cosmicCareProjections?.nails)}>
+                  <View style={styles.careItemHeader}>
+                    <Text style={styles.careItemTitle}>💅 Tırnak Bakımı</Text>
+                    <View style={styles.starsContainer}>
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Ionicons key={i} name={i < cosmicCare.nails.stars ? "star" : "star-outline"} size={13} color={i < cosmicCare.nails.stars ? "#D4AF37" : "rgba(255, 255, 255, 0.2)"} style={{ marginRight: 2 }} />
+                      ))}
+                      <Text style={styles.careLabelText}>{cosmicCare.nails.label}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.viewDetailText}>Detaylı görünüm için tıkla →</Text>
+                </Pressable>
+
+                {/* Masaj */}
+                <Pressable style={styles.careClickableItem} onPress={() => openCareDetailModal('💆‍♀️ Masaj & Rahatlama', cosmicCare.massage.advice, cosmicCareProjections?.massage)}>
+                  <View style={styles.careItemHeader}>
+                    <Text style={styles.careItemTitle}>💆‍♀️ Masaj & Rahatlama</Text>
+                    <View style={styles.starsContainer}>
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Ionicons key={i} name={i < cosmicCare.massage.stars ? "star" : "star-outline"} size={13} color={i < cosmicCare.massage.stars ? "#D4AF37" : "rgba(255, 255, 255, 0.2)"} style={{ marginRight: 2 }} />
+                      ))}
+                      <Text style={styles.careLabelText}>{cosmicCare.massage.label}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.viewDetailText}>Detaylı görünüm için tıkla →</Text>
+                </Pressable>
+
+                {/* Zihinsel Gölgeler */}
+                <Pressable style={styles.careClickableItem} onPress={() => openDetailModal('shadow')}>
+                  <View style={styles.careItemHeader}>
+                    <Text style={styles.careItemTitle}>🌓 Zihinsel Gölgeler & Ritüel</Text>
+                    <View style={styles.starsContainer}>
+                      {isPremium || hasUnlockedDailyShadow ? (
+                        <Text style={styles.careLabelText}>Erişime Açık</Text>
+                      ) : (
+                        <>
+                          <Ionicons name="lock-closed" size={13} color="#D4AF37" style={{ marginRight: 2 }} />
+                          <Text style={styles.careLabelText}>Stellium Elite</Text>
+                        </>
                       )}
                     </View>
+                  </View>
+                  <Text style={styles.viewDetailText}>Kozmik esma ve günlük gölge analizi için tıkla →</Text>
+                </Pressable>
 
-                    {/* Cilt Bakımı */}
-                    <View style={styles.careItemRow}>
-                      <View style={styles.careItemHeader}>
-                        <Text style={styles.careItemTitle}>🧴 Cilt Bakımı & Peeling</Text>
-                        <View style={styles.starsContainer}>
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Ionicons 
-                              key={i} 
-                              name={i < cosmicCare.skincare.stars ? "star" : "star-outline"} 
-                              size={13} 
-                              color={i < cosmicCare.skincare.stars ? "#D4AF37" : "rgba(255, 255, 255, 0.2)"} 
-                              style={{ marginRight: 2 }}
-                            />
-                          ))}
-                          <Text style={styles.careLabelText}>{cosmicCare.skincare.label}</Text>
-                        </View>
-                      </View>
-                      <Text style={styles.careAdviceText}>{cosmicCare.skincare.advice}</Text>
-                      {cosmicCareProjections?.skincare && cosmicCareProjections.skincare.length > 0 && (
-                        <View style={styles.projectionsContainer}>
-                          <Text style={styles.projectionsTitle}>🔮 En Uyumlu Gelecek Tarihler:</Text>
-                          <View style={styles.projectionTags}>
-                            {cosmicCareProjections.skincare.slice(0, 3).map((window, idx) => (
-                              <View key={idx} style={styles.projectionBadge}>
-                                <Text style={styles.projectionBadgeText}>{window.formattedRange} ({window.label})</Text>
-                              </View>
-                            ))}
-                          </View>
-                        </View>
-                      )}
-                    </View>
-
-                    {/* Detoks */}
-                    <View style={[styles.careItemRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
-                      <View style={styles.careItemHeader}>
-                        <Text style={styles.careItemTitle}>🥑 Detoks & Arınma</Text>
-                        <View style={styles.starsContainer}>
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Ionicons 
-                              key={i} 
-                              name={i < cosmicCare.detox.stars ? "star" : "star-outline"} 
-                              size={13} 
-                              color={i < cosmicCare.detox.stars ? "#D4AF37" : "rgba(255, 255, 255, 0.2)"} 
-                              style={{ marginRight: 2 }}
-                            />
-                          ))}
-                          <Text style={styles.careLabelText}>{cosmicCare.detox.label}</Text>
-                        </View>
-                      </View>
-                      <Text style={styles.careAdviceText}>{cosmicCare.detox.advice}</Text>
-                      {cosmicCareProjections?.detox && cosmicCareProjections.detox.length > 0 && (
-                        <View style={styles.projectionsContainer}>
-                          <Text style={styles.projectionsTitle}>🔮 En Uyumlu Gelecek Tarihler:</Text>
-                          <View style={styles.projectionTags}>
-                            {cosmicCareProjections.detox.slice(0, 3).map((window, idx) => (
-                              <View key={idx} style={styles.projectionBadge}>
-                                <Text style={styles.projectionBadgeText}>{window.formattedRange} ({window.label})</Text>
-                              </View>
-                            ))}
-                          </View>
-                        </View>
-                      )}
-                    </View>
-                  </>
-                )}
               </View>
-
-              <Pressable 
-                onPress={() => setCareExpanded(!careExpanded)} 
-                style={styles.expandCardBtn}
-              >
-                <Text style={styles.expandCardBtnText}>
-                  {careExpanded ? 'Daha Az Göster ▲' : 'Kozmik Bakım Takvimi & Tarihlerini Aç ▼'}
-                </Text>
-              </Pressable>
             </View>
           )}
 
@@ -878,14 +762,6 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
                 <View style={styles.forecastCard}>
                   <Text style={styles.forecastHeader}>💼 Kariyer & Bereket</Text>
                   <Text style={styles.forecastText} numberOfLines={3}>{horoscope.career}</Text>
-                  <Text style={styles.detailLink}>Detaylı Analiz için Dokunun →</Text>
-                </View>
-              </Pressable>
-
-              <Pressable onPress={() => openDetailModal('shadow')}>
-                <View style={styles.forecastCard}>
-                  <Text style={styles.forecastHeader}>✨ Günlük Ritüel & Zikir</Text>
-                  <Text style={styles.forecastText} numberOfLines={3}>{horoscope.shadowSelf}</Text>
                   <Text style={styles.detailLink}>Detaylı Analiz için Dokunun →</Text>
                 </View>
               </Pressable>
@@ -1292,86 +1168,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
-  // Almanac Card
-  almanacCard: {
-    backgroundColor: '#161B22',
-    borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.12)',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-  },
-  almanacHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  almanacTitle: {
-    fontFamily: 'Cinzel',
-    fontSize: 16,
-    color: '#F0F6FC',
-    fontWeight: '600',
-  },
-  almanacBadge: {
-    backgroundColor: 'rgba(212, 175, 55, 0.12)',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-  },
-  almanacBadgeText: {
-    color: '#D4AF37',
-    fontSize: 9,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  almanacSubtitle: {
-    fontFamily: 'Inter',
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#8B949E',
-    marginBottom: 16,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  almanacBody: {
-    gap: 14,
-  },
-  almanacItemRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  almanacEmoji: {
-    fontSize: 18,
-    marginRight: 12,
-    marginTop: 1,
-  },
-  almanacItemContent: {
-    flex: 1,
-  },
-  almanacSectionHeader: {
-    fontFamily: 'Inter',
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#8B949E',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  almanacAdviceText: {
-    fontFamily: 'Inter',
-    fontSize: 13,
-    color: '#F0F6FC',
-    marginTop: 3,
-    lineHeight: 18,
-  },
-  almanacUnlockText: {
-    color: '#D4AF37',
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 3,
-  },
-
   // Services Grid (icon-based)
   servicesGrid: {
     gap: 10,
@@ -1526,6 +1322,21 @@ const styles = StyleSheet.create({
     color: '#F0F6FC',
     lineHeight: 24,
     marginBottom: 20,
+  },
+  careClickableItem: {
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  viewDetailText: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: 'rgba(212, 175, 55, 0.8)',
+    marginTop: 8,
+    textAlign: 'right',
   },
   adviceContainer: {
     backgroundColor: 'rgba(212, 175, 55, 0.06)',

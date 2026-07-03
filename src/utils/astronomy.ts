@@ -324,6 +324,66 @@ export function getPlanetHouse(longitude: number, houses: number[]): number {
   return 12; // Default to 12th house if not caught in 1-11
 }
 
+export interface Aspect {
+  planet1: string;
+  planet2: string;
+  aspectType: string;
+  aspectTypeTurkish: string;
+  orb: number;
+  exactAngle: number;
+  isApplying: boolean;
+}
+
+const MAJOR_ASPECTS = [
+  { name: 'Conjunction', turkish: 'Kavuşum', angle: 0, orb: 8 },
+  { name: 'Sextile', turkish: 'Altmışlık', angle: 60, orb: 4 },
+  { name: 'Square', turkish: 'Kare', angle: 90, orb: 6 },
+  { name: 'Trine', turkish: 'Üçgen', angle: 120, orb: 6 },
+  { name: 'Opposition', turkish: 'Karşıt', angle: 180, orb: 8 }
+];
+
+export function calculateAspects(planets: any[], d: number): Aspect[] {
+  const aspects: Aspect[] = [];
+  
+  for (let i = 0; i < planets.length; i++) {
+    for (let j = i + 1; j < planets.length; j++) {
+      const p1 = planets[i];
+      const p2 = planets[j];
+      
+      let diff = Math.abs(p1.longitude - p2.longitude);
+      if (diff > 180) {
+        diff = 360 - diff;
+      }
+      
+      for (const aspectDef of MAJOR_ASPECTS) {
+        const orb = Math.abs(diff - aspectDef.angle);
+        if (orb <= aspectDef.orb) {
+          // Check applying/separating
+          // Calculate positions a little bit in the future to see if they get closer to the exact angle
+          const p1FutureLon = getPlanetLongitude(p1.name, d + 0.1);
+          const p2FutureLon = getPlanetLongitude(p2.name, d + 0.1);
+          let futureDiff = Math.abs(p1FutureLon - p2FutureLon);
+          if (futureDiff > 180) futureDiff = 360 - futureDiff;
+          
+          const futureOrb = Math.abs(futureDiff - aspectDef.angle);
+          const isApplying = futureOrb < orb;
+          
+          aspects.push({
+            planet1: p1.name,
+            planet2: p2.name,
+            aspectType: aspectDef.name,
+            aspectTypeTurkish: aspectDef.turkish,
+            orb: Number(orb.toFixed(2)),
+            exactAngle: aspectDef.angle,
+            isApplying
+          });
+        }
+      }
+    }
+  }
+  return aspects;
+}
+
 // Main function to compute a full Natal Chart
 export function computeNatalChart(
   year: number,
@@ -369,11 +429,14 @@ export function computeNatalChart(
     };
   });
 
+  const aspects = calculateAspects(planets, d);
+
   return {
     planets,
     houses,
     ascendant,
-    midheaven
+    midheaven,
+    aspects
   };
 }
 

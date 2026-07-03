@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, ActivityIndicator, SafeAreaView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useAuthStore } from '@/store/authStore';
 import { calculateEbced } from '@/utils/ebced';
-import { fetchYildiznameAnalysis } from '@/api/gemini';
+import { fetchYildiznameAnalysis, YildiznameAnalysisResult } from '@/api/gemini';
 import GlassCard from '@/components/glass/GlassCard';
 import CosmicInput from '@/components/ui/CosmicInput';
 import CosmicButton from '@/components/ui/CosmicButton';
@@ -37,7 +37,8 @@ export default function YildiznameScreen() {
   const [motherEbced, setMotherEbced] = useState(0);
   const [totalEbced, setTotalEbced] = useState(0);
   const [computedSign, setComputedSign] = useState<typeof YILDIZNAME_SIGNS[0] | null>(null);
-  const [analysisReport, setAnalysisReport] = useState('');
+  const [analysisReport, setAnalysisReport] = useState<YildiznameAnalysisResult | string | null>(null);
+  const [activeTab, setActiveTab] = useState<'ebcedDestiny' | 'elementTemperament' | 'spiritualObstacles' | 'protectionEsma'>('ebcedDestiny');
 
   const handleCalculate = async () => {
     if (!userName.trim()) return Alert.alert('Hata', 'Lütfen adınızı girin.');
@@ -62,13 +63,16 @@ export default function YildiznameScreen() {
       setTotalEbced(sum);
       setComputedSign(sign);
 
+      const cacheKey = `${userName}_${motherName}`.toLowerCase();
+      
       // Fetch deep AI report
       const analysis = await fetchYildiznameAnalysis(
         userName,
         motherName,
         sum,
         sign.name,
-        sign.element
+        sign.element,
+        cacheKey
       );
 
       setAnalysisReport(analysis);
@@ -149,7 +153,47 @@ export default function YildiznameScreen() {
               {/* Gemini Report (Moved to the Top) */}
               <Text style={styles.aspectsTitle}>Manevi Yıldızname Rehberliği</Text>
               <GlassCard style={styles.reportCard}>
-                <Text style={styles.reportText}>{analysisReport}</Text>
+                {analysisReport && typeof analysisReport === 'object' ? (
+                  <View>
+                    <View style={styles.tabContainer}>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 5 }}>
+                        <Text 
+                          style={[styles.tabButton, activeTab === 'ebcedDestiny' && styles.tabButtonActive]} 
+                          onPress={() => setActiveTab('ebcedDestiny')}
+                        >Kader Temaları</Text>
+                        <Text 
+                          style={[styles.tabButton, activeTab === 'elementTemperament' && styles.tabButtonActive]} 
+                          onPress={() => setActiveTab('elementTemperament')}
+                        >Element Mizacı</Text>
+                        <Text 
+                          style={[styles.tabButton, activeTab === 'spiritualObstacles' && styles.tabButtonActive]} 
+                          onPress={() => setActiveTab('spiritualObstacles')}
+                        >Manevi Engeller</Text>
+                        <Text 
+                          style={[styles.tabButton, activeTab === 'protectionEsma' && styles.tabButtonActive]} 
+                          onPress={() => setActiveTab('protectionEsma')}
+                        >Koruma & Esma</Text>
+                      </ScrollView>
+                    </View>
+
+                    <View style={styles.reportSection}>
+                      {activeTab === 'ebcedDestiny' && (
+                        <Text style={styles.reportText}>{analysisReport.ebcedDestiny}</Text>
+                      )}
+                      {activeTab === 'elementTemperament' && (
+                        <Text style={styles.reportText}>{analysisReport.elementTemperament}</Text>
+                      )}
+                      {activeTab === 'spiritualObstacles' && (
+                        <Text style={styles.reportText}>{analysisReport.spiritualObstacles}</Text>
+                      )}
+                      {activeTab === 'protectionEsma' && (
+                        <Text style={styles.reportText}>{analysisReport.protectionEsma}</Text>
+                      )}
+                    </View>
+                  </View>
+                ) : (
+                  <Text style={styles.reportText}>{typeof analysisReport === 'string' ? analysisReport : 'Rapor yüklenemedi.'}</Text>
+                )}
               </GlassCard>
 
               {/* Ebced Details Grid */}
@@ -355,13 +399,40 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   reportCard: {
-    padding: 20,
+    padding: 16,
+    marginBottom: 24,
   },
   reportText: {
     fontFamily: 'Inter',
-    color: '#E6EDF0',
-    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.95)',
+    fontSize: 14,
     lineHeight: 24,
+  },
+  tabContainer: {
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    paddingBottom: 8,
+  },
+  tabButton: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.6)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginRight: 8,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    overflow: 'hidden',
+  },
+  tabButtonActive: {
+    backgroundColor: '#D4AF37',
+    color: '#000000',
+    fontFamily: 'InterBold',
+    fontWeight: '700',
+  },
+  reportSection: {
+    marginTop: 4,
   },
   resetButton: {
     marginTop: 10,

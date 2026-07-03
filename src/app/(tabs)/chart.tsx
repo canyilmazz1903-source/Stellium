@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useCosmicCalendarStore } from '@/store/cosmicCalendarStore';
 import GlassCard from '@/components/glass/GlassCard';
 import { getZodiacSign } from '@/utils/astronomy';
-import { fetchFullChartAnalysis } from '@/api/gemini';
+import { fetchFullChartAnalysis, ChartAnalysisResult } from '@/api/gemini';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, withDelay, Easing } from 'react-native-reanimated';
@@ -313,8 +313,9 @@ export default function ChartScreen() {
 
   // AI Modal States
   const [loadingAI, setLoadingAI] = useState(false);
-  const [aiReport, setAiReport] = useState<string | null>(null);
+  const [aiReport, setAiReport] = useState<ChartAnalysisResult | string | null>(null);
   const [aiModalVisible, setAiModalVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState<'bigThree' | 'mental' | 'love' | 'lessons'>('bigThree');
 
   // Background Aura Reanimated Config
   const color1 = useSharedValue('#B2F7EF');
@@ -557,7 +558,7 @@ export default function ChartScreen() {
     setLoadingAI(true);
     setAiModalVisible(true);
     try {
-      const response = await fetchFullChartAnalysis(profile.name || 'Kozmik Ruh', computedChart, aspects);
+      const response = await fetchFullChartAnalysis(profile.name || 'Kozmik Ruh', computedChart, aspects, profile.id);
       setAiReport(response);
     } catch (error) {
       console.warn('AI analysis error:', error);
@@ -1113,13 +1114,75 @@ export default function ChartScreen() {
                   <Text style={styles.loadingSubtext}>Bu işlem yaklaşık 10-15 saniye sürebilir.</Text>
                 </View>
               ) : (
-                <ScrollView contentContainerStyle={styles.modalScrollContent} showsVerticalScrollIndicator={false}>
-                  {aiReport ? (
-                    <Text style={styles.modalReportText}>{aiReport}</Text>
+                <View style={{ flex: 1 }}>
+                  {aiReport && typeof aiReport === 'object' ? (
+                    <>
+                      <View style={styles.tabContainer}>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+                          <Pressable style={[styles.tabButton, activeTab === 'bigThree' && styles.tabButtonActive]} onPress={() => setActiveTab('bigThree')}>
+                            <Text style={[styles.tabText, activeTab === 'bigThree' && styles.tabTextActive]}>Genel Mizaç</Text>
+                          </Pressable>
+                          <Pressable style={[styles.tabButton, activeTab === 'mental' && styles.tabButtonActive]} onPress={() => setActiveTab('mental')}>
+                            <Text style={[styles.tabText, activeTab === 'mental' && styles.tabTextActive]}>Zihin & Analiz</Text>
+                          </Pressable>
+                          <Pressable style={[styles.tabButton, activeTab === 'love' && styles.tabButtonActive]} onPress={() => setActiveTab('love')}>
+                            <Text style={[styles.tabText, activeTab === 'love' && styles.tabTextActive]}>Aşk & Bereket</Text>
+                          </Pressable>
+                          <Pressable style={[styles.tabButton, activeTab === 'lessons' && styles.tabButtonActive]} onPress={() => setActiveTab('lessons')}>
+                            <Text style={[styles.tabText, activeTab === 'lessons' && styles.tabTextActive]}>Sınavlar & Gelecek</Text>
+                          </Pressable>
+                        </ScrollView>
+                      </View>
+                      
+                      <ScrollView contentContainerStyle={styles.modalScrollContent} showsVerticalScrollIndicator={false}>
+                        {activeTab === 'bigThree' && (
+                          <View style={styles.reportSection}>
+                            <Text style={styles.reportSectionTitle}>🪐 Yükselen, Güneş ve Ay Sentezi</Text>
+                            <Text style={styles.modalReportText}>{aiReport.bigThree}</Text>
+                          </View>
+                        )}
+                        {activeTab === 'mental' && (
+                          <View style={styles.reportSection}>
+                            <Text style={styles.reportSectionTitle}>🧠 Zihinsel Kapasite ve İletişim</Text>
+                            <Text style={styles.modalReportText}>{aiReport.mentalAndCommunication}</Text>
+                            
+                            <Text style={styles.reportSectionTitle}>🔥 İrade Gücü ve Mücadele</Text>
+                            <Text style={styles.modalReportText}>{aiReport.willpowerAndStruggle}</Text>
+                          </View>
+                        )}
+                        {activeTab === 'love' && (
+                          <View style={styles.reportSection}>
+                            <Text style={styles.reportSectionTitle}>❤️ Sevgi Dili ve Finansal Bereket</Text>
+                            <Text style={styles.modalReportText}>{aiReport.loveAndFinance}</Text>
+                          </View>
+                        )}
+                        {activeTab === 'lessons' && (
+                          <View style={styles.reportSection}>
+                            <Text style={styles.reportSectionTitle}>⚠️ Satürn Dersleri ve Sınavlar</Text>
+                            <Text style={styles.modalReportText}>{aiReport.saturnLessons}</Text>
+                            
+                            <Text style={styles.reportSectionTitle}>🚨 Güncel Riskler</Text>
+                            <Text style={styles.modalReportText}>{aiReport.currentRisks}</Text>
+
+                            <Text style={styles.reportSectionTitle}>🗓️ Yakın Dönem Projeksiyonu</Text>
+                            <Text style={styles.modalReportText}>{aiReport.projection}</Text>
+
+                            <Text style={styles.reportSectionTitle}>🔮 Uzun Vadeli Strateji</Text>
+                            <Text style={styles.modalReportText}>{aiReport.longTerm}</Text>
+                          </View>
+                        )}
+                      </ScrollView>
+                    </>
                   ) : (
-                    <Text style={styles.modalReportText}>Analiz yüklenemedi. Lütfen tekrar deneyin.</Text>
+                    <ScrollView contentContainerStyle={styles.modalScrollContent} showsVerticalScrollIndicator={false}>
+                      {aiReport ? (
+                        <Text style={styles.modalReportText}>{typeof aiReport === 'string' ? aiReport : 'Hata'}</Text>
+                      ) : (
+                        <Text style={styles.modalReportText}>Analiz yüklenemedi. Lütfen tekrar deneyin.</Text>
+                      )}
+                    </ScrollView>
                   )}
-                </ScrollView>
+                </View>
               )}
             </SafeAreaView>
           </View>

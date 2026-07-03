@@ -4,7 +4,7 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
 import { computeNatalChart, getTimezoneOffset } from '@/utils/astronomy';
-import { fetchSynastryAnalysis } from '@/api/gemini';
+import { fetchSynastryAnalysis, SynastryAnalysisResult } from '@/api/gemini';
 import { searchLocation, getTimezoneForCoordinates, LocationSuggestion } from '@/api/location';
 import GlassCard from '@/components/glass/GlassCard';
 import CosmicInput from '@/components/ui/CosmicInput';
@@ -76,10 +76,11 @@ export default function SynastryScreen() {
   const [searchingLocation, setSearchingLocation] = useState(false);
 
   // Result States
-  const [analysisReport, setAnalysisReport] = useState<string>('');
+  const [analysisReport, setAnalysisReport] = useState<SynastryAnalysisResult | string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isCalculated, setIsCalculated] = useState(false);
   const [partnerChart, setPartnerChart] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<'loveAndAttraction' | 'communication' | 'friction' | 'harmonyGuide'>('loveAndAttraction');
 
   const handleLocationSearch = async (text: string) => {
     setBirthPlace(text);
@@ -217,12 +218,15 @@ export default function SynastryScreen() {
 
       const userSun = computedChart?.planets?.find(p => p.name === 'Sun')?.sign || 'Koç';
 
+      const cacheKey = `${profile?.name || 'Kozmik Ruh'}_${partnerName}`.toLowerCase();
+
       const analysis = await fetchSynastryAnalysis(
         profile?.name || 'Kozmik Ruh',
         userSun,
         computedChart?.planets || [],
         partnerName,
-        chart.planets
+        chart.planets,
+        cacheKey
       );
 
       setAnalysisReport(analysis);
@@ -378,7 +382,47 @@ export default function SynastryScreen() {
               {/* Gemini AI Synastry Report (Moved to the Top) */}
               <Text style={styles.aspectsTitle}>Anima & Animus İlişki Rehberi</Text>
               <GlassCard style={styles.reportCard}>
-                <Text style={styles.reportText}>{analysisReport}</Text>
+                {analysisReport && typeof analysisReport === 'object' ? (
+                  <View>
+                    <View style={styles.tabContainer}>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 5 }}>
+                        <Text 
+                          style={[styles.tabButton, activeTab === 'loveAndAttraction' && styles.tabButtonActive]} 
+                          onPress={() => setActiveTab('loveAndAttraction')}
+                        >Romantik Çekim</Text>
+                        <Text 
+                          style={[styles.tabButton, activeTab === 'communication' && styles.tabButtonActive]} 
+                          onPress={() => setActiveTab('communication')}
+                        >İletişim</Text>
+                        <Text 
+                          style={[styles.tabButton, activeTab === 'friction' && styles.tabButtonActive]} 
+                          onPress={() => setActiveTab('friction')}
+                        >Uyuşmazlıklar</Text>
+                        <Text 
+                          style={[styles.tabButton, activeTab === 'harmonyGuide' && styles.tabButtonActive]} 
+                          onPress={() => setActiveTab('harmonyGuide')}
+                        >Uyum Rehberi</Text>
+                      </ScrollView>
+                    </View>
+
+                    <View style={styles.reportSection}>
+                      {activeTab === 'loveAndAttraction' && (
+                        <Text style={styles.reportText}>{analysisReport.loveAndAttraction}</Text>
+                      )}
+                      {activeTab === 'communication' && (
+                        <Text style={styles.reportText}>{analysisReport.communication}</Text>
+                      )}
+                      {activeTab === 'friction' && (
+                        <Text style={styles.reportText}>{analysisReport.friction}</Text>
+                      )}
+                      {activeTab === 'harmonyGuide' && (
+                        <Text style={styles.reportText}>{analysisReport.harmonyGuide}</Text>
+                      )}
+                    </View>
+                  </View>
+                ) : (
+                  <Text style={styles.reportText}>{typeof analysisReport === 'string' ? analysisReport : 'Rapor yüklenemedi.'}</Text>
+                )}
               </GlassCard>
 
               {/* Aspects */}
@@ -718,9 +762,35 @@ const styles = StyleSheet.create({
   },
   reportText: {
     fontFamily: 'Inter',
-    color: '#E6EDF0',
-    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.95)',
+    fontSize: 14,
     lineHeight: 24,
+  },
+  tabContainer: {
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    paddingBottom: 8,
+  },
+  tabButton: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.6)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginRight: 8,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    overflow: 'hidden',
+  },
+  tabButtonActive: {
+    backgroundColor: '#D4AF37',
+    color: '#000000',
+    fontFamily: 'InterBold',
+    fontWeight: '700',
+  },
+  reportSection: {
+    marginTop: 4,
   },
   resetButton: {
     marginTop: 10,
