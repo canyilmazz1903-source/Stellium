@@ -1,3 +1,5 @@
+import 'react-native-gesture-handler';
+import '../global.css';
 import React, { useEffect } from 'react';
 import { ThemeProvider, DarkTheme, Stack, useRouter, useSegments } from 'expo-router';
 import { ActivityIndicator, View, StyleSheet, StatusBar } from 'react-native';
