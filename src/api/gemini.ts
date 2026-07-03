@@ -148,17 +148,64 @@ export async function fetchTransitAnalysis(
   name: string,
   zodiacSign: string,
   planets: any[],
+  profileId?: string
+): Promise<TransitAnalysisResult | string> {
+  const cached = await getCachedAnalysis(profileId, 'transit');
+  if (cached) return cached as TransitAnalysisResult;
 
-    const text1 = res1.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const text2 = res2.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const fallbackReport = `**🌟 1. Genel Etkiler...**\nTransit analizi şu anda yüklenemedi.`;
 
-    if (!text1 && !text2) {
-      return fallbackReport;
+  if (!GEMINI_API_KEY) {
+    return fallbackReport;
+  }
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`;
+  
+  const prompt = `
+[SYSTEM INSTRUCTION]
+Sen transit gökyüzü açılarını ve natal haritayı kıyaslayan elit bir astroloji profesörüsün.
+
+[STRICT OUTPUT FORMAT RULES]
+Aşağıdaki anahtarlarla tam olarak bir JSON objesi dönmelisin. ASLA markdown formatında (örneğin \`\`\`json) sarmalama. Doğrudan ham JSON döndür. Bölümlerin içeriğinde paragraf ve **kalın metin** kullanabilirsin.
+
+JSON Şeması:
+{
+  "potentials": "Gezegen transitlerinin genel olarak açığa çıkardığı gizli potansiyeller...",
+  "houseReflections": "Transitlerin evlere göre yansımaları (Kariyer, aşk, para)...",
+  "risks": "Önümüzdeki günlerde dikkat edilmesi gereken sert transit açıları ve kriz ihtimalleri...",
+  "opportunities": "Değerlendirilmesi gereken kadersel fırsatlar ve şanslı günler..."
+}
+
+Kullanıcı: "${name}", Burç: "${zodiacSign}"
+Gezegen Konumları: ${JSON.stringify(planets)}
+Bugünün Gökyüzü: Gezegenler sürekli hareket halinde, buna göre yukarıdaki kişinin natal yerleşimlerine olan mevcut transit etkilerini yorumla.
+  `;
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: "application/json" }
+      })
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const result = await response.json();
+    let jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    jsonText = jsonText.replace(/^```json/m, '').replace(/```$/m, '').trim();
+    const parsed = JSON.parse(jsonText);
+
+    if (parsed.potentials && parsed.risks) {
+      await saveCachedAnalysis(profileId, 'transit', parsed, 'gemini-1.5-pro');
+      return parsed as TransitAnalysisResult;
     }
-
-    return `${text1.trim()}\n\n${text2.trim()}`;
+    
+    return fallbackReport;
   } catch (error) {
-    console.warn('Error fetching transit analysis concurrently:', error);
+    console.warn('Error fetching transit analysis:', error);
     return fallbackReport;
   }
 }
