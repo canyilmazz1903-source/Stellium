@@ -41,14 +41,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   setProfile: (profile) => set({ profile }),
   setPremium: (isPremium) => {
     set({ isPremium });
-    try {
-      const appStore = require('./appStore').useAppStore;
-      if (appStore.getState().isPremium !== isPremium) {
-        appStore.getState().setPremium(isPremium);
-      }
-    } catch (e) {
-      console.warn('Syncing premium state warning:', e);
-    }
   },
   unlockDailyShadow: () => set({ hasUnlockedDailyShadow: true }),
   initialize: async () => {

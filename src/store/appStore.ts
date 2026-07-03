@@ -36,14 +36,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   isPremium: false,
   setPremium: (isPremium) => {
     set({ isPremium });
-    try {
-      const authStore = require('./authStore').useAuthStore;
-      if (authStore.getState().isPremium !== isPremium) {
-        authStore.getState().setPremium(isPremium);
-      }
-    } catch (e) {
-      console.warn('Syncing premium state warning:', e);
-    }
   },
   computedChart: null,
   setComputedChart: (computedChart) => set({ computedChart }),

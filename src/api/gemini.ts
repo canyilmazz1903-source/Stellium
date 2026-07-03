@@ -1,4 +1,4 @@
-import { ComputedChart } from '@/store/appStore';
+import type { ComputedChart } from '@/store/appStore';
 import { supabase } from './supabase';
 
 const rawKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
