@@ -1669,4 +1669,39 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: '#E6EDF0',
   },
+  tabContainer: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    marginBottom: 4,
+  },
+  tabButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginRight: 4,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabButtonActive: {
+    borderBottomColor: '#D4AF37',
+  },
+  tabText: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8B949E',
+  },
+  tabTextActive: {
+    color: '#D4AF37',
+  },
+  reportSection: {
+    gap: 8,
+  },
+  reportSectionTitle: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#D4AF37',
+    marginTop: 16,
+    marginBottom: 4,
+  },
 });

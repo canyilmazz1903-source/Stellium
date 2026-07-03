@@ -1390,6 +1390,25 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 24,
   },
+  almanacHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  almanacTitle: {
+    fontFamily: 'Cinzel',
+    fontSize: 17,
+    color: '#D4AF37',
+    fontWeight: '700',
+  },
+  almanacSubtitle: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: '#8B949E',
+    marginTop: 4,
+    marginBottom: 16,
+    lineHeight: 16,
+  },
   expandCardBtn: {
     marginTop: 14,
     paddingVertical: 10,

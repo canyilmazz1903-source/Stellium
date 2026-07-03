@@ -10,6 +10,7 @@ import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@e
 import { computeNatalChart, getTimezoneOffset } from '@/utils/astronomy';
 import { initAds } from '@/services/ads';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 // Persist the last uncaught JS error so it survives the fatal abort that
 // follows -- native crash logs (.ips) never include the actual JS message
@@ -143,6 +144,7 @@ export default function RootLayout() {
   }
 
   return (
+    <ErrorBoundary>
     <ThemeProvider value={DarkTheme}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
       <Stack screenOptions={{ headerShown: false }}>
@@ -195,6 +197,7 @@ export default function RootLayout() {
         />
       </Stack>
     </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

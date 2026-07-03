@@ -88,6 +88,8 @@ export interface CosmicCareRatings {
   haircut: CosmicCareRating;
   epilation: CosmicCareRating;
   skincare: CosmicCareRating;
+  nails: CosmicCareRating;
+  massage: CosmicCareRating;
   detox: CosmicCareRating;
 }
 
@@ -188,13 +190,61 @@ export function calculateCosmicCare(
     }
   }
 
-  // 4. Detox
+  const isFullMoon = Math.abs(elongation - 180) <= 12;
+  const isNewMoon = elongation <= 12 || elongation >= 348;
+
+  // 4. Nails (manikür / pedikür) — nails grow like hair. Cutting in the
+  // waning phase (especially earth signs) yields stronger, slower-growing
+  // nails; water signs soften and weaken them.
+  let nailsStars = 3;
+  let nailsLabel = 'Orta';
+  let nailsAdvice = 'Rutin tırnak bakımı yapılabilir. Tırnakların yapısında belirgin bir değişim beklenmez.';
+  if (isWaterSign) {
+    nailsStars = 2;
+    nailsLabel = 'Uygun Değil';
+    nailsAdvice = `Ay ${moonSignTurkish} (Su) burcunda. Tırnaklar yumuşayıp kolay kırılabilir; kesim için beklemeniz önerilir.`;
+  } else if (phase === 'waning') {
+    if (moonSignTurkish === 'Oğlak' || moonSignTurkish === 'Başak' || moonSignTurkish === 'Boğa') {
+      nailsStars = 5;
+      nailsLabel = 'Mükemmel';
+      nailsAdvice = `Ay ${moonSignTurkish} (Toprak) burcunda küçülüyor. Tırnak kesimi için en iyi zaman: tırnaklar güçlenir ve daha yavaş uzar.`;
+    } else {
+      nailsStars = 4;
+      nailsLabel = 'Çok İyi';
+      nailsAdvice = 'Küçülen Ay fazında kesilen tırnaklar daha sağlam çıkar ve kırılmaya karşı dirençli olur.';
+    }
+  } else {
+    // waxing — good if you want faster growth
+    nailsStars = 3;
+    nailsLabel = 'Uzatmak İçin İyi';
+    nailsAdvice = 'Büyüyen Ay fazında tırnaklar daha hızlı uzar. Tırnak uzatmak isteyenler için uygun, ancak sık kesim gerektirir.';
+  }
+
+  // 5. Massage & relaxation — water signs and the full moon favour deep
+  // lymphatic/emotional release; the waning phase supports detox massage.
+  let massageStars = 3;
+  let massageLabel = 'Orta';
+  let massageAdvice = 'Rahatlatıcı genel masaj her zaman faydalıdır. Kaslarınızı gevşetmek için güzel bir gün.';
+  if (isWaterSign || isFullMoon) {
+    massageStars = 5;
+    massageLabel = 'Mükemmel';
+    massageAdvice = isFullMoon
+      ? 'Dolunay enerjisi gerilimi zirveye taşır. Derin doku ve lenf drenaj masajı ile biriken stresi boşaltmak için en uygun an.'
+      : `Ay ${moonSignTurkish} (Su) burcunda. Duygusal boşalım ve lenfatik arınma masajları için son derece güçlü bir enerji.`;
+  } else if (phase === 'waning') {
+    massageStars = 4;
+    massageLabel = 'Çok İyi';
+    massageAdvice = 'Küçülen Ay fazı arınma zamanıdır. Selülit, ödem ve toksin atımına yönelik masajların etkisi maksimuma çıkar.';
+  } else {
+    massageStars = 3;
+    massageLabel = 'Canlandırıcı';
+    massageAdvice = 'Büyüyen Ay fazında canlandırıcı ve enerji veren masajlar (aromaterapi, İsveç masajı) bedeninizi tazeler.';
+  }
+
+  // 6. Detox
   let detoxStars = 3;
   let detoxLabel = 'Orta';
   let detoxAdvice = 'Sindirim sistemini yormayacak hafif gıdalarla beslenmek yararlıdır.';
-  
-  const isFullMoon = Math.abs(elongation - 180) <= 12;
-  const isNewMoon = elongation <= 12 || elongation >= 348;
 
   if (isNewMoon) {
     detoxStars = 5;
@@ -227,6 +277,8 @@ export function calculateCosmicCare(
     haircut: { stars: haircutStars, label: haircutLabel, advice: haircutAdvice },
     epilation: { stars: epilationStars, label: epilationLabel, advice: epilationAdvice },
     skincare: { stars: skincareStars, label: skincareLabel, advice: skincareAdvice },
+    nails: { stars: nailsStars, label: nailsLabel, advice: nailsAdvice },
+    massage: { stars: massageStars, label: massageLabel, advice: massageAdvice },
     detox: { stars: detoxStars, label: detoxLabel, advice: detoxAdvice },
   };
 }
@@ -241,6 +293,8 @@ export interface CosmicCareProjection {
   haircut: CosmicCareProjectionWindow[];
   epilation: CosmicCareProjectionWindow[];
   skincare: CosmicCareProjectionWindow[];
+  nails: CosmicCareProjectionWindow[];
+  massage: CosmicCareProjectionWindow[];
   detox: CosmicCareProjectionWindow[];
 }
 
@@ -251,11 +305,15 @@ export function getCosmicCareProjections(): CosmicCareProjection {
     haircut: { date: Date; stars: number; label: string }[];
     epilation: { date: Date; stars: number; label: string }[];
     skincare: { date: Date; stars: number; label: string }[];
+    nails: { date: Date; stars: number; label: string }[];
+    massage: { date: Date; stars: number; label: string }[];
     detox: { date: Date; stars: number; label: string }[];
   } = {
     haircut: [],
     epilation: [],
     skincare: [],
+    nails: [],
+    massage: [],
     detox: []
   };
 
@@ -276,6 +334,8 @@ export function getCosmicCareProjections(): CosmicCareProjection {
     dailyRatings.haircut.push({ date: futureDate, stars: care.haircut.stars, label: care.haircut.label });
     dailyRatings.epilation.push({ date: futureDate, stars: care.epilation.stars, label: care.epilation.label });
     dailyRatings.skincare.push({ date: futureDate, stars: care.skincare.stars, label: care.skincare.label });
+    dailyRatings.nails.push({ date: futureDate, stars: care.nails.stars, label: care.nails.label });
+    dailyRatings.massage.push({ date: futureDate, stars: care.massage.stars, label: care.massage.label });
     dailyRatings.detox.push({ date: futureDate, stars: care.detox.stars, label: care.detox.label });
   }
 
@@ -337,6 +397,8 @@ export function getCosmicCareProjections(): CosmicCareProjection {
     haircut: groupWindows(dailyRatings.haircut),
     epilation: groupWindows(dailyRatings.epilation),
     skincare: groupWindows(dailyRatings.skincare),
+    nails: groupWindows(dailyRatings.nails),
+    massage: groupWindows(dailyRatings.massage),
     detox: groupWindows(dailyRatings.detox)
   };
 }
