@@ -193,14 +193,72 @@ export default function HomeScreen() {
     cosmicCareProjections
   } = useCosmicCalendarStore();
 
+  // Reanimated shared values for background aura colors
+  const color1 = useSharedValue('#B2F7EF');
+  const color2 = useSharedValue('#EFF7F6');
+
+  // Breathing effect values
+  const breatheScale1 = useSharedValue(1);
+  const breatheOpacity1 = useSharedValue(0.12);
+  const breatheScale2 = useSharedValue(1.1);
+  const breatheOpacity2 = useSharedValue(0.09);
+
   useEffect(() => {
     if (auraColors && auraColors.length >= 2) {
-      // Reanimated removed for stability
+      color1.value = withTiming(auraColors[0], { duration: 2500 });
+      color2.value = withTiming(auraColors[1], { duration: 2500 });
     }
   }, [auraColors]);
 
+  useEffect(() => {
+    // Start repeating breathing loop for Aura 1
+    breatheScale1.value = withRepeat(
+      withTiming(1.35, { duration: 7000, easing: Easing.bezier(0.42, 0, 0.58, 1) }),
+      -1,
+      true
+    );
+    breatheOpacity1.value = withRepeat(
+      withTiming(0.24, { duration: 7000, easing: Easing.bezier(0.42, 0, 0.58, 1) }),
+      -1,
+      true
+    );
 
-  // Calculated Almanac and shadows
+    // Start repeating breathing loop for Aura 2 with a delay
+    breatheScale2.value = withDelay(
+      1800,
+      withRepeat(
+        withTiming(1.45, { duration: 8000, easing: Easing.bezier(0.42, 0, 0.58, 1) }),
+        -1,
+        true
+      )
+    );
+    breatheOpacity2.value = withDelay(
+      1800,
+      withRepeat(
+        withTiming(0.20, { duration: 8000, easing: Easing.bezier(0.42, 0, 0.58, 1) }),
+        -1,
+        true
+      )
+    );
+  }, []);
+
+  const animatedAuraStyle1 = useAnimatedStyle(() => {
+    return {
+      backgroundColor: color1.value,
+      transform: [{ scale: breatheScale1.value }],
+      opacity: breatheOpacity1.value,
+    };
+  });
+
+  const animatedAuraStyle2 = useAnimatedStyle(() => {
+    return {
+      backgroundColor: color2.value,
+      transform: [{ scale: breatheScale2.value }],
+      opacity: breatheOpacity2.value,
+    };
+  });
+
+  // Calculate Almanac and fetch shadows on chart load
   useEffect(() => {
     calculateAlmanac(computedChart);
     if (computedChart && profile) {
@@ -434,9 +492,10 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0B0F19' }}>
-      {/* Static Background Aura circles */}
-      <View
-        style={{
+      {/* Background Aura circles blurred */}
+      <Animated.View
+        style={[
+          {
             position: 'absolute',
             top: -100,
             right: -100,
@@ -444,11 +503,13 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
             height: 320,
             borderRadius: 160,
             opacity: 0.15,
-            backgroundColor: auraColors?.[0] || '#B2F7EF'
-        }}
+          },
+          animatedAuraStyle1
+        ]}
       />
-      <View
-        style={{
+      <Animated.View
+        style={[
+          {
             position: 'absolute',
             bottom: 100,
             left: -100,
@@ -456,8 +517,9 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
             height: 360,
             borderRadius: 180,
             opacity: 0.12,
-            backgroundColor: auraColors?.[1] || '#EFF7F6'
-        }}
+          },
+          animatedAuraStyle2
+        ]}
       />
       
       {/* BlurView to make the aura soft and ethereal */}

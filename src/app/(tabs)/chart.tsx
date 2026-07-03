@@ -317,7 +317,66 @@ export default function ChartScreen() {
   const [aiModalVisible, setAiModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<'bigThree' | 'mental' | 'love' | 'lessons'>('bigThree');
 
-  // Reanimated removed for stability
+  // Background Aura Reanimated Config
+  const color1 = useSharedValue('#B2F7EF');
+  const color2 = useSharedValue('#EFF7F6');
+
+  // Breathing effect values
+  const breatheScale1 = useSharedValue(1);
+  const breatheOpacity1 = useSharedValue(0.12);
+  const breatheScale2 = useSharedValue(1.1);
+  const breatheOpacity2 = useSharedValue(0.09);
+
+  useEffect(() => {
+    if (auraColors && auraColors.length >= 2) {
+      color1.value = withTiming(auraColors[0], { duration: 2500 });
+      color2.value = withTiming(auraColors[1], { duration: 2500 });
+    }
+  }, [auraColors]);
+
+  useEffect(() => {
+    // Start repeating breathing loop for Aura 1
+    breatheScale1.value = withRepeat(
+      withTiming(1.35, { duration: 7000, easing: Easing.bezier(0.42, 0, 0.58, 1) }),
+      -1,
+      true
+    );
+    breatheOpacity1.value = withRepeat(
+      withTiming(0.24, { duration: 7000, easing: Easing.bezier(0.42, 0, 0.58, 1) }),
+      -1,
+      true
+    );
+
+    // Start repeating breathing loop for Aura 2 with a delay
+    breatheScale2.value = withDelay(
+      1800,
+      withRepeat(
+        withTiming(1.45, { duration: 8000, easing: Easing.bezier(0.42, 0, 0.58, 1) }),
+        -1,
+        true
+      )
+    );
+    breatheOpacity2.value = withDelay(
+      1800,
+      withRepeat(
+        withTiming(0.20, { duration: 8000, easing: Easing.bezier(0.42, 0, 0.58, 1) }),
+        -1,
+        true
+      )
+    );
+  }, []);
+
+  const animatedAuraStyle1 = useAnimatedStyle(() => ({
+    backgroundColor: color1.value,
+    transform: [{ scale: breatheScale1.value }],
+    opacity: breatheOpacity1.value,
+  }));
+
+  const animatedAuraStyle2 = useAnimatedStyle(() => ({
+    backgroundColor: color2.value,
+    transform: [{ scale: breatheScale2.value }],
+    opacity: breatheOpacity2.value,
+  }));
 
   // 1. Calculate Fire/Earth/Air/Water element percentages
   const elementPercentages = useMemo(() => {
@@ -722,9 +781,10 @@ export default function ChartScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0B0F19' }}>
-      {/* Background Ethereal Auras (Static for stability) */}
-      <View
-        style={{
+      {/* Background Ethereal Auras */}
+      <Animated.View
+        style={[
+          {
             position: 'absolute',
             top: -100,
             right: -100,
@@ -732,11 +792,13 @@ export default function ChartScreen() {
             height: 300,
             borderRadius: 150,
             opacity: 0.15,
-            backgroundColor: auraColors?.[0] || '#B2F7EF'
-        }}
+          },
+          animatedAuraStyle1
+        ]}
       />
-      <View
-        style={{
+      <Animated.View
+        style={[
+          {
             position: 'absolute',
             bottom: 100,
             left: -100,
@@ -744,8 +806,9 @@ export default function ChartScreen() {
             height: 320,
             borderRadius: 160,
             opacity: 0.12,
-            backgroundColor: auraColors?.[1] || '#EFF7F6'
-        }}
+          },
+          animatedAuraStyle2
+        ]}
       />
 
       <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
