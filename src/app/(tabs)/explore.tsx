@@ -348,6 +348,46 @@ export default function ExploreScreen() {
               {"\n"}• Küçülen Ay (Temizlik & Detoks): Evde derin temizlik yapın, epilasyon yaptırın (etkisi daha kalıcı olur) ve toksin atmak için bitki çayları için.
             </Text>
           </LibrarySection>
+
+          {/* Section 5: Aspects */}
+          <LibrarySection
+            title="Açılar (Gezegen İlişkileri)"
+            emoji="📐"
+            isOpen={openSection === 4}
+            onToggle={() => toggleSection(4)}
+          >
+            <Text style={styles.introText}>
+              Açılar, gezegenlerin haritada birbirleriyle kurduğu geometrik ilişkilerdir. Transit, sinastri ve doğum haritası yorumlarının temelini oluştururlar; iki gezegenin enerjisinin uyumlu mu yoksa gergin mi aktığını gösterirler:
+            </Text>
+
+            <View style={styles.signList}>
+              <View style={styles.signItemTextOnly}>
+                <Text style={[styles.signTitleText, { color: '#FCD34D' }]}>☌ Kavuşum (0°):</Text>
+                <Text style={styles.signBodyText}>İki gezegen yan yana gelir ve enerjileri birleşir. Güçlü bir odak ve yeni başlangıç noktasıdır; birleşen gezegenlerin doğasına göre yapıcı veya yoğun olabilir.</Text>
+              </View>
+              <View style={styles.signItemTextOnly}>
+                <Text style={[styles.signTitleText, { color: '#86EFAC' }]}>△ Üçgen (120°):</Text>
+                <Text style={styles.signBodyText}>En uyumlu ve akıcı açıdır. Gezegenler arasında doğal bir yetenek, şans ve kolaylık akışı yaratır. Çaba gerektirmeden gelen armağanları simgeler.</Text>
+              </View>
+              <View style={styles.signItemTextOnly}>
+                <Text style={[styles.signTitleText, { color: '#93C5FD' }]}>⚹ Sekstil (60°):</Text>
+                <Text style={styles.signBodyText}>Fırsat ve olanak açısıdır. Uyumludur ancak potansiyeli açığa çıkarmak için küçük bir çaba ister. Öğrenme ve gelişim kapıları aralar.</Text>
+              </View>
+              <View style={styles.signItemTextOnly}>
+                <Text style={[styles.signTitleText, { color: '#FCA5A5' }]}>□ Kare (90°):</Text>
+                <Text style={styles.signBodyText}>Gerilim ve mücadele açısıdır. İçsel/dışsal çatışmalar, engeller ve harekete geçiren baskılar yaratır. Aşıldığında en büyük gelişim ve karakter gücünü getirir.</Text>
+              </View>
+              <View style={styles.signItemTextOnly}>
+                <Text style={[styles.signTitleText, { color: '#F0ABFC' }]}>☍ Karşıt (180°):</Text>
+                <Text style={styles.signBodyText}>Kutuplaşma ve denge sınavıdır. Gezegenler tam karşı karşıyadır; genellikle ilişkiler ve dış olaylar yoluyla farkındalık getirir. Orta yolu bulmayı öğretir.</Text>
+              </View>
+            </View>
+
+            <Text style={styles.sectionSubtitleText}>Orb (Etki Alanı) Nedir?</Text>
+            <Text style={styles.sectionBodyParagraph}>
+              Bir açının tam dereceden sapma toleransına "orb" denir. Örneğin 90°'ye 2-3 derece yakınlıktaki bir kare açı hâlâ etkilidir. Orb ne kadar dar (tam dereceye yakın) ise açının etkisi o kadar güçlü ve belirgin hissedilir.
+            </Text>
+          </LibrarySection>
         </View>
       </ScrollView>
     </SafeAreaView>
