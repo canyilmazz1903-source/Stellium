@@ -555,10 +555,14 @@ export default function SettingsScreen() {
 
                 {!isPremium ? (
                   <View style={styles.benefitsList}>
-                    <Text style={styles.benefitItem}>✓ Yapay Zeka Destekli Detaylı Transit Yorumları</Text>
-                    <Text style={styles.benefitItem}>✓ Enerji Uyum Haritası (Sinastri)</Text>
-                    <Text style={styles.benefitItem}>✓ Detaylı Esma Zikir Saatleri & Ebced Analizleri</Text>
-                    <Text style={styles.benefitItem}>✓ Altın Yaldızlı Ay Evresi Widget Eklentileri</Text>
+                    <Text style={styles.benefitItem}>✓ Tamamen Reklamsız Deneyim</Text>
+                    <Text style={styles.benefitItem}>✓ AI Destekli Transit, Sinastri & Yıldızname Raporları</Text>
+                    <Text style={styles.benefitItem}>✓ Günlük Aşk & Kariyer Analizlerinin Tam Metni</Text>
+                    <Text style={styles.benefitItem}>✓ 30 Günlük Bakım Tarihi Projeksiyonları (Otomatik)</Text>
+                    <Text style={styles.benefitItem}>✓ Tam Ay Takvimi + Yeni Ay & Dolunay Tarihleri</Text>
+                    <Text style={styles.benefitItem}>✓ 13 Aylık Retro Takvimi (Tüm Gezegenler)</Text>
+                    <Text style={styles.benefitItem}>✓ Otomatik Gezegen Saati Bildirimleri</Text>
+                    <Text style={styles.benefitItem}>✓ Tüm Gezegen Yerleşimleri & Açı Analizleri</Text>
                   </View>
                 ) : null}
 

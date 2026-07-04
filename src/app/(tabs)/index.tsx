@@ -180,6 +180,8 @@ export default function HomeScreen() {
   const { profile, isPremium, hasUnlockedDailyShadow, unlockDailyShadow } = useAuthStore();
   const { computedChart, setComputedChart, dailyHoroscope: horoscope, fetchHoroscope } = useAppStore();
   const [paywallVisible, setPaywallVisible] = useState(false);
+  // Generic feature paywall: set a title+description to open it from any lock.
+  const [featurePaywall, setFeaturePaywall] = useState<{ title: string; description: string } | null>(null);
   const [loadingHoroscope, setLoadingHoroscope] = useState(false);
   const router = useRouter();
   const interstitialShownRef = useRef(false);
@@ -321,6 +323,16 @@ export default function HomeScreen() {
   }, []);
 
   const togglePreference = async (planetName: string) => {
+    // Automatic planetary-hour notifications are an Elite perk; free users
+    // can always check the live hours strip manually in the app.
+    if (!isPremium) {
+      setPlanetaryModalVisible(false);
+      setFeaturePaywall({
+        title: 'Otomatik Gezegen Saati Bildirimleri',
+        description: 'Seçtiğiniz gezegenlerin saati başladığında otomatik bildirim almak Stellium Elite üyelerine özeldir. Elite olmadan gezegen saatlerini uygulamadaki canlı şeritten manuel takip edebilirsiniz.',
+      });
+      return;
+    }
     const updated = {
       ...notifPreferences,
       [planetName]: !notifPreferences[planetName]
@@ -344,10 +356,11 @@ export default function HomeScreen() {
     const lon = profile?.longitude || 28.9784;
     const hours = calculatePlanetaryHours(lat, lon, new Date());
     setPlanetaryHours(hours);
-    if (hours.length > 0) {
+    // Auto-scheduling planetary hour notifications is an Elite perk.
+    if (hours.length > 0 && isPremium) {
       schedulePlanetaryHourNotifications(hours);
     }
-  }, [profile]);
+  }, [profile, isPremium]);
 
   useEffect(() => {
     if (planetaryHours.length > 0) {
@@ -411,14 +424,10 @@ export default function HomeScreen() {
     if (isPremium) {
       router.push(route as any);
     } else {
-      Alert.alert(
-        'Elite Üyelik Gerekli',
-        'Bu özellik yalnızca Stellium Elite üyelerine özeldir. Detaylı analizleri açmak için üye olabilirsiniz.',
-        [
-          { text: 'Vazgeç', style: 'cancel' },
-          { text: 'Üyeliği İncele', onPress: () => router.push('/settings') }
-        ]
-      );
+      setFeaturePaywall({
+        title: 'Elite Kozmik Servisler',
+        description: 'Yapay zeka destekli Transit, Sinastri ve Yıldızname raporları Stellium Elite üyelerine özeldir. Elite ile tüm derin analizler açılır ve hiç reklam görmezsiniz.',
+      });
     }
   };
 
@@ -489,8 +498,11 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
 
   const openCareDetailModal = (title: string, advice: string, projections?: any[]) => {
     let projectionText = '';
-    if (projections && projections.length > 0) {
+    if (isPremium && projections && projections.length > 0) {
       projectionText = '\n\n🔮 En Uyumlu Gelecek Tarihler:\n' + projections.map(p => `• ${p.formattedRange} (${p.label})`).join('\n');
+    } else if (!isPremium) {
+      // Free tier sees today's rating; the 30-day auto-planning is the upsell.
+      projectionText = '\n\n🔒 30 günlük "en uygun tarih" pencereleri Stellium Elite üyeleri için otomatik hesaplanır. Elite olmayan üyeler günlük değerleri her gün manuel kontrol edebilir.';
     }
     setSelectedModalContent({
       title: title,
@@ -715,7 +727,9 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
                       <Text style={styles.careGridTitle} numberOfLines={1}>{item.title}</Text>
                       <Text style={styles.careGridLabel} numberOfLines={1}>{rating.label}</Text>
                       <Text style={styles.careGridDate} numberOfLines={1}>
-                        {nextBest ? `📅 ${nextBest.formattedRange}` : 'Uygun pencere yaklaşıyor'}
+                        {isPremium
+                          ? (nextBest ? `📅 ${nextBest.formattedRange}` : 'Uygun pencere yaklaşıyor')
+                          : '🔒 En iyi tarihler: Elite'}
                       </Text>
                     </Pressable>
                   );
@@ -841,19 +855,31 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
                 </View>
               </Pressable>
 
-              <Pressable onPress={() => openDetailModal('love')}>
+              {/* Love & career deep-dives are the Elite hook: free tier gets
+                  a one-line teaser, full text behind the paywall. */}
+              <Pressable onPress={() => isPremium ? openDetailModal('love') : setFeaturePaywall({
+                title: 'Aşk & İlişki Analizi',
+                description: 'Venüs ve Mars enerjilerinize göre hazırlanan günlük derin ilişki analiziniz Stellium Elite üyelerine özeldir. Elite ile tüm günlük bölümler tam metin açılır ve hiç reklam görmezsiniz.',
+              })}>
                 <View style={styles.forecastCard}>
-                  <Text style={styles.forecastHeader}>💞 Yansımalar & İlişki</Text>
-                  <Text style={styles.forecastText} numberOfLines={3}>{horoscope.love}</Text>
-                  <Text style={styles.detailLink}>Detaylı Analiz için Dokunun →</Text>
+                  <Text style={styles.forecastHeader}>💞 Yansımalar & İlişki {!isPremium && '🔒'}</Text>
+                  <Text style={styles.forecastText} numberOfLines={isPremium ? 3 : 1}>{horoscope.love}</Text>
+                  <Text style={styles.detailLink}>
+                    {isPremium ? 'Detaylı Analiz için Dokunun →' : 'Devamını Elite ile Okuyun →'}
+                  </Text>
                 </View>
               </Pressable>
 
-              <Pressable onPress={() => openDetailModal('career')}>
+              <Pressable onPress={() => isPremium ? openDetailModal('career') : setFeaturePaywall({
+                title: 'Kariyer & Bereket Analizi',
+                description: 'Jüpiter ve Satürn geçişlerinize göre hazırlanan günlük kariyer ve bolluk analiziniz Stellium Elite üyelerine özeldir. Elite ile tüm günlük bölümler tam metin açılır ve hiç reklam görmezsiniz.',
+              })}>
                 <View style={styles.forecastCard}>
-                  <Text style={styles.forecastHeader}>💼 Kariyer & Bereket</Text>
-                  <Text style={styles.forecastText} numberOfLines={3}>{horoscope.career}</Text>
-                  <Text style={styles.detailLink}>Detaylı Analiz için Dokunun →</Text>
+                  <Text style={styles.forecastHeader}>💼 Kariyer & Bereket {!isPremium && '🔒'}</Text>
+                  <Text style={styles.forecastText} numberOfLines={isPremium ? 3 : 1}>{horoscope.career}</Text>
+                  <Text style={styles.detailLink}>
+                    {isPremium ? 'Detaylı Analiz için Dokunun →' : 'Devamını Elite ile Okuyun →'}
+                  </Text>
                 </View>
               </Pressable>
             </View>
@@ -1073,6 +1099,14 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
           </View>
         </View>
       </Modal>
+
+      <PaywallAdModal
+        visible={!!featurePaywall}
+        onClose={() => setFeaturePaywall(null)}
+        title={featurePaywall?.title}
+        description={featurePaywall?.description}
+        onSuccess={() => setFeaturePaywall(null)}
+      />
 
       <PaywallAdModal
         visible={paywallVisible}

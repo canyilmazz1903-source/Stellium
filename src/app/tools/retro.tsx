@@ -1,9 +1,14 @@
-import React, { useMemo } from 'react';
-import { StyleSheet, Text, View, ScrollView, SafeAreaView } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { StyleSheet, Text, View, ScrollView, SafeAreaView, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import GlassCard from '@/components/glass/GlassCard';
+import PaywallAdModal from '@/components/ui/PaywallAdModal';
+import { useAuthStore } from '@/store/authStore';
 import { computeRetroPeriods, formatTurkishDate, RETRO_MEANINGS } from '@/utils/cosmicTools';
 
 export default function RetroCalendarScreen() {
+  const { isPremium } = useAuthStore();
+  const [paywallVisible, setPaywallVisible] = useState(false);
   const periods = useMemo(() => computeRetroPeriods(400), []);
   const activeOnes = periods.filter(p => p.isActive);
   const upcoming = periods.filter(p => !p.isActive);
@@ -45,7 +50,21 @@ export default function RetroCalendarScreen() {
           )}
 
           <Text style={styles.sectionTitle}>📅 Yaklaşan Retro Dönemleri</Text>
-          {upcoming.length === 0 ? (
+          {!isPremium ? (
+            // Free tier sees only the live status above; forward planning
+            // (upcoming windows with dates) is the Elite value.
+            <GlassCard style={[styles.card, styles.lockedCard]}>
+              <Ionicons name="lock-closed" size={22} color="#D4AF37" style={{ marginBottom: 8 }} />
+              <Text style={styles.lockedTitle}>Önümüzdeki 13 ayın retro tarihleri Elite üyelere özel</Text>
+              <Text style={styles.lockedDesc}>
+                {upcoming.length} yaklaşan retro penceresi hesaplandı. Hangi gezegenin ne zaman retroya gireceğini önceden bilerek
+                imza, seyahat ve yatırım planlarınızı kozmik takvime göre yapın.
+              </Text>
+              <Pressable onPress={() => setPaywallVisible(true)} style={styles.unlockBtn}>
+                <Text style={styles.unlockBtnText}>Retro Takvimini Aç →</Text>
+              </Pressable>
+            </GlassCard>
+          ) : upcoming.length === 0 ? (
             <GlassCard style={styles.card}>
               <Text style={styles.adviceText}>Önümüzdeki dönemde hesaplanan yeni retro penceresi bulunmuyor.</Text>
             </GlassCard>
@@ -74,6 +93,14 @@ export default function RetroCalendarScreen() {
           </Text>
         </ScrollView>
       </SafeAreaView>
+
+      <PaywallAdModal
+        visible={paywallVisible}
+        onClose={() => setPaywallVisible(false)}
+        onSuccess={() => {}}
+        title="Retro Takvimi — Elite"
+        description="Tüm gezegenlerin önümüzdeki 13 aylık retro başlangıç ve bitiş tarihlerine erişin, hayatınızı gökyüzüne göre önceden planlayın. Elite üyelikte ayrıca hiç reklam görmezsiniz."
+      />
     </View>
   );
 }
@@ -167,5 +194,37 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 16,
     lineHeight: 15,
+  },
+  lockedCard: {
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
+  lockedTitle: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#F0F6FC',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  lockedDesc: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: '#8B949E',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 14,
+  },
+  unlockBtn: {
+    backgroundColor: '#D4AF37',
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  unlockBtnText: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0B0F19',
   },
 });
