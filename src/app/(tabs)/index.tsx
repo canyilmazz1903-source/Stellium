@@ -14,6 +14,7 @@ import PaywallAdModal from '@/components/ui/PaywallAdModal';
 import BannerAdSlot from '@/components/ads/BannerAdSlot';
 import { showInterstitial } from '@/services/ads';
 import { schedulePlanetaryHourNotifications } from '@/utils/notifications';
+import { getDailyCard } from '@/utils/cosmicTools';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Determine Moon phase name and symbol based on Sun and Moon elongations
@@ -475,6 +476,17 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
     setModalVisible(true);
   };
 
+  const openDailyCard = () => {
+    const card = getDailyCard(profile?.name || 'Kozmik Ruh');
+    setSelectedModalContent({
+      title: `🎴 GÜNÜN KARTI: ${card.title} ${card.emoji}`,
+      subtitle: 'Size Özel Günlük Kozmik Mesaj',
+      content: card.message,
+      advice: `🔮 Günün Pratiği:\n${card.ritual}`,
+    });
+    setModalVisible(true);
+  };
+
   const openCareDetailModal = (title: string, advice: string, projections?: any[]) => {
     let projectionText = '';
     if (projections && projections.length > 0) {
@@ -729,6 +741,47 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
               </Pressable>
             </View>
           )}
+
+          {/* Free Cosmic Tools Section */}
+          <Text style={styles.sectionTitle}>Kozmik Araçlar</Text>
+          <View style={styles.servicesGrid}>
+            <Pressable style={styles.serviceCard} onPress={() => router.push('/tools/retro' as any)}>
+              <View style={styles.serviceIconWrap}>
+                <Text style={styles.serviceIcon}>🔁</Text>
+              </View>
+              <View style={styles.serviceInfo}>
+                <View style={styles.serviceNameRow}>
+                  <Text style={styles.serviceCardTitle}>Retro Takvimi</Text>
+                  {retroCount > 0 && <Text style={styles.retroMiniBadge}>℞ {retroCount}</Text>}
+                </View>
+                <Text style={styles.serviceDescription} numberOfLines={2}>Aktif ve yaklaşan gezegen retroları, tarihleriyle.</Text>
+              </View>
+            </Pressable>
+
+            <Pressable style={styles.serviceCard} onPress={() => router.push('/tools/moon-calendar' as any)}>
+              <View style={styles.serviceIconWrap}>
+                <Text style={styles.serviceIcon}>{moonPhaseInfo.symbol}</Text>
+              </View>
+              <View style={styles.serviceInfo}>
+                <View style={styles.serviceNameRow}>
+                  <Text style={styles.serviceCardTitle}>Ay Takvimi</Text>
+                </View>
+                <Text style={styles.serviceDescription} numberOfLines={2}>30 günlük Ay evreleri, burç geçişleri, Yeni Ay & Dolunay.</Text>
+              </View>
+            </Pressable>
+
+            <Pressable style={styles.serviceCard} onPress={openDailyCard}>
+              <View style={styles.serviceIconWrap}>
+                <Text style={styles.serviceIcon}>🎴</Text>
+              </View>
+              <View style={styles.serviceInfo}>
+                <View style={styles.serviceNameRow}>
+                  <Text style={styles.serviceCardTitle}>Günün Kartı</Text>
+                </View>
+                <Text style={styles.serviceDescription} numberOfLines={2}>Size özel günlük kozmik mesaj ve mini pratik.</Text>
+              </View>
+            </Pressable>
+          </View>
 
           {/* Elite Services Section */}
           <Text style={styles.sectionTitle}>Elite Kozmik Servisler</Text>
@@ -1220,6 +1273,17 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#8B949E',
     marginTop: 5,
+  },
+  retroMiniBadge: {
+    fontFamily: 'Inter',
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#F8AD9D',
+    backgroundColor: 'rgba(248, 173, 157, 0.1)',
+    borderRadius: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    overflow: 'hidden',
   },
   hourChipSymbol: {
     fontSize: 18,

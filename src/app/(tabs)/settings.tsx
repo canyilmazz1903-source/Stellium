@@ -10,18 +10,27 @@ import CosmicInput from '@/components/ui/CosmicInput';
 import { BlurView } from 'expo-blur';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, Easing } from 'react-native-reanimated';
 import { fetchEliteOffering, isPurchasesConfigured, purchasePackage, restorePurchases } from '@/services/purchases';
+import { isDailyGuidanceEnabled, setDailyGuidanceEnabled } from '@/utils/notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SettingsScreen() {
   const { user, profile, signOut, isPremium, setPremium } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [lastFatalError, setLastFatalError] = useState<string | null>(null);
+  const [dailyNotifEnabled, setDailyNotifEnabled] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem('stellium_last_fatal_error').then((raw) => {
       if (raw) setLastFatalError(raw);
     });
+    isDailyGuidanceEnabled().then(setDailyNotifEnabled);
   }, []);
+
+  const toggleDailyNotif = async () => {
+    const next = !dailyNotifEnabled;
+    setDailyNotifEnabled(next);
+    await setDailyGuidanceEnabled(next);
+  };
 
   // Profile editing states
   const [isEditing, setIsEditing] = useState(false);
@@ -515,6 +524,22 @@ export default function SettingsScreen() {
                 )}
               </GlassCard>
 
+              {/* Daily Notification Preference */}
+              <GlassCard style={styles.card}>
+                <Text style={styles.cardTitle}>🔔 Bildirim Tercihleri</Text>
+                <Pressable onPress={toggleDailyNotif} style={styles.notifToggleRow}>
+                  <View style={{ flex: 1, marginRight: 12 }}>
+                    <Text style={styles.notifToggleTitle}>Günlük Kozmik Rehber</Text>
+                    <Text style={styles.notifToggleDesc}>
+                      Her sabah 09:00'da günün burç yorumu, Ay evresi ve bakım rehberi hatırlatması alın.
+                    </Text>
+                  </View>
+                  <View style={[styles.toggleTrack, dailyNotifEnabled && styles.toggleTrackOn]}>
+                    <View style={[styles.toggleThumb, dailyNotifEnabled && styles.toggleThumbOn]} />
+                  </View>
+                </Pressable>
+              </GlassCard>
+
               {/* Premium Paywall / Subscription Status Card */}
               <GlassCard style={[styles.card, isPremium && styles.premiumCard]}>
                 <Text style={[styles.cardTitle, isPremium && styles.premiumTitle]}>
@@ -774,6 +799,45 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.5)',
     textDecorationLine: 'underline',
+  },
+  notifToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  notifToggleTitle: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#F0F6FC',
+  },
+  notifToggleDesc: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    color: '#8B949E',
+    marginTop: 3,
+    lineHeight: 16,
+  },
+  toggleTrack: {
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    padding: 3,
+    justifyContent: 'center',
+  },
+  toggleTrackOn: {
+    backgroundColor: 'rgba(212, 175, 55, 0.5)',
+  },
+  toggleThumb: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#8B949E',
+  },
+  toggleThumbOn: {
+    backgroundColor: '#D4AF37',
+    alignSelf: 'flex-end',
   },
   actionGroup: {
     gap: 12,

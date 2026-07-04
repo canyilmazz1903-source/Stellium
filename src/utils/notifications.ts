@@ -52,6 +52,52 @@ const PLANET_NOTIF_DETAILS: Record<string, { title: string; body: string }> = {
   }
 };
 
+// ---------- Daily morning guidance notification ----------
+
+const DAILY_GUIDANCE_PREF_KEY = 'daily_guidance_notification_enabled';
+const DAILY_GUIDANCE_ID = 'daily-guidance';
+
+export async function isDailyGuidanceEnabled(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(DAILY_GUIDANCE_PREF_KEY)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export async function scheduleDailyGuidanceNotification(): Promise<void> {
+  if (Platform.OS === 'web') return;
+  const hasPermission = await requestNotificationPermissions();
+  if (!hasPermission) return;
+  try {
+    await Notifications.scheduleNotificationAsync({
+      identifier: DAILY_GUIDANCE_ID,
+      content: {
+        title: '🌌 Bugünün Kozmik Rehberliği Hazır',
+        body: 'Günlük burç yorumunuz, gezegen saatleri, Ay evresi ve bakım rehberiniz sizi bekliyor.',
+        sound: true,
+      },
+      // Daily repeating trigger at 09:00 local time
+      trigger: { type: 'daily', hour: 9, minute: 0 } as any,
+    });
+  } catch (e) {
+    console.warn('Error scheduling daily guidance notification:', e);
+  }
+}
+
+export async function setDailyGuidanceEnabled(enabled: boolean): Promise<void> {
+  try {
+    await AsyncStorage.setItem(DAILY_GUIDANCE_PREF_KEY, enabled ? '1' : '0');
+    if (enabled) {
+      await scheduleDailyGuidanceNotification();
+    } else {
+      await Notifications.cancelScheduledNotificationAsync(DAILY_GUIDANCE_ID);
+    }
+  } catch (e) {
+    console.warn('Error toggling daily guidance notification:', e);
+  }
+}
+
 /**
  * Request notifications permissions
  */
@@ -80,8 +126,13 @@ export async function schedulePlanetaryHourNotifications(hours: any[]) {
   if (!hasPermission) return;
 
   try {
-    // Clear previously scheduled notifications to prevent duplicate alerts
+    // Clear previously scheduled notifications to prevent duplicate alerts.
+    // NOTE: this also wipes the daily guidance notification, so it is
+    // re-scheduled right after if the user has it enabled.
     await Notifications.cancelAllScheduledNotificationsAsync();
+    if (await isDailyGuidanceEnabled()) {
+      await scheduleDailyGuidanceNotification();
+    }
 
     // Read preferences from AsyncStorage
     let preferences: Record<string, boolean> = { Sun: true, Moon: true, Mercury: true, Venus: true, Mars: true, Jupiter: true, Saturn: true };

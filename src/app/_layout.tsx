@@ -180,11 +180,11 @@ export default function RootLayout() {
             gestureResponseDistance: { start: 120 },
           }} 
         />
-        <Stack.Screen 
-          name="premium/yildizname" 
-          options={{ 
-            headerShown: true, 
-            title: 'YILDIZNAME RAPORU', 
+        <Stack.Screen
+          name="premium/yildizname"
+          options={{
+            headerShown: true,
+            title: 'YILDIZNAME RAPORU',
             headerStyle: { backgroundColor: '#0B0F19' },
             headerTintColor: '#D4AF37',
             headerTitleStyle: { fontFamily: 'Inter', fontSize: 16, fontWeight: '700' },
@@ -193,7 +193,37 @@ export default function RootLayout() {
             headerBackTitleStyle: { fontFamily: 'Inter', fontSize: 14 },
             gestureEnabled: true,
             gestureResponseDistance: { start: 120 },
-          }} 
+          }}
+        />
+        <Stack.Screen
+          name="tools/retro"
+          options={{
+            headerShown: true,
+            title: 'RETRO TAKVİMİ',
+            headerStyle: { backgroundColor: '#0B0F19' },
+            headerTintColor: '#D4AF37',
+            headerTitleStyle: { fontFamily: 'Inter', fontSize: 16, fontWeight: '700' },
+            headerShadowVisible: false,
+            headerBackTitle: 'Geri',
+            headerBackTitleStyle: { fontFamily: 'Inter', fontSize: 14 },
+            gestureEnabled: true,
+            gestureResponseDistance: { start: 120 },
+          }}
+        />
+        <Stack.Screen
+          name="tools/moon-calendar"
+          options={{
+            headerShown: true,
+            title: 'AY TAKVİMİ',
+            headerStyle: { backgroundColor: '#0B0F19' },
+            headerTintColor: '#D4AF37',
+            headerTitleStyle: { fontFamily: 'Inter', fontSize: 16, fontWeight: '700' },
+            headerShadowVisible: false,
+            headerBackTitle: 'Geri',
+            headerBackTitleStyle: { fontFamily: 'Inter', fontSize: 14 },
+            gestureEnabled: true,
+            gestureResponseDistance: { start: 120 },
+          }}
         />
       </Stack>
     </ThemeProvider>
