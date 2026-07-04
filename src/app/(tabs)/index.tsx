@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { StyleSheet, Text, View, ScrollView, ActivityIndicator, SafeAreaView, Pressable, Alert, Modal, Platform } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, ActivityIndicator, SafeAreaView, Pressable, Alert, Modal, Platform, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
-import { computeNatalChart, getPlanetLongitude, getJulianDaysSinceJ2000, calculatePlanetaryHours, PlanetaryHour, getTimezoneOffset } from '@/utils/astronomy';
+import { computeNatalChart, getPlanetLongitude, getJulianDaysSinceJ2000, calculatePlanetaryHours, PlanetaryHour, getTimezoneOffset, getZodiacSign } from '@/utils/astronomy';
 import { HoroscopeResponse } from '@/api/gemini';
 import GlassCard from '@/components/glass/GlassCard';
 import { Ionicons } from '@expo/vector-icons';
@@ -352,12 +352,15 @@ export default function HomeScreen() {
     if (planetaryHours.length > 0) {
       const activeIdx = planetaryHours.findIndex(h => h.isActive);
       if (activeIdx !== -1) {
-        setTimeout(() => {
-          planetaryScrollRef.current?.scrollTo({
-            x: Math.max(0, activeIdx * 108 - 8), // 100 width + 8 gap
-            animated: true
-          });
-        }, 300);
+        // Center the active hour chip in the viewport. Two passes: an early
+        // one and a late one, so it lands even if layout finishes slowly.
+        const screenWidth = Dimensions.get('window').width;
+        const CHIP_FULL = 108; // 100 width + 8 gap
+        const targetX = Math.max(0, activeIdx * CHIP_FULL - screenWidth / 2 + CHIP_FULL / 2);
+        const scroll = (animated: boolean) => planetaryScrollRef.current?.scrollTo({ x: targetX, animated });
+        const t1 = setTimeout(() => scroll(false), 150);
+        const t2 = setTimeout(() => scroll(true), 700);
+        return () => { clearTimeout(t1); clearTimeout(t2); };
       }
     }
   }, [planetaryHours]);
@@ -371,6 +374,37 @@ export default function HomeScreen() {
     const moonLon = getPlanetLongitude('Moon', jd);
     return getMoonPhase(sunLon, moonLon);
   }, []);
+
+  // Current sky snapshot: every planet's live sign + retrograde state,
+  // computed locally (retro = ecliptic longitude decreasing day-over-day).
+  const currentSky = useMemo(() => {
+    const jd = getJulianDaysSinceJ2000(new Date());
+    const SKY_SYMBOLS: Record<string, string> = {
+      Sun: '☀️', Moon: '🌙', Mercury: '☿', Venus: '♀', Mars: '♂',
+      Jupiter: '♃', Saturn: '♄', Uranus: '♅', Neptune: '♆', Pluto: '♇',
+    };
+    const SKY_NAMES_TR: Record<string, string> = {
+      Sun: 'Güneş', Moon: 'Ay', Mercury: 'Merkür', Venus: 'Venüs', Mars: 'Mars',
+      Jupiter: 'Jüpiter', Saturn: 'Satürn', Uranus: 'Uranüs', Neptune: 'Neptün', Pluto: 'Plüton',
+    };
+    return Object.keys(SKY_SYMBOLS).map((name) => {
+      const lon = getPlanetLongitude(name, jd);
+      const lonNext = getPlanetLongitude(name, jd + 1);
+      const delta = ((lonNext - lon + 540) % 360) - 180;
+      const retro = name !== 'Sun' && name !== 'Moon' && delta < 0;
+      const signInfo = getZodiacSign(lon);
+      return {
+        name,
+        nameTR: SKY_NAMES_TR[name],
+        symbol: SKY_SYMBOLS[name],
+        sign: signInfo.turkish,
+        signSymbol: signInfo.symbol,
+        retro,
+      };
+    });
+  }, []);
+
+  const retroCount = useMemo(() => currentSky.filter(p => p.retro).length, [currentSky]);
 
   const handlePremiumNavigation = (route: string) => {
     if (isPremium) {
@@ -608,6 +642,28 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
             </Pressable>
           </View>
 
+          {/* Live Sky Snapshot: every planet's current sign + retrograde alerts */}
+          <View style={styles.skyNowSection}>
+            <View style={styles.skyNowHeaderRow}>
+              <Text style={styles.sectionLabel}>🌌 Gökyüzü Şu An</Text>
+              {retroCount > 0 && (
+                <View style={styles.retroAlertBadge}>
+                  <Text style={styles.retroAlertText}>℞ {retroCount} gezegen retroda</Text>
+                </View>
+              )}
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {currentSky.map((p) => (
+                <View key={p.name} style={[styles.skyChip, p.retro && styles.skyChipRetro]}>
+                  <Text style={styles.skyChipSymbol}>{p.symbol}</Text>
+                  <Text style={styles.skyChipName}>{p.nameTR}</Text>
+                  <Text style={styles.skyChipSign}>{p.signSymbol} {p.sign}</Text>
+                  {p.retro && <Text style={styles.skyChipRetroBadge}>℞ Retro</Text>}
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+
           {/* Kozmik Bakım Rehberi Card */}
           {cosmicCare && (
             <View style={styles.careCard}>
@@ -616,96 +672,61 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
               </View>
               <Text style={styles.almanacSubtitle}>Güzellik ve Bakım Rutinleriniz İçin Kozmik Zamanlama</Text>
               
-              <View style={styles.careItemsList}>
-                {/* Saç Kesimi */}
-                <Pressable style={styles.careClickableItem} onPress={() => openCareDetailModal('💇‍♀️ Saç Kesimi & Bakımı', cosmicCare.haircut.advice, cosmicCareProjections?.haircut)}>
-                  <View style={styles.careItemHeader}>
-                    <Text style={styles.careItemTitle}>💇‍♀️ Saç Kesimi & Bakımı</Text>
-                    <View style={styles.starsContainer}>
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Ionicons key={i} name={i < cosmicCare.haircut.stars ? "star" : "star-outline"} size={13} color={i < cosmicCare.haircut.stars ? "#D4AF37" : "rgba(255, 255, 255, 0.2)"} style={{ marginRight: 2 }} />
-                      ))}
-                      <Text style={styles.careLabelText}>{cosmicCare.haircut.label}</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.viewDetailText}>Detaylı görünüm için tıkla →</Text>
-                </Pressable>
-
-                {/* Epilasyon */}
-                <Pressable style={styles.careClickableItem} onPress={() => openCareDetailModal('🪒 Epilasyon', cosmicCare.epilation.advice, cosmicCareProjections?.epilation)}>
-                  <View style={styles.careItemHeader}>
-                    <Text style={styles.careItemTitle}>🪒 Epilasyon (Tüy Alımı)</Text>
-                    <View style={styles.starsContainer}>
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Ionicons key={i} name={i < cosmicCare.epilation.stars ? "star" : "star-outline"} size={13} color={i < cosmicCare.epilation.stars ? "#D4AF37" : "rgba(255, 255, 255, 0.2)"} style={{ marginRight: 2 }} />
-                      ))}
-                      <Text style={styles.careLabelText}>{cosmicCare.epilation.label}</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.viewDetailText}>Detaylı görünüm için tıkla →</Text>
-                </Pressable>
-
-                {/* Cilt Bakımı */}
-                <Pressable style={styles.careClickableItem} onPress={() => openCareDetailModal('🧴 Cilt Bakımı', cosmicCare.skincare.advice, cosmicCareProjections?.skincare)}>
-                  <View style={styles.careItemHeader}>
-                    <Text style={styles.careItemTitle}>🧴 Cilt Bakımı & Peeling</Text>
-                    <View style={styles.starsContainer}>
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Ionicons key={i} name={i < cosmicCare.skincare.stars ? "star" : "star-outline"} size={13} color={i < cosmicCare.skincare.stars ? "#D4AF37" : "rgba(255, 255, 255, 0.2)"} style={{ marginRight: 2 }} />
-                      ))}
-                      <Text style={styles.careLabelText}>{cosmicCare.skincare.label}</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.viewDetailText}>Detaylı görünüm için tıkla →</Text>
-                </Pressable>
-
-                {/* Tırnak Bakımı */}
-                <Pressable style={styles.careClickableItem} onPress={() => openCareDetailModal('💅 Tırnak Bakımı', cosmicCare.nails.advice, cosmicCareProjections?.nails)}>
-                  <View style={styles.careItemHeader}>
-                    <Text style={styles.careItemTitle}>💅 Tırnak Bakımı</Text>
-                    <View style={styles.starsContainer}>
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Ionicons key={i} name={i < cosmicCare.nails.stars ? "star" : "star-outline"} size={13} color={i < cosmicCare.nails.stars ? "#D4AF37" : "rgba(255, 255, 255, 0.2)"} style={{ marginRight: 2 }} />
-                      ))}
-                      <Text style={styles.careLabelText}>{cosmicCare.nails.label}</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.viewDetailText}>Detaylı görünüm için tıkla →</Text>
-                </Pressable>
-
-                {/* Masaj */}
-                <Pressable style={styles.careClickableItem} onPress={() => openCareDetailModal('💆‍♀️ Masaj & Rahatlama', cosmicCare.massage.advice, cosmicCareProjections?.massage)}>
-                  <View style={styles.careItemHeader}>
-                    <Text style={styles.careItemTitle}>💆‍♀️ Masaj & Rahatlama</Text>
-                    <View style={styles.starsContainer}>
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Ionicons key={i} name={i < cosmicCare.massage.stars ? "star" : "star-outline"} size={13} color={i < cosmicCare.massage.stars ? "#D4AF37" : "rgba(255, 255, 255, 0.2)"} style={{ marginRight: 2 }} />
-                      ))}
-                      <Text style={styles.careLabelText}>{cosmicCare.massage.label}</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.viewDetailText}>Detaylı görünüm için tıkla →</Text>
-                </Pressable>
-
-                {/* Zihinsel Gölgeler */}
-                <Pressable style={styles.careClickableItem} onPress={() => openDetailModal('shadow')}>
-                  <View style={styles.careItemHeader}>
-                    <Text style={styles.careItemTitle}>🌓 Zihinsel Gölgeler & Ritüel</Text>
-                    <View style={styles.starsContainer}>
-                      {isPremium || hasUnlockedDailyShadow ? (
-                        <Text style={styles.careLabelText}>Erişime Açık</Text>
-                      ) : (
-                        <>
-                          <Ionicons name="lock-closed" size={13} color="#D4AF37" style={{ marginRight: 2 }} />
-                          <Text style={styles.careLabelText}>Stellium Elite</Text>
-                        </>
-                      )}
-                    </View>
-                  </View>
-                  <Text style={styles.viewDetailText}>Kozmik esma ve günlük gölge analizi için tıkla →</Text>
-                </Pressable>
-
+              {/* Compact 2-column care grid: stars + next best date at a glance,
+                  full advice + all upcoming windows in the detail modal. */}
+              <View style={styles.careGrid}>
+                {([
+                  { key: 'haircut', emoji: '💇‍♀️', title: 'Saç Kesimi', fullTitle: '💇‍♀️ Saç Kesimi & Bakımı' },
+                  { key: 'epilation', emoji: '🪒', title: 'Epilasyon', fullTitle: '🪒 Epilasyon (Tüy Alımı)' },
+                  { key: 'skincare', emoji: '🧴', title: 'Cilt Bakımı', fullTitle: '🧴 Cilt Bakımı & Peeling' },
+                  { key: 'nails', emoji: '💅', title: 'Tırnak', fullTitle: '💅 Tırnak Bakımı' },
+                  { key: 'massage', emoji: '💆‍♀️', title: 'Masaj', fullTitle: '💆‍♀️ Masaj & Rahatlama' },
+                  { key: 'detox', emoji: '🌿', title: 'Detoks', fullTitle: '🌿 Detoks & Arınma' },
+                ] as const).map((item) => {
+                  const rating = cosmicCare[item.key];
+                  const projections = cosmicCareProjections?.[item.key];
+                  const nextBest = projections && projections.length > 0 ? projections[0] : null;
+                  return (
+                    <Pressable
+                      key={item.key}
+                      style={styles.careGridItem}
+                      onPress={() => openCareDetailModal(item.fullTitle, rating.advice, projections)}
+                    >
+                      <View style={styles.careGridTopRow}>
+                        <Text style={styles.careGridEmoji}>{item.emoji}</Text>
+                        <View style={styles.careGridStars}>
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Ionicons key={i} name={i < rating.stars ? 'star' : 'star-outline'} size={10} color={i < rating.stars ? '#D4AF37' : 'rgba(255,255,255,0.2)'} />
+                          ))}
+                        </View>
+                      </View>
+                      <Text style={styles.careGridTitle} numberOfLines={1}>{item.title}</Text>
+                      <Text style={styles.careGridLabel} numberOfLines={1}>{rating.label}</Text>
+                      <Text style={styles.careGridDate} numberOfLines={1}>
+                        {nextBest ? `📅 ${nextBest.formattedRange}` : 'Uygun pencere yaklaşıyor'}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
+
+              {/* Zihinsel Gölgeler — full width row below the grid */}
+              <Pressable style={styles.careClickableItem} onPress={() => openDetailModal('shadow')}>
+                <View style={styles.careItemHeader}>
+                  <Text style={styles.careItemTitle}>🌓 Zihinsel Gölgeler & Ritüel</Text>
+                  <View style={styles.starsContainer}>
+                    {isPremium || hasUnlockedDailyShadow ? (
+                      <Text style={styles.careLabelText}>Erişime Açık</Text>
+                    ) : (
+                      <>
+                        <Ionicons name="lock-closed" size={13} color="#D4AF37" style={{ marginRight: 2 }} />
+                        <Text style={styles.careLabelText}>Stellium Elite</Text>
+                      </>
+                    )}
+                  </View>
+                </View>
+                <Text style={styles.viewDetailText}>Kozmik esma ve günlük gölge analizi için tıkla →</Text>
+              </Pressable>
             </View>
           )}
 
@@ -1080,7 +1101,125 @@ const styles = StyleSheet.create({
   },
   hourChipActive: {
     borderColor: '#D4AF37',
-    backgroundColor: 'rgba(212, 175, 55, 0.1)',
+    borderWidth: 2,
+    backgroundColor: 'rgba(212, 175, 55, 0.16)',
+    shadowColor: '#D4AF37',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.55,
+    shadowRadius: 8,
+    elevation: 6,
+    transform: [{ scale: 1.04 }],
+  },
+  skyNowSection: {
+    marginBottom: 20,
+  },
+  skyNowHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  retroAlertBadge: {
+    backgroundColor: 'rgba(248, 173, 157, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(248, 173, 157, 0.35)',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginBottom: 10,
+  },
+  retroAlertText: {
+    fontFamily: 'Inter',
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#F8AD9D',
+  },
+  skyChip: {
+    width: 92,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: '#161B22',
+    alignItems: 'center',
+  },
+  skyChipRetro: {
+    borderColor: 'rgba(248, 173, 157, 0.45)',
+    backgroundColor: 'rgba(248, 173, 157, 0.06)',
+  },
+  skyChipSymbol: {
+    fontSize: 17,
+    color: '#FFFFFF',
+    marginBottom: 3,
+  },
+  skyChipName: {
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'Inter',
+    color: '#F0F6FC',
+  },
+  skyChipSign: {
+    fontSize: 9,
+    fontWeight: '600',
+    fontFamily: 'Inter',
+    color: '#D4AF37',
+    marginTop: 2,
+  },
+  skyChipRetroBadge: {
+    fontSize: 8,
+    fontWeight: '700',
+    fontFamily: 'Inter',
+    color: '#F8AD9D',
+    marginTop: 3,
+  },
+  careGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 12,
+  },
+  careGridItem: {
+    flexBasis: '47%',
+    flexGrow: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.1)',
+    borderRadius: 14,
+    padding: 12,
+  },
+  careGridTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  careGridEmoji: {
+    fontSize: 18,
+  },
+  careGridStars: {
+    flexDirection: 'row',
+    gap: 1,
+  },
+  careGridTitle: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#F0F6FC',
+  },
+  careGridLabel: {
+    fontFamily: 'Inter',
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#D4AF37',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginTop: 2,
+  },
+  careGridDate: {
+    fontFamily: 'Inter',
+    fontSize: 10,
+    color: '#8B949E',
+    marginTop: 5,
   },
   hourChipSymbol: {
     fontSize: 18,
@@ -1500,7 +1639,7 @@ const styles = StyleSheet.create({
   planetaryModalContainer: {
     backgroundColor: '#0F1420',
     width: '100%',
-    height: '92%',
+    height: '88%',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderBottomLeftRadius: 0,
@@ -1509,7 +1648,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
     borderColor: 'rgba(212, 175, 55, 0.25)',
     padding: 20,
-    paddingTop: Platform.OS === 'ios' ? 36 : 20,
+    paddingTop: Platform.OS === 'ios' ? 28 : 20,
     alignItems: 'stretch',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -10 },

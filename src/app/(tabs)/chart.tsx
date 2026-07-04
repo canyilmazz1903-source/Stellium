@@ -11,6 +11,30 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, withDelay, Easing } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
+import { composePlanetInSign, computeElementBalance } from '@/utils/interpretations';
+
+// Collapsible section wrapper so the chart page reads as an organized index
+// instead of one endless scroll.
+function ChartSection({ title, emoji, isOpen, onToggle, children }: {
+  title: string;
+  emoji: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <View style={styles.chartSectionCard}>
+      <Pressable onPress={onToggle} style={styles.chartSectionHeader}>
+        <View style={styles.chartSectionTitleRow}>
+          <Text style={styles.chartSectionEmoji}>{emoji}</Text>
+          <Text style={styles.chartSectionTitle}>{title}</Text>
+        </View>
+        <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={18} color="#D4AF37" />
+      </Pressable>
+      {isOpen && <View style={styles.chartSectionContent}>{children}</View>}
+    </View>
+  );
+}
 
 const BIG_THREE_INTERPRETATIONS: Record<string, {
   sun: { archetype: string; ego: string; advice: string };
@@ -317,6 +341,10 @@ export default function ChartScreen() {
   const [aiModalVisible, setAiModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<'bigThree' | 'mental' | 'love' | 'lessons'>('bigThree');
 
+  // Accordion state: which analysis section is expanded (0 = Big Three open by default)
+  const [openSection, setOpenSection] = useState<number | null>(0);
+  const toggleSection = (idx: number) => setOpenSection(openSection === idx ? null : idx);
+
   // Background Aura Reanimated Config
   const color1 = useSharedValue('#B2F7EF');
   const color2 = useSharedValue('#EFF7F6');
@@ -516,7 +544,7 @@ export default function ChartScreen() {
     return calculated;
   }, [computedChart]);
 
-  // 4. Generate dynamic planet placements explanations
+  // 4. Generate dynamic planet placements explanations (rich, composed text)
   const planetPlacements = useMemo(() => {
     if (!computedChart) return [];
 
@@ -525,19 +553,42 @@ export default function ChartScreen() {
       .map(p => {
         const kw = PLANET_KEYWORDS[p.name];
         if (!kw) return null;
-        
+
+        const composed = composePlanetInSign(p.name, p.sign, p.house, p.retrograde);
         const signText = SIGN_KEYWORDS[p.sign] || 'kendine has bir üslupla';
         const houseText = HOUSE_KEYWORDS[p.house] || 'yaşam alanlarınızda etkili olur.';
-        
+        const legacy = `Astrolojide ${kw.turkish}, ${kw.theme} Gezegeninizin bu konumu, enerjisini ${signText} yansıtır ve özellikle ${houseText}`;
+
         return {
           name: kw.turkish,
           symbol: kw.symbol,
           placement: `${kw.turkish} ${p.sign} Burcunda (${p.house}. Ev)`,
           archetype: kw.archetype,
-          description: `Astrolojide ${kw.turkish}, ${kw.theme} Gezegeninizin bu konumu, enerjisini ${signText} yansıtır ve özellikle ${houseText}`,
+          retrograde: p.retrograde,
+          degree: formatPlanetDegree(p.longitude, p.sign),
+          description: composed ? `${legacy}\n\n${composed}` : legacy,
         };
       })
       .filter(Boolean);
+  }, [computedChart]);
+
+  // 4b. House cusp table + modality balance + element narrative (technical depth)
+  const houseCusps = useMemo(() => {
+    if (!computedChart) return [];
+    return computedChart.houses.map((cusp, i) => {
+      const signInfo = getZodiacSign(cusp);
+      return {
+        house: i + 1,
+        sign: signInfo ? signInfo.turkish : '—',
+        symbol: signInfo ? signInfo.symbol : '',
+        degree: formatPlanetDegree(cusp, ''),
+      };
+    });
+  }, [computedChart]);
+
+  const balanceInfo = useMemo(() => {
+    if (!computedChart) return null;
+    return computeElementBalance(computedChart.planets);
   }, [computedChart]);
 
   const handleFetchAIAnalysis = async () => {
@@ -901,8 +952,9 @@ export default function ChartScreen() {
                 </View>
               </Pressable>
 
-              {/* Detailed Astrology Interpretations */}
+              {/* Detailed Astrology Interpretations (accordion sections) */}
               <Text style={styles.sectionDividerTitle}>Derinlikli Astroloji Analizleri</Text>
+              <ChartSection title="Üç Büyükler: Güneş • Ay • Yükselen" emoji="🌟" isOpen={openSection === 0} onToggle={() => toggleSection(0)}>
               {interpretations && (
                 <View style={styles.interpretationsList}>
                   {/* Sun Interpretation Card */}
@@ -952,7 +1004,12 @@ export default function ChartScreen() {
                       <Text style={styles.interpAdviceText}>{interpretations.asc.advice}</Text>
                     </View>
                   </GlassCard>
+                </View>
+              )}
+              </ChartSection>
 
+              <ChartSection title="Gezegen Yerleşimleri" emoji="🪐" isOpen={openSection === 1} onToggle={() => toggleSection(1)}>
+                <View style={styles.interpretationsList}>
                   {/* Placements Cards for other Planets */}
                   {isPremium ? (
                     planetPlacements.map((p, idx) => p && (
@@ -960,8 +1017,8 @@ export default function ChartScreen() {
                         <View style={styles.interpHeaderRow}>
                           <Text style={styles.interpHeaderEmoji}>{p.symbol}</Text>
                           <View style={styles.interpHeaderDetails}>
-                            <Text style={styles.interpPlacementTitle}>{p.placement}</Text>
-                            <Text style={styles.interpArchetypeText}>Temsili Karakter: {p.archetype}</Text>
+                            <Text style={styles.interpPlacementTitle}>{p.placement} {p.retrograde ? ' ℞' : ''}</Text>
+                            <Text style={styles.interpArchetypeText}>Temsili Karakter: {p.archetype} • {p.degree}</Text>
                           </View>
                         </View>
                         <Text style={styles.interpBodyText}>{p.description}</Text>
@@ -979,10 +1036,10 @@ export default function ChartScreen() {
                     </GlassCard>
                   )}
                 </View>
-              )}
+              </ChartSection>
 
               {/* Natal Aspects Calculation Section */}
-              <Text style={styles.sectionDividerTitle}>Açı İlişkileri (Aspects)</Text>
+              <ChartSection title="Açı İlişkileri (Aspects)" emoji="📐" isOpen={openSection === 2} onToggle={() => toggleSection(2)}>
               <GlassCard style={styles.aspectsCard}>
                 {isPremium ? (
                   aspects.length > 0 ? (
@@ -1017,9 +1074,11 @@ export default function ChartScreen() {
                   </View>
                 )}
               </GlassCard>
+              </ChartSection>
 
-              {/* Planets Degrees List (3-Column Table) */}
-              <Text style={styles.sectionDividerTitle}>Gezegen Konumları</Text>
+              {/* Technical details: planet table, house cusps, balances */}
+              <ChartSection title="Teknik Detaylar: Konumlar & Evler" emoji="📊" isOpen={openSection === 3} onToggle={() => toggleSection(3)}>
+              <Text style={styles.techSubTitle}>Gezegen Konumları</Text>
               <GlassCard style={styles.planetTableCard}>
                 <View style={styles.tableHeader}>
                   <Text style={[styles.tableHeaderCell, { flex: 1.2 }]}>Gezegen</Text>
@@ -1056,8 +1115,25 @@ export default function ChartScreen() {
                 })}
               </GlassCard>
 
+              {/* House cusp table */}
+              <Text style={styles.techSubTitle}>Ev Başlangıçları (Cusps)</Text>
+              <GlassCard style={styles.planetTableCard}>
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Ev</Text>
+                  <Text style={[styles.tableHeaderCell, { flex: 1.4 }]}>Burç</Text>
+                  <Text style={[styles.tableHeaderCell, { flex: 1, textAlign: 'right' }]}>Derece</Text>
+                </View>
+                {houseCusps.map((h, idx) => (
+                  <View key={idx} style={[styles.tableRowGrid, idx % 2 === 1 && styles.tableRowGridAlt]}>
+                    <Text style={[styles.tableCellGrid, { flex: 1 }]}>{h.house}. Ev</Text>
+                    <Text style={[styles.tableCellGrid, styles.tablePlanetSign, { flex: 1.4 }]}>{h.symbol} {h.sign}</Text>
+                    <Text style={[styles.tableCellGrid, { flex: 1, textAlign: 'right' }]}>{h.degree}</Text>
+                  </View>
+                ))}
+              </GlassCard>
+
               {/* Element Percentages Panel */}
-              <Text style={styles.sectionDividerTitle}>Element Dengesi</Text>
+              <Text style={styles.techSubTitle}>Element & Nitelik Dengesi</Text>
               <GlassCard style={styles.elementCard}>
                 {elementPercentages && Object.entries(elementPercentages).map(([el, pct], idx) => {
                   const colors: Record<string, string> = {
@@ -1079,7 +1155,22 @@ export default function ChartScreen() {
                     </View>
                   );
                 })}
+
+                {balanceInfo && (
+                  <View style={styles.modalityRow}>
+                    {(Object.entries(balanceInfo.modalityCounts) as [string, number][]).map(([mod, count]) => (
+                      <View key={mod} style={styles.modalityChip}>
+                        <Text style={styles.modalityChipCount}>{count}</Text>
+                        <Text style={styles.modalityChipLabel}>{mod}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+                {balanceInfo && (
+                  <Text style={styles.balanceNarrative}>{balanceInfo.narrative}</Text>
+                )}
               </GlassCard>
+              </ChartSection>
             </View>
           ) : (
             <GlassCard style={styles.errorCard}>
@@ -1703,5 +1794,89 @@ const styles = StyleSheet.create({
     color: '#D4AF37',
     marginTop: 16,
     marginBottom: 4,
+  },
+  chartSectionCard: {
+    backgroundColor: '#12161F',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.15)',
+    borderRadius: 16,
+    marginBottom: 14,
+    overflow: 'hidden',
+  },
+  chartSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+  },
+  chartSectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  chartSectionEmoji: {
+    fontSize: 17,
+  },
+  chartSectionTitle: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#F0F6FC',
+    flex: 1,
+  },
+  chartSectionContent: {
+    paddingHorizontal: 12,
+    paddingBottom: 14,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+    paddingTop: 12,
+  },
+  techSubTitle: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#8B949E',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  modalityRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+    marginBottom: 4,
+  },
+  modalityChip: {
+    flex: 1,
+    alignItems: 'center',
+    backgroundColor: 'rgba(212, 175, 55, 0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.15)',
+    borderRadius: 12,
+    paddingVertical: 10,
+  },
+  modalityChipCount: {
+    fontFamily: 'InterBold',
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#D4AF37',
+  },
+  modalityChipLabel: {
+    fontFamily: 'Inter',
+    fontSize: 10,
+    color: '#8B949E',
+    marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  balanceNarrative: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    color: '#E6EDF0',
+    lineHeight: 20,
+    marginTop: 12,
   },
 });
