@@ -214,6 +214,21 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="tools/timeline"
+          options={{
+            headerShown: true,
+            title: 'KOZMİK ZAMANLAMA',
+            headerStyle: { backgroundColor: '#0B0F19' },
+            headerTintColor: '#D4AF37',
+            headerTitleStyle: { fontFamily: 'Inter', fontSize: 16, fontWeight: '700' },
+            headerShadowVisible: false,
+            headerBackTitle: 'Geri',
+            headerBackTitleStyle: { fontFamily: 'Inter', fontSize: 14 },
+            gestureEnabled: true,
+            gestureResponseDistance: { start: 120 },
+          }}
+        />
+        <Stack.Screen
           name="tools/moon-calendar"
           options={{
             headerShown: true,

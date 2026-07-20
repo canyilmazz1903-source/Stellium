@@ -805,6 +805,19 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
                 <Text style={styles.serviceDescription} numberOfLines={2}>Size özel günlük kozmik mesaj ve mini pratik.</Text>
               </View>
             </Pressable>
+
+            <Pressable style={styles.serviceCard} onPress={() => router.push('/tools/timeline' as any)}>
+              <View style={styles.serviceIconWrap}>
+                <Text style={styles.serviceIcon}>🧭</Text>
+              </View>
+              <View style={styles.serviceInfo}>
+                <View style={styles.serviceNameRow}>
+                  <Text style={styles.serviceCardTitle}>Kozmik Zamanlama</Text>
+                  {!isPremium && <Text style={styles.lockIcon}>🔒</Text>}
+                </View>
+                <Text style={styles.serviceDescription} numberOfLines={2}>Niyetinize en uygun günler, tutulmalar, profeksiyon & firdaria.</Text>
+              </View>
+            </Pressable>
           </View>
 
           {/* Elite Services Section */}
