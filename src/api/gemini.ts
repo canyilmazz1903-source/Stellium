@@ -179,7 +179,8 @@ function chartToCtx(chart: ComputedChart, dstNote?: boolean) {
     points: chart.points?.map(p => ({ turkish: p.turkish, sign: p.sign, house: p.house })),
     aspects: chart.aspects,
     patterns: chart.patterns?.map(p => ({ title: p.title, members: p.members })),
-    dstNote,
+    // Trust layer: DST context flows to every prompt automatically
+    dstNote: dstNote ?? chart.dstCorrected,
   };
 }
 

@@ -621,6 +621,11 @@ export default function SettingsScreen() {
                   textStyle={styles.deleteButtonText}
                   style={styles.actionButton}
                 />
+
+                <Text style={styles.disclaimerText}>
+                  Stellium'daki tüm astrolojik ve geleneksel içerikler eğlence ve kişisel gelişim amaçlıdır;
+                  tıbbi, hukuki veya finansal tavsiye niteliği taşımaz.
+                </Text>
               </View>
 
               {lastFatalError && (
@@ -831,6 +836,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.5)',
     textDecorationLine: 'underline',
+  },
+  disclaimerText: {
+    fontFamily: 'Inter',
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.35)',
+    textAlign: 'center',
+    lineHeight: 15,
+    marginTop: 14,
+    paddingHorizontal: 10,
   },
   houseSystemRow: {
     flexDirection: 'row',

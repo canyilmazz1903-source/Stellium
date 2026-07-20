@@ -388,6 +388,30 @@ export default function ExploreScreen() {
               Bir açının tam dereceden sapma toleransına "orb" denir. Örneğin 90°'ye 2-3 derece yakınlıktaki bir kare açı hâlâ etkilidir. Orb ne kadar dar (tam dereceye yakın) ise açının etkisi o kadar güçlü ve belirgin hissedilir.
             </Text>
           </LibrarySection>
+
+          {/* Section 6: Methods & FAQ (trust layer) */}
+          <LibrarySection
+            title="Yöntemlerimiz & SSS"
+            emoji="🔬"
+            isOpen={openSection === 5}
+            onToggle={() => toggleSection(5)}
+          >
+            <Text style={styles.sectionSubtitleText}>Hesaplarımız Neye Dayanır?</Text>
+            <Text style={styles.sectionBodyParagraph}>
+              Stellium'daki tüm gezegen konumları, cihazınızda çalışan yüksek hassasiyetli bir astronomi motoruyla (VSOP87 sınıfı) hesaplanır; boylamlar gökbilimin standardı olan "görünen, tarih ekinoksuna göre" değerlerdir. Ev sistemleri (Placidus, Tam Burç, Eşit Ev), açılar, retro dönemleri, tutulmalar ve gezegen saatleri — hepsi matematiksel hesaptır; yapay zeka yalnızca hesaplanmış veriyi YORUMLAR, asla konum veya tarih üretmez. Ebced değerleri isimlerin geleneksel Arapça imlâsından harf harf hesaplanır; 28 Ay Menzili (Menazil-i Kamer) ve Ahlat-ı Erbaa mizaç sistemi klasik literatürün ana hatlarına dayanır.
+            </Text>
+
+            <Text style={styles.sectionSubtitleText}>SSS: Yükselen burcum başka uygulamada neden farklı?</Text>
+            <Text style={styles.sectionBodyParagraph}>
+              En yaygın sebep yaz saatidir. Türkiye 1973–2016 arasında her yıl Mart–Ekim döneminde saatleri 1 saat ileri aldı (GMT+3), kış aylarında GMT+2'ye döndü; Eylül 2016'dan beri ise kalıcı GMT+3 kullanılıyor. Doğum haritası hesabında doğum anının GERÇEK resmî saati kullanılmalıdır. Yaz saati düzeltmesini atlayan bir kaynak, doğum saatinizi gökyüzüne 1 saat kaydırarak işler — yükselen burç yaklaşık her 2 saatte bir değiştiği için bu hata yükseleni ve tüm ev yerleşimlerini kaydırabilir.
+              {"\n\n"}Stellium, doğum tarihinize hangi kuralın uygulandığını harita ekranındaki 🕐 rozetinde açıkça gösterir; rozete dokunarak düzeltmesiz (hatalı) hesabın ne göstereceğini yan yana karşılaştırabilirsiniz. Başka bir yerde gördüğünüz farklı yükselen büyük olasılıkla o karşılaştırmadaki "düzeltmesiz" değerdir.
+            </Text>
+
+            <Text style={styles.sectionSubtitleText}>İçerik İlkemiz</Text>
+            <Text style={styles.sectionBodyParagraph}>
+              Stellium'daki tüm yorumlar eğlence ve kişisel gelişim amaçlıdır; tıbbi, hukuki veya finansal tavsiye değildir. Sağlık ve finans kararlarınızda daima ilgili uzmanlara danışın.
+            </Text>
+          </LibrarySection>
         </View>
       </ScrollView>
     </SafeAreaView>

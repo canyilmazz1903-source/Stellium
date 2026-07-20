@@ -5,7 +5,7 @@ import { useAppStore } from '@/store/appStore';
 import { useAuthStore } from '@/store/authStore';
 import { useCosmicCalendarStore } from '@/store/cosmicCalendarStore';
 import GlassCard from '@/components/glass/GlassCard';
-import { getZodiacSign } from '@/utils/astronomy';
+import { getZodiacSign, getTimezoneOffset, explainTimezoneDecision, computeNatalChart, HOUSE_SYSTEM_LABELS } from '@/utils/astronomy';
 import { fetchFullChartAnalysis, ChartAnalysisResult } from '@/api/gemini';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -344,6 +344,52 @@ export default function ChartScreen() {
   // Accordion state: which analysis section is expanded (0 = Big Three open by default)
   const [openSection, setOpenSection] = useState<number | null>(0);
   const toggleSection = (idx: number) => setOpenSection(openSection === idx ? null : idx);
+
+  // Trust layer: timezone/DST decision + calc-detail modal + comparison view
+  const [calcDetailVisible, setCalcDetailVisible] = useState(false);
+  const [showDstComparison, setShowDstComparison] = useState(false);
+
+  const tzInfo = useMemo(() => {
+    if (!profile?.birth_date || !profile?.birth_time) return null;
+    try {
+      const [y, m, dd] = profile.birth_date.split('-').map(Number);
+      const [h, min] = profile.birth_time.split(':').map(Number);
+      const local = new Date(y, m - 1, dd, h, min);
+      const tzName = profile.timezone || 'Europe/Istanbul';
+      const decision = explainTimezoneDecision(local, tzName);
+      const utcMs = Date.UTC(y, m - 1, dd, h, min) - decision.offsetHours * 3600000;
+      const utc = new Date(utcMs);
+      const utcStr = `${String(utc.getUTCHours()).padStart(2, '0')}:${String(utc.getUTCMinutes()).padStart(2, '0')} UTC`;
+      const birthDateStr = local.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+      const birthTimeStr = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+      return { decision, utcStr, birthDateStr, birthTimeStr, y, m, dd, h, min };
+    } catch {
+      return null;
+    }
+  }, [profile]);
+
+  // Comparison: same birth data computed WITHOUT the DST correction (the
+  // wrong way many sources do it) — the user recognizes the wrong ascendant
+  // they saw elsewhere and the debate ends.
+  const dstComparison = useMemo(() => {
+    if (!showDstComparison || !tzInfo || !tzInfo.decision.dstActive || !profile) return null;
+    try {
+      const lat = profile.latitude || 41.0082;
+      const lon = profile.longitude || 28.9784;
+      const wrong = computeNatalChart(tzInfo.y, tzInfo.m, tzInfo.dd, tzInfo.h, tzInfo.min, lat, lon, tzInfo.decision.offsetHours - 1, computedChart?.houseSystem || 'placidus');
+      const fmt = (lonDeg: number) => {
+        const s = getZodiacSign(lonDeg);
+        const inSign = lonDeg % 30;
+        return `${s.turkish} ${Math.floor(inSign)}°${String(Math.floor((inSign % 1) * 60)).padStart(2, '0')}'`;
+      };
+      return {
+        correct: computedChart ? fmt(computedChart.ascendant) : '—',
+        wrong: fmt(wrong.ascendant),
+      };
+    } catch {
+      return null;
+    }
+  }, [showDstComparison, tzInfo, profile, computedChart]);
 
   // Background Aura Reanimated Config
   const color1 = useSharedValue('#B2F7EF');
@@ -873,9 +919,36 @@ export default function ChartScreen() {
 
           {computedChart ? (
             <View style={styles.chartContainer}>
+              {/* Unknown birth time: honest solar-chart banner */}
+              {computedChart.timeUnknown && (
+                <GlassCard style={styles.solarModeBanner}>
+                  <Text style={styles.solarModeTitle}>☀️ Güneş Haritası Modu</Text>
+                  <Text style={styles.solarModeText}>
+                    Doğum saatiniz kayıtlı olmadığı için haritanız Güneş Haritası olarak gösteriliyor (Güneş = 1. ev, Tam Burç sistemi).
+                    Yükselen burç ve saat hassasiyeti gerektiren ev yorumları bu modda gösterilmez. Doğum saatinizi Ayarlar'dan
+                    eklerseniz tam haritanız hesaplanır.
+                  </Text>
+                </GlassCard>
+              )}
+
               <View style={styles.wheelWrapper}>
                 {svgContent}
               </View>
+
+              {/* Trust layer: timezone/DST verification badge → Hesap Detayı modal */}
+              {tzInfo && !computedChart.timeUnknown && (
+                <Pressable onPress={() => { setShowDstComparison(false); setCalcDetailVisible(true); }}>
+                  <GlassCard style={[styles.tzBadgeCard, tzInfo.decision.dstActive ? styles.tzBadgeCardDst : null]}>
+                    <Text style={styles.tzBadgeText}>
+                      🕐 Doğum saatiniz <Text style={styles.tzBadgeBold}>{tzInfo.birthDateStr}</Text> için o günkü resmî saat uygulamasına göre
+                      (<Text style={styles.tzBadgeBold}>GMT{tzInfo.decision.offsetHours >= 0 ? '+' : ''}{tzInfo.decision.offsetHours % 1 === 0 ? tzInfo.decision.offsetHours : tzInfo.decision.offsetHours.toFixed(1)}, yaz saati: {tzInfo.decision.dstActive ? 'aktif' : 'pasif'}</Text>) hesaplandı.
+                    </Text>
+                    <Text style={styles.tzBadgeLink}>
+                      {tzInfo.decision.dstActive ? 'Neden başka yerde farklı çıkıyor? Hesap detayı →' : 'Hesap detayını gör →'}
+                    </Text>
+                  </GlassCard>
+                </Pressable>
+              )}
 
               {/* Interactive Detail Panel */}
               {selectedPlanet && (() => {
@@ -989,7 +1062,9 @@ export default function ChartScreen() {
                     </View>
                   </GlassCard>
 
-                  {/* Ascendant Interpretation Card */}
+                  {/* Ascendant Interpretation Card — hidden in solar-chart mode
+                      (no birth time = no honest Ascendant) */}
+                  {!computedChart.timeUnknown && (
                   <GlassCard style={styles.interpretationCard}>
                     <View style={styles.interpHeaderRow}>
                       <Text style={styles.interpHeaderEmoji}>✨</Text>
@@ -1004,6 +1079,7 @@ export default function ChartScreen() {
                       <Text style={styles.interpAdviceText}>{interpretations.asc.advice}</Text>
                     </View>
                   </GlassCard>
+                  )}
                 </View>
               )}
               </ChartSection>
@@ -1228,6 +1304,77 @@ export default function ChartScreen() {
             </GlassCard>
           )}
         </ScrollView>
+
+        {/* Hesap Detayı & DST transparency modal */}
+        <Modal
+          visible={calcDetailVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setCalcDetailVisible(false)}
+        >
+          <View style={styles.modalBg}>
+            <BlurView intensity={95} tint="dark" style={StyleSheet.absoluteFill} />
+            <SafeAreaView style={styles.modalSafeArea}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Hesap Detayı</Text>
+                <Pressable onPress={() => setCalcDetailVisible(false)} style={styles.closeBtn}>
+                  <Ionicons name="close" size={24} color="#ffffff" />
+                </Pressable>
+              </View>
+              <ScrollView contentContainerStyle={styles.modalScrollContent} showsVerticalScrollIndicator={false}>
+                {tzInfo && (
+                  <>
+                    <Text style={styles.calcSectionTitle}>🕐 Saat Dilimi Kararı</Text>
+                    <Text style={styles.calcBody}>{tzInfo.decision.ruleLabel}.</Text>
+                    <Text style={styles.calcBody}>
+                      Sizin doğumunuzda saat karşılığı: girdiğiniz <Text style={styles.tzBadgeBold}>{tzInfo.birthTimeStr}</Text> = evrensel saatte <Text style={styles.tzBadgeBold}>{tzInfo.utcStr}</Text>.
+                    </Text>
+
+                    {tzInfo.decision.dstActive && (
+                      <>
+                        <Text style={styles.calcSectionTitle}>Neden başka yerde farklı çıkıyor?</Text>
+                        <Text style={styles.calcBody}>
+                          Yaz saatini hesaba katmayan bir kaynak, doğum saatinizi gökyüzüne 1 saat kaydırarak işler; bu, yükselen
+                          burcunuzu ve ev yerleşimlerinizi değiştirebilir. Daha önce farklı bir yükselen gördüyseniz, büyük olasılıkla
+                          o hesap yaz saati düzeltmesini atlamıştır — burada gördüğünüz sonuç, doğum anınızdaki resmî saat
+                          uygulamasına göre doğrudur.
+                        </Text>
+
+                        {!showDstComparison ? (
+                          <Pressable onPress={() => setShowDstComparison(true)} style={styles.compareBtn}>
+                            <Text style={styles.compareBtnText}>Karşılaştır: düzeltmesiz hesap ne gösterirdi?</Text>
+                          </Pressable>
+                        ) : dstComparison ? (
+                          <View style={styles.compareBox}>
+                            <View style={styles.compareRow}>
+                              <Text style={styles.compareLabel}>Yaz saati düzeltmesiyle (doğru):</Text>
+                              <Text style={styles.compareValueGood}>Yükselen {dstComparison.correct} ✅</Text>
+                            </View>
+                            <View style={styles.compareRow}>
+                              <Text style={styles.compareLabel}>Düzeltmesiz (hatalı) hesap:</Text>
+                              <Text style={styles.compareValueBad}>Yükselen {dstComparison.wrong}</Text>
+                            </View>
+                            <Text style={styles.compareNote}>
+                              Başka bir kaynakta sağdaki değeri gördüyseniz, o hesap yaz saatini atlamış demektir.
+                            </Text>
+                          </View>
+                        ) : null}
+                      </>
+                    )}
+
+                    <Text style={styles.calcSectionTitle}>📐 Hesap Yöntemi</Text>
+                    <Text style={styles.calcBody}>
+                      • Efemeris: astronomy-engine (VSOP87 sınıfı hassasiyet); boylamlar görünen (apparent), tarih ekinoksuna göre.{'\n'}
+                      • Ev sistemi: {computedChart?.houseSystem ? HOUSE_SYSTEM_LABELS[computedChart.houseSystem] : 'Placidus'}{computedChart?.polarFallback ? ' (kutup enlemi nedeniyle Tam Burç kullanıldı)' : ''}.{'\n'}
+                      • Gezegen saatleri gerçek güneş doğuş/batışına göre hesaplanır.{'\n'}
+                      • Chiron yaklaşık modeldir (±1°); diğer cisimler ±1 yay dakikası mertebesindedir.
+                    </Text>
+                  </>
+                )}
+              </ScrollView>
+            </SafeAreaView>
+          </View>
+        </Modal>
 
         {/* AI Report Full-Screen Modal */}
         <Modal
@@ -1958,5 +2105,118 @@ const styles = StyleSheet.create({
     color: '#E6EDF0',
     lineHeight: 18,
     marginTop: 8,
+  },
+  solarModeBanner: {
+    marginBottom: 16,
+    padding: 14,
+    borderColor: 'rgba(212, 175, 55, 0.4)',
+    borderWidth: 1,
+  },
+  solarModeTitle: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#D4AF37',
+    marginBottom: 4,
+  },
+  solarModeText: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    color: '#8B949E',
+    lineHeight: 16,
+  },
+  tzBadgeCard: {
+    marginTop: 12,
+    marginBottom: 4,
+    padding: 12,
+  },
+  tzBadgeCardDst: {
+    borderColor: 'rgba(212, 175, 55, 0.45)',
+    borderWidth: 1,
+  },
+  tzBadgeText: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    color: '#E6EDF0',
+    lineHeight: 16,
+  },
+  tzBadgeBold: {
+    fontWeight: '700',
+    color: '#D4AF37',
+  },
+  tzBadgeLink: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#D4AF37',
+    marginTop: 6,
+  },
+  calcSectionTitle: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#D4AF37',
+    marginTop: 18,
+    marginBottom: 6,
+  },
+  calcBody: {
+    fontFamily: 'Inter',
+    fontSize: 13,
+    color: '#E6EDF0',
+    lineHeight: 20,
+    marginBottom: 6,
+  },
+  compareBtn: {
+    backgroundColor: 'rgba(212, 175, 55, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.4)',
+    borderRadius: 12,
+    paddingVertical: 11,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  compareBtnText: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#D4AF37',
+  },
+  compareBox: {
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 8,
+  },
+  compareRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  compareLabel: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    color: '#8B949E',
+    flex: 1,
+  },
+  compareValueGood: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#86EFAC',
+  },
+  compareValueBad: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#F8AD9D',
+    textDecorationLine: 'line-through',
+  },
+  compareNote: {
+    fontFamily: 'Inter',
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.4)',
+    lineHeight: 14,
   },
 });

@@ -25,6 +25,8 @@ export interface ComputedChart {
   polarFallback?: boolean;
   isDayBirth?: boolean;
   meanNode?: number;
+  timeUnknown?: boolean;   // solar chart mode (no birth time recorded)
+  dstCorrected?: boolean;  // Turkey historical DST rule applied to birth time
 }
 
 const HOUSE_SYSTEM_KEY = 'stellium_house_system';

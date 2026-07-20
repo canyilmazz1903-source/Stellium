@@ -279,6 +279,36 @@ export function computeNatalChart(
   };
 }
 
+// Solar chart for unknown birth times: computed at local noon, houses are
+// Whole Sign counted from the SUN's sign (Sun = 1st house, classical solar
+// chart). ASC/MC are meaningless without a time and must be hidden by the UI
+// (timeUnknown flag). Honest degradation instead of silently-wrong houses.
+export function computeSolarChart(
+  year: number,
+  month: number,
+  day: number,
+  latitude: number,
+  longitude: number,
+  timezoneOffsetHours: number
+) {
+  const chart = computeNatalChart(year, month, day, 12, 0, latitude, longitude, timezoneOffsetHours, 'whole');
+  const sun = chart.planets.find(p => p.name === 'Sun')!;
+  const sunSignStart = Math.floor(normalize360(sun.longitude) / 30) * 30;
+  const houses = Array.from({ length: 12 }, (_, i) => normalize360(sunSignStart + i * 30));
+
+  const planets = chart.planets.map(p => ({ ...p, house: getPlanetHouse(p.longitude, houses) }));
+  const points = chart.points.map(pt => ({ ...pt, house: getPlanetHouse(pt.longitude, houses) }));
+
+  return {
+    ...chart,
+    planets,
+    points,
+    houses,
+    houseSystem: 'whole' as HouseSystem,
+    timeUnknown: true,
+  };
+}
+
 export interface PlanetaryHour {
   hourIndex: number;
   label: string;

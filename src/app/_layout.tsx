@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
 import { supabase } from '@/api/supabase';
 import { useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { computeNatalChart, getTimezoneOffset } from '@/utils/astronomy';
+import { computeNatalChart, computeSolarChart, getTimezoneOffset, explainTimezoneDecision } from '@/utils/astronomy';
 import { initAds } from '@/services/ads';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -87,23 +87,35 @@ export default function RootLayout() {
 
   // Calculate computedChart dynamically at RootLayout level so that all tabs have it instantly
   useEffect(() => {
-    if (!profile || !profile.birth_date || !profile.birth_time) {
+    if (!profile || !profile.birth_date) {
       useAppStore.getState().setComputedChart(null);
       return;
     }
 
     try {
       const [year, month, day] = profile.birth_date.split('-').map(Number);
-      const [hour, minute] = profile.birth_time.split(':').map(Number);
       const lat = profile.latitude || 41.0082;
       const lon = profile.longitude || 28.9784;
       const tzName = profile.timezone || 'Europe/Istanbul';
 
+      // No birth time → honest solar chart (Sun = 1st house, Whole Sign)
+      // instead of silently producing wrong houses from an assumed time.
+      if (!profile.birth_time) {
+        const noonLocal = new Date(year, month - 1, day, 12, 0);
+        const tzOffset = getTimezoneOffset(tzName, noonLocal);
+        const solar = computeSolarChart(year, month, day, lat, lon, tzOffset);
+        useAppStore.getState().setComputedChart(solar);
+        return;
+      }
+
+      const [hour, minute] = profile.birth_time.split(':').map(Number);
       const birthDateLocal = new Date(year, month - 1, day, hour, minute);
       const tzOffset = getTimezoneOffset(tzName, birthDateLocal);
 
       const chart = computeNatalChart(year, month, day, hour, minute, lat, lon, tzOffset, houseSystem);
-      useAppStore.getState().setComputedChart(chart);
+      // Trust layer: flag Turkey historical-DST correction for UI + AI prompts
+      const decision = explainTimezoneDecision(birthDateLocal, tzName);
+      useAppStore.getState().setComputedChart({ ...chart, dstCorrected: decision.isTurkeyRule && decision.dstActive });
     } catch (e) {
       console.warn('Error calculating natal chart in RootLayout:', e);
     }
