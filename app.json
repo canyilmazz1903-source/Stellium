@@ -2,15 +2,15 @@
   "expo": {
     "name": "Stellium",
     "slug": "Stellium",
-    "version": "1.3.2",
+    "version": "1.4.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "stellium",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.stellium.app",
-      "buildNumber": "42",
+      "buildNumber": "43",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -20,7 +20,7 @@
     },
     "android": {
       "package": "com.stellium.app",
-      "versionCode": 42,
+      "versionCode": 43,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -38,11 +38,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
-          }
+          "backgroundColor": "#0B0F19",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 180
         }
       ],
       "expo-secure-store",
