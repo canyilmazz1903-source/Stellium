@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, ActivityIndicator, SafeAreaView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useAuthStore } from '@/store/authStore';
-import { calculateEbced } from '@/utils/ebced';
+import { calculateEbced, calculateEbcedDetailed, getYildiznameSystems, YildiznameSystems, EbcedResult } from '@/utils/ebced';
+import { getJulianDaysSinceJ2000, getPlanetLongitude, getTimezoneOffset } from '@/utils/astronomy';
+import { menzilFromLongitude, menzilGuidance } from '@/utils/menazil';
+import type { MenzilInfo } from '@/data/menazilData';
 import { fetchYildiznameAnalysis, YildiznameAnalysisResult } from '@/api/gemini';
 import GlassCard from '@/components/glass/GlassCard';
 import CosmicInput from '@/components/ui/CosmicInput';
@@ -37,6 +40,9 @@ export default function YildiznameScreen() {
   const [motherEbced, setMotherEbced] = useState(0);
   const [totalEbced, setTotalEbced] = useState(0);
   const [computedSign, setComputedSign] = useState<typeof YILDIZNAME_SIGNS[0] | null>(null);
+  const [systems, setSystems] = useState<YildiznameSystems | null>(null);
+  const [ebcedDetails, setEbcedDetails] = useState<{ user: EbcedResult; mother: EbcedResult } | null>(null);
+  const [birthMenzil, setBirthMenzil] = useState<MenzilInfo | null>(null);
   const [analysisReport, setAnalysisReport] = useState<YildiznameAnalysisResult | string | null>(null);
   const [activeTab, setActiveTab] = useState<'ebcedDestiny' | 'elementTemperament' | 'spiritualObstacles' | 'protectionEsma'>('ebcedDestiny');
 
@@ -46,9 +52,11 @@ export default function YildiznameScreen() {
 
     setLoading(true);
     try {
-      // Calculate Ebced values
-      const pEbced = calculateEbced(userName);
-      const mEbced = calculateEbced(motherName);
+      // Calculate Ebced values (dictionary-first; transliteration transparent)
+      const pDet = calculateEbcedDetailed(userName);
+      const mDet = calculateEbcedDetailed(motherName);
+      const pEbced = pDet.value;
+      const mEbced = mDet.value;
       const sum = pEbced + mEbced;
 
       // Traditional remainder calculation
@@ -62,9 +70,31 @@ export default function YildiznameScreen() {
       setMotherEbced(mEbced);
       setTotalEbced(sum);
       setComputedSign(sign);
+      setEbcedDetails({ user: pDet, mother: mDet });
+      setSystems(getYildiznameSystems(sum));
 
-      const cacheKey = `${userName}_${motherName}`.toLowerCase();
-      
+      // Birth mansion (Moon's menzil at the birth instant), if profile has it
+      let menzilLineStr: string | undefined;
+      if (profile?.birth_date && profile?.birth_time) {
+        try {
+          const [by, bm, bd] = profile.birth_date.split('-').map(Number);
+          const [bh, bmin] = profile.birth_time.split(':').map(Number);
+          const local = new Date(by, bm - 1, bd, bh, bmin);
+          const off = getTimezoneOffset(profile.timezone || 'Europe/Istanbul', local);
+          const utc = new Date(Date.UTC(by, bm - 1, bd, bh, bmin) - off * 3600000);
+          const moonLon = getPlanetLongitude('Moon', getJulianDaysSinceJ2000(utc));
+          const m = menzilFromLongitude(moonLon);
+          setBirthMenzil(m);
+          menzilLineStr = `Doğum Menzili (doğum anındaki Ay menzili): ${m.index}. menzil ${m.name} — ${m.natureTR}. ${m.theme}.`;
+        } catch (e) {
+          console.warn('Birth menzil computation failed:', e);
+        }
+      }
+
+      // Cache key must start with uid for RLS; fall back to undefined (no cache)
+      const nameSlug = `${userName}_${motherName}`.toLocaleLowerCase('tr-TR').replace(/[^a-z0-9ğüşıöç]/g, '').slice(0, 24);
+      const cacheKey = profile?.id ? `${profile.id}_yz_${nameSlug}` : undefined;
+
       // Fetch deep AI report
       const analysis = await fetchYildiznameAnalysis(
         userName,
@@ -72,7 +102,8 @@ export default function YildiznameScreen() {
         sum,
         sign.name,
         sign.element,
-        cacheKey
+        cacheKey,
+        menzilLineStr
       );
 
       setAnalysisReport(analysis);
@@ -214,7 +245,51 @@ export default function YildiznameScreen() {
                   <Text style={styles.detailLabel}>Toplam Ebced Değeri:</Text>
                   <Text style={[styles.detailVal, styles.goldText]}>{totalEbced}</Text>
                 </View>
+
+                {/* Calculation transparency: dictionary (Arabic orthography) vs phonetic */}
+                {ebcedDetails && (
+                  <Text style={styles.methodNote}>
+                    {ebcedDetails.user.source === 'dictionary'
+                      ? `"${userName.trim()}" ismi Arapça imlâ sözlüğünden hesaplandı (${ebcedDetails.user.arabic}).`
+                      : `"${userName.trim()}" ismi fonetik çeviriyle hesaplandı${ebcedDetails.user.ambiguous ? ` (çok karşılıklı harfler: ${ebcedDetails.user.ambiguousLetters.join(', ')} — geleneksel imlâya göre değer değişebilir)` : ''}.`}
+                    {' '}
+                    {ebcedDetails.mother.source === 'dictionary'
+                      ? `Anne ismi de sözlükten (${ebcedDetails.mother.arabic}).`
+                      : `Anne ismi fonetik çeviriyle hesaplandı${ebcedDetails.mother.ambiguous ? ' (belirsiz harfler mevcut)' : ''}.`}
+                  </Text>
+                )}
               </GlassCard>
+
+              {/* Traditional secondary systems: mod 7 planet + mod 4 temperament */}
+              {systems && (
+                <GlassCard style={styles.detailsCard}>
+                  <Text style={styles.sectionTitle}>Geleneksel Tali Sistemler</Text>
+
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Gezegen Tabı (mod 7):</Text>
+                    <Text style={styles.detailVal}>{systems.mod7.planet}</Text>
+                  </View>
+                  <Text style={styles.systemDesc}>Geleneksel öğretiye göre isim enerjiniz {systems.mod7.planet} tabında: {systems.mod7.theme} öne çıkar.</Text>
+
+                  <View style={[styles.detailRow, { marginTop: 12 }]}>
+                    <Text style={styles.detailLabel}>Ahlat-ı Erbaa Mizacı (mod 4):</Text>
+                    <Text style={[styles.detailVal, styles.goldText]}>{systems.mod4.name}</Text>
+                  </View>
+                  <Text style={styles.systemDesc}>{systems.mod4.quality} • {systems.mod4.element} elementi</Text>
+                  <Text style={styles.systemDesc}>{systems.mod4.description}</Text>
+                </GlassCard>
+              )}
+
+              {/* Birth mansion card */}
+              {birthMenzil && (
+                <GlassCard style={styles.detailsCard}>
+                  <Text style={styles.sectionTitle}>☾ Doğum Menziliniz (Menazil-i Kamer)</Text>
+                  <Text style={[styles.detailVal, styles.goldText, { fontSize: 16, marginBottom: 6 }]}>
+                    {birthMenzil.index}. Menzil: {birthMenzil.name} ({birthMenzil.arabicName})
+                  </Text>
+                  <Text style={styles.systemDesc}>{menzilGuidance(birthMenzil)}</Text>
+                </GlassCard>
+              )}
 
               {/* Planetary Rulers Card */}
               <GlassCard style={styles.rulersCard}>
@@ -273,6 +348,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 30,
+  },
+  methodNote: {
+    fontFamily: 'Inter',
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.4)',
+    lineHeight: 15,
+    marginTop: 10,
+  },
+  systemDesc: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: '#8B949E',
+    lineHeight: 18,
+    marginTop: 4,
   },
   loadingText: {
     fontFamily: 'Cinzel',

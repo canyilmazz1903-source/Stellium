@@ -5,6 +5,8 @@ import GlassCard from '@/components/glass/GlassCard';
 import PaywallAdModal from '@/components/ui/PaywallAdModal';
 import { useAuthStore } from '@/store/authStore';
 import { computeMoonCalendar, MOON_SIGN_GUIDANCE } from '@/utils/cosmicTools';
+import { getJulianDaysSinceJ2000, getPlanetLongitude } from '@/utils/astronomy';
+import { menzilFromLongitude, menzilGuidance } from '@/utils/menazil';
 
 const WEEKDAYS_TR = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
 const MONTHS_TR = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
@@ -55,6 +57,7 @@ export default function MoonCalendarScreen() {
           {calendar.map((d, idx) => {
             const isExpanded = expandedIdx === idx;
             const isEvent = d.isNewMoon || d.isFullMoon;
+            const menzil = menzilFromLongitude(getPlanetLongitude('Moon', getJulianDaysSinceJ2000(d.date)));
             return (
               <Pressable key={idx} onPress={() => setExpandedIdx(isExpanded ? null : idx)}>
                 <GlassCard style={[
@@ -74,6 +77,7 @@ export default function MoonCalendarScreen() {
                         {d.isToday ? '  •  BUGÜN' : ''}
                       </Text>
                       <Text style={styles.signText}>{d.signSymbol} Ay {d.moonSign} burcunda • {WEEKDAYS_TR[d.date.getDay()]}</Text>
+                      <Text style={styles.menzilText}>☾ {menzil.index}. Menzil: {menzil.name} — {menzil.natureTR}</Text>
                     </View>
                     {isEvent && (
                       <View style={styles.eventTag}>
@@ -84,6 +88,7 @@ export default function MoonCalendarScreen() {
                   {isExpanded && (
                     <Text style={styles.guidanceText}>
                       {MOON_SIGN_GUIDANCE[d.moonSign] || 'Ay bu burçta kendine has bir ritim taşır.'}
+                      {'\n\n☾ '}{menzilGuidance(menzil)}
                       {d.isNewMoon ? '\n\n🌑 Yeni Ay: Niyet tohumları ekmek, yeni başlangıçlar planlamak ve sayfa açmak için ayın en güçlü günü.' : ''}
                       {d.isFullMoon ? '\n\n🌕 Dolunay: Tamamlanma, hasat ve bırakma günü. Şükran pratiği ve enerji temizliği için idealdir.' : ''}
                     </Text>
@@ -224,6 +229,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     fontSize: 11,
     color: '#8B949E',
+    marginTop: 2,
+  },
+  menzilText: {
+    fontFamily: 'Inter',
+    fontSize: 10,
+    color: 'rgba(212, 175, 55, 0.75)',
     marginTop: 2,
   },
   eventTag: {
