@@ -216,16 +216,24 @@ export default function SynastryScreen() {
       const chart = computeNatalChart(year, month, day, hour, minute, latitude, longitude, tzOffset);
       setPartnerChart(chart);
 
-      const userSun = computedChart?.planets?.find(p => p.name === 'Sun')?.sign || 'Koç';
+      if (!computedChart) {
+        Alert.alert('Harita Gerekli', 'Sinastri için önce kendi doğum haritanızın hesaplanması gerekir. Profil bilgilerinizi kontrol edin.');
+        setLoading(false);
+        return;
+      }
 
-      const cacheKey = `${profile?.name || 'Kozmik Ruh'}_${partnerName}`.toLowerCase();
+      const userSun = computedChart.planets?.find(p => p.name === 'Sun')?.sign || 'Koç';
+
+      // Cache key must start with the auth uid so the RLS policy matches.
+      const partnerSlug = partnerName.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 24);
+      const cacheKey = profile?.id ? `${profile.id}_syn_${partnerSlug}` : undefined;
 
       const analysis = await fetchSynastryAnalysis(
         profile?.name || 'Kozmik Ruh',
         userSun,
-        computedChart?.planets || [],
+        computedChart,
         partnerName,
-        chart.planets,
+        chart,
         cacheKey
       );
 

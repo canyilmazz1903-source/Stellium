@@ -126,13 +126,15 @@ export default function TransitScreen() {
       try {
         const sun = computedChart.planets.find(p => p.name === 'Sun');
         const sunSign = sun ? sun.sign : 'Koç';
-        const todayStr = new Date().toISOString().split('T')[0];
 
+        // Plain profile id: valid_until (end of local day) handles daily
+        // expiry now, and the UNIQUE row is simply overwritten — no more
+        // one-row-per-day accumulation.
         const data = await fetchTransitAnalysis(
           profile.name || 'Kozmik Ruh',
           sunSign,
-          computedChart.planets,
-          profile.id ? `${profile.id}_${todayStr}` : undefined
+          computedChart,
+          profile.id
         );
         setReport(data);
       } catch (err) {

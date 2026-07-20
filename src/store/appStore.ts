@@ -78,8 +78,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         return;
       }
 
-      // Fetch fresh data
-      const data = await fetchDailyHoroscope(name, zodiacSign, birthDate, birthPlace);
+      // Fetch fresh data — hand the AI the fully computed chart (H6)
+      const data = await fetchDailyHoroscope(name, zodiacSign, birthDate, birthPlace, get().computedChart);
 
       // Store in cache
       await AsyncStorage.setItem(cacheKey, JSON.stringify(data));

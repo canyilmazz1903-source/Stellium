@@ -1,12 +1,38 @@
+// AI layer 2.0 — "hesap konuşur, model yorumlar".
+// Every request carries fully computed chart/sky data (built in utils/, never
+// by the model), every response is zod-validated (H10), the model chain is
+// centralized in prompts/common.ts (H9), and the Supabase cache respects
+// valid_until so transit reports can no longer go stale (H3).
+
 import type { ComputedChart } from '@/store/appStore';
 import { supabase } from './supabase';
-import { getJulianDaysSinceJ2000, getPlanetLongitude, getZodiacSign } from '@/utils/astronomy';
+import { getZodiacSign, HOUSE_SYSTEM_LABELS } from '@/utils/astronomy';
 import {
   composeNatalFallback,
   composeSynastryFallback,
   composeTransitFallback,
   SIGN_TRAITS,
 } from '@/utils/interpretations';
+import { computeTransitContacts, computeCurrentTransits } from '@/utils/transits';
+import { synastryAspects, houseOverlays, compositeChart } from '@/utils/synastry';
+import { currentMenzil, menzilLine } from '@/utils/menazil';
+import {
+  MODEL_CHAIN,
+  DailySchema,
+  TransitSchema,
+  SynastrySchema,
+  YildiznameSchema,
+  NatalSchema,
+  serializeChart,
+} from './prompts/common';
+import {
+  buildDailyPrompt,
+  buildTransitPrompt,
+  buildSynastryPrompt,
+  buildNatalPrompt,
+  buildYildiznamePrompt,
+} from './prompts/builders';
+import type { z } from 'zod';
 
 const rawKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
 const GEMINI_API_KEY = (rawKey.trim() === '' ||
@@ -14,17 +40,6 @@ const GEMINI_API_KEY = (rawKey.trim() === '' ||
   rawKey.toLowerCase().includes('your_') ||
   rawKey.toLowerCase().includes('todo') ||
   rawKey.toLowerCase().includes('api_key')) ? '' : rawKey;
-
-// Gemini 1.5 models were RETIRED by Google (API returns 404), which silently
-// broke every AI feature in this app. Use a fallback chain of current models
-// so a single retirement can never kill the AI layer again. The env var lets
-// us hotfix the model without an app release.
-const MODEL_CHAIN = [
-  process.env.EXPO_PUBLIC_GEMINI_MODEL,
-  'gemini-3.5-flash',
-  'gemini-2.5-flash',
-  'gemini-2.5-flash-lite',
-].filter((m): m is string => !!m && m.length > 0);
 
 async function callGemini(prompt: string, wantJson: boolean): Promise<string | null> {
   if (!GEMINI_API_KEY) return null;
@@ -61,37 +76,80 @@ async function callGemini(prompt: string, wantJson: boolean): Promise<string | n
   return null;
 }
 
-async function callGeminiJSON(prompt: string): Promise<any | null> {
-  const text = await callGemini(prompt, true);
-  if (!text) return null;
+function tryParseJson(text: string): any | null {
   try {
     const cleaned = text.replace(/^```json/m, '').replace(/```$/m, '').trim();
     return JSON.parse(cleaned);
-  } catch (e) {
-    console.warn('Gemini JSON parse failed:', e);
+  } catch {
     return null;
   }
 }
 
-// Cache Helpers
+// JSON call with zod validation + one corrective retry (H10).
+async function callGeminiValidated<T>(prompt: string, schema: z.ZodType<T>): Promise<T | null> {
+  const first = await callGemini(prompt, true);
+  if (!first) return null;
+
+  let parsed = tryParseJson(first);
+  let check = parsed !== null ? schema.safeParse(parsed) : null;
+  if (check && check.success) return check.data;
+
+  // One corrective round: tell the model exactly what went wrong.
+  const corrective =
+    prompt +
+    `\n\n[DÜZELTME] Önceki çıktın şema doğrulamasından geçmedi` +
+    `${check && !check.success ? ` (${check.error.issues.slice(0, 3).map(i => i.path.join('.') + ': ' + i.message).join('; ')})` : ''}. ` +
+    `İstenen anahtarların TAMAMINI içeren, her alanı dolu, SADECE ham JSON döndür.`;
+  const second = await callGemini(corrective, true);
+  if (!second) return null;
+  parsed = tryParseJson(second);
+  if (parsed === null) return null;
+  const check2 = schema.safeParse(parsed);
+  return check2.success ? check2.data : null;
+}
+
+// ---------- Cache (H2/H3 discipline) ----------
+
 async function getCachedAnalysis(profileId: string | undefined, analysisType: string) {
   if (!profileId) return null;
   try {
     const { data, error } = await supabase
       .from('chart_analysis_sections')
-      .select('content')
+      .select('content, valid_until, model_version')
       .eq('profile_id', profileId)
       .eq('analysis_type', analysisType)
       .eq('section_key', 'full_report')
       .single();
-    if (!error && data) return data.content;
+    if (error || !data) return null;
+
+    // H3: expired entries are dead entries.
+    if (data.valid_until && new Date(data.valid_until).getTime() < Date.now()) {
+      return null;
+    }
+    // Model retirement invalidates indefinite caches (natal etc.).
+    if (data.model_version && !MODEL_CHAIN.includes(data.model_version)) {
+      return null;
+    }
+    return data.content;
   } catch (e) {
     console.warn('Cache read error', e);
   }
   return null;
 }
 
-async function saveCachedAnalysis(profileId: string | undefined, analysisType: string, content: any, modelVersion: string) {
+function endOfLocalDayISO(): string {
+  const d = new Date();
+  d.setHours(23, 59, 59, 999);
+  return d.toISOString();
+}
+
+async function saveCachedAnalysis(
+  profileId: string | undefined,
+  analysisType: string,
+  content: any,
+  modelVersion: string,
+  validUntil: string | null
+) {
   if (!profileId) return;
   try {
     const { error } = await supabase
@@ -101,22 +159,31 @@ async function saveCachedAnalysis(profileId: string | undefined, analysisType: s
         analysis_type: analysisType,
         section_key: 'full_report',
         content,
-        model_version: modelVersion
-      });
+        model_version: modelVersion,
+        valid_until: validUntil,
+      }, { onConflict: 'profile_id,analysis_type,section_key' });
     if (error) console.warn('Cache save db error', error);
   } catch (e) {
     console.warn('Cache save error', e);
   }
 }
 
-// Compute today's transit planet signs locally (pure math, no network).
-function computeTodayTransits(): { name: string; sign: string }[] {
-  const jd = getJulianDaysSinceJ2000(new Date());
-  return ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'].map((name) => ({
-    name,
-    sign: getZodiacSign(getPlanetLongitude(name, jd)).turkish,
-  }));
+// ---------- Chart serialization helper ----------
+
+function chartToCtx(chart: ComputedChart, dstNote?: boolean) {
+  return {
+    planets: chart.planets,
+    ascendantSign: getZodiacSign(chart.ascendant)?.turkish,
+    midheavenSign: getZodiacSign(chart.midheaven)?.turkish,
+    houseSystem: chart.houseSystem ? HOUSE_SYSTEM_LABELS[chart.houseSystem] : undefined,
+    points: chart.points?.map(p => ({ turkish: p.turkish, sign: p.sign, house: p.house })),
+    aspects: chart.aspects,
+    patterns: chart.patterns?.map(p => ({ title: p.title, members: p.members })),
+    dstNote,
+  };
 }
+
+// ---------- Daily horoscope (H6: full natal + real sky context) ----------
 
 export interface HoroscopeResponse {
   general: string;
@@ -125,9 +192,25 @@ export interface HoroscopeResponse {
   shadowSelf: string; // Used for "Kozmik Ritüel & Zikir"
 }
 
+function moonPhaseName(): string {
+  const transits = computeCurrentTransits();
+  const sun = transits.find(t => t.name === 'Sun')!;
+  const moon = transits.find(t => t.name === 'Moon')!;
+  let diff = moon.longitude - sun.longitude;
+  if (diff < 0) diff += 360;
+  if (diff >= 352.5 || diff < 7.5) return 'Yeni Ay';
+  if (diff < 82.5) return 'Hilal (Büyüyen)';
+  if (diff < 97.5) return 'İlk Dördün';
+  if (diff < 172.5) return 'Şişkin Ay (Büyüyen)';
+  if (diff < 187.5) return 'Dolunay';
+  if (diff < 262.5) return 'Şişkin Ay (Küçülen)';
+  if (diff < 277.5) return 'Son Dördün';
+  return 'Balsamik Ay (Küçülen)';
+}
+
 function buildHoroscopeFallback(name: string, zodiacSign: string): HoroscopeResponse {
   const traits = SIGN_TRAITS[zodiacSign];
-  const transits = computeTodayTransits();
+  const transits = computeCurrentTransits();
   const tMoon = transits.find(t => t.name === 'Moon');
   const moonTraits = tMoon ? SIGN_TRAITS[tMoon.sign] : undefined;
 
@@ -157,49 +240,38 @@ export async function fetchDailyHoroscope(
   name: string,
   zodiacSign: string,
   birthDate: string,
-  birthPlace: string
+  birthPlace: string,
+  chart?: ComputedChart | null,
+  dstNote?: boolean
 ): Promise<HoroscopeResponse> {
   const fallback = buildHoroscopeFallback(name, zodiacSign);
 
-  const prompt = `
-[SYSTEM INSTRUCTION]
-Sen; İsviçre Efemerisi hassasiyetine vakıf, Keldani numerolojisini ve klasik/modern astroloji metodolojilerini birleştiren elit bir Astroloji Profesörüsün. Görevin, kullanıcının natal harita verilerine dayanarak yüzeysel olmaktan uzak, edebi derinliği yüksek, felsefi ve son derece detaylı analizler üretmektir.
+  const { transits, contacts } = chart
+    ? computeTransitContacts(chart.planets, chart.ascendant, chart.midheaven)
+    : { transits: computeCurrentTransits(), contacts: [] };
 
-[STRICT OUTPUT FORMAT RULES]
-1. Asla "Bugün şanslısınız" veya "Para gelebilir" gibi klişe, falcı ağzı cümleler kurma. Bunun yerine transitlerin ruhsal izdüşümlerini, ev yerleşimlerinin olumlu ve olumsuz yönlerini analiz et.
-2. Çıktı dilin mistik, bilge, sarmalayıcı ama aynı zamanda bilimsel ve analitik olmalıdır.
-3. Metin içi yapılandırmada başlıklar ve anahtar kelimeler için **kalın metin** kullan. Bölümler arasını net ayır.
-4. Her ana bölüm EN AZ 2 dolu paragraf (bölüm başına minimum 120 kelime) olmalıdır. Kısa ve yüzeysel çıktı kabul edilmez.
-5. Çıktıyı kesinlikle aşağıdaki JSON şemasında belirtilen anahtarlarla eksiksiz döndür.
+  const prompt = buildDailyPrompt({
+    name,
+    zodiacSign,
+    chart: chart ? chartToCtx(chart, dstNote) : null,
+    transits,
+    contacts,
+    moonPhaseName: moonPhaseName(),
+    menzilLine: menzilLine(currentMenzil()),
+  });
 
-Kullanıcının adı: "${name}"
-Öz Burcu: "${zodiacSign}"
-Doğum Parametreleri: ${birthDate} - ${birthPlace}
-Bugünün tarihi: ${new Date().toLocaleDateString('tr-TR')}
-
-JSON Çıktı Şeması:
-{
-  "cosmic_vibe": "Günün kozmik özeti (Mistik ve metaforik 1 cümle)",
-  "general_analysis": "En az 3 paragraftan oluşan felsefi ve psikolojik günlük analiz.",
-  "love_and_relationships": "Derinlemesine bağ ve ilişki dinamikleri yorumu (en az 2 paragraf).",
-  "career_and_manifest": "Kariyer, finans ve eylem planı tavsiyeleri (en az 2 paragraf).",
-  "ritual_of_the_day": {
-    "title": "Günün Ritüeli Başlığı",
-    "instructions": "Adım adım uygulanacak, elemente uygun majikal/psikolojik ritüel veya meditasyon."
-  }
-}
-  `;
-
-  const parsed = await callGeminiJSON(prompt);
+  const parsed = await callGeminiValidated(prompt, DailySchema);
   if (!parsed) return fallback;
 
   return {
-    general: parsed.general_analysis || parsed.general || fallback.general,
-    love: parsed.love_and_relationships || parsed.love || fallback.love,
-    career: parsed.career_and_manifest || parsed.career || fallback.career,
-    shadowSelf: `**Kozmik Titreşim:** ${parsed.cosmic_vibe || 'Mistik dengelenme'}\n\n**Ritüel: ${parsed.ritual_of_the_day?.title || 'Kozmik Bağlantı'}**\n${parsed.ritual_of_the_day?.instructions || 'Derin nefes meditasyonu yapın.'}`
+    general: parsed.general_analysis,
+    love: parsed.love_and_relationships,
+    career: parsed.career_and_manifest,
+    shadowSelf: `**Kozmik Titreşim:** ${parsed.cosmic_vibe}\n\n**Ritüel: ${parsed.ritual_of_the_day.title}**\n${parsed.ritual_of_the_day.instructions}`,
   };
 }
+
+// ---------- Transit ----------
 
 export interface TransitAnalysisResult {
   potentials: string;
@@ -211,46 +283,27 @@ export interface TransitAnalysisResult {
 export async function fetchTransitAnalysis(
   name: string,
   zodiacSign: string,
-  planets: any[],
+  chart: ComputedChart,
   profileId?: string
 ): Promise<TransitAnalysisResult | string> {
   const cached = await getCachedAnalysis(profileId, 'transit');
   if (cached) return cached as TransitAnalysisResult;
 
-  const transits = computeTodayTransits();
-  const fallbackReport = composeTransitFallback(name, planets, transits);
+  const { transits, contacts } = computeTransitContacts(chart.planets, chart.ascendant, chart.midheaven);
+  const fallbackReport = composeTransitFallback(name, chart.planets, transits.map(t => ({ name: t.name, sign: t.sign })));
 
-  const prompt = `
-[SYSTEM INSTRUCTION]
-Sen transit gökyüzü açılarını ve natal haritayı kıyaslayan elit bir astroloji profesörüsün.
-
-[STRICT OUTPUT FORMAT RULES]
-Aşağıdaki anahtarlarla tam olarak bir JSON objesi dönmelisin. ASLA markdown formatında (örneğin \`\`\`json) sarmalama. Doğrudan ham JSON döndür. Bölümlerin içeriğinde paragraf ve **kalın metin** kullanabilirsin.
-Her bölüm EN AZ 2-3 dolu paragraf (minimum 150 kelime) olmalıdır. Somut transit-natal temaslarına (hangi gezegen hangi natal gezegeni/evi tetikliyor) atıf yap; genel geçer laflardan kaçın.
-
-JSON Şeması:
-{
-  "potentials": "Gezegen transitlerinin genel olarak açığa çıkardığı gizli potansiyeller...",
-  "houseReflections": "Transitlerin evlere göre yansımaları (Kariyer, aşk, para)...",
-  "risks": "Önümüzdeki günlerde dikkat edilmesi gereken sert transit açıları ve kriz ihtimalleri...",
-  "opportunities": "Değerlendirilmesi gereken kadersel fırsatlar ve şanslı günler..."
-}
-
-Kullanıcı: "${name}", Burç: "${zodiacSign}"
-Natal Gezegen Konumları: ${JSON.stringify(planets)}
-BUGÜNÜN GERÇEK GÖKYÜZÜ (hesaplanmış transit konumları): ${JSON.stringify(transits)}
-Bugünün tarihi: ${new Date().toLocaleDateString('tr-TR')}
-Bu gerçek transit konumlarını natal yerleşimlerle kıyaslayarak yorumla.
-  `;
-
-  const parsed = await callGeminiJSON(prompt);
-  if (parsed && parsed.potentials && parsed.risks) {
-    await saveCachedAnalysis(profileId, 'transit', parsed, MODEL_CHAIN[0]);
-    return parsed as TransitAnalysisResult;
+  const prompt = buildTransitPrompt({ name, zodiacSign, chart: chartToCtx(chart), transits, contacts });
+  const parsed = await callGeminiValidated(prompt, TransitSchema);
+  if (parsed) {
+    // H3: a transit reading is only valid until the end of the local day.
+    await saveCachedAnalysis(profileId, 'transit', parsed, MODEL_CHAIN[0], endOfLocalDayISO());
+    return parsed;
   }
 
   return fallbackReport;
 }
+
+// ---------- Synastry ----------
 
 export interface SynastryAnalysisResult {
   loveAndAttraction: string;
@@ -262,44 +315,43 @@ export interface SynastryAnalysisResult {
 export async function fetchSynastryAnalysis(
   p1Name: string,
   p1Sign: string,
-  p1Planets: any[],
+  p1Chart: ComputedChart,
   p2Name: string,
-  p2Planets: any[],
+  p2Chart: ComputedChart,
   cacheKey?: string
 ): Promise<SynastryAnalysisResult | string> {
   const cached = await getCachedAnalysis(cacheKey, 'synastry');
   if (cached) return cached as SynastryAnalysisResult;
 
-  const fallbackReport = composeSynastryFallback(p1Name, p1Planets, p2Name, p2Planets);
+  const fallbackReport = composeSynastryFallback(p1Name, p1Chart.planets, p2Name, p2Chart.planets);
 
-  const prompt = `
-[SYSTEM INSTRUCTION]
-Sen ilişki astrolojisi ve harita sinastrisi uyumu konusunda elit bir astrologsun.
+  const interAspects = synastryAspects(p1Chart.planets, p2Chart.planets);
+  const overlays = [
+    ...houseOverlays(p2Chart.planets, p1Chart.houses, '2.', '1.'),
+    ...houseOverlays(p1Chart.planets, p2Chart.houses, '1.', '2.'),
+  ];
+  const composite = compositeChart(p1Chart.planets, p2Chart.planets);
 
-[STRICT OUTPUT FORMAT RULES]
-Aşağıdaki anahtarlarla tam olarak bir JSON objesi dönmelisin. ASLA markdown formatında (örneğin \`\`\`json) sarmalama. Doğrudan ham JSON döndür. Bölümlerin içeriğinde paragraf ve **kalın metin** kullanabilirsin.
-Her bölüm EN AZ 2-3 dolu paragraf (minimum 150 kelime) olmalıdır. İki haritanın SOMUT gezegen kombinasyonlarına (ör. birinin Venüs'ü ile diğerinin Mars'ı) atıf yaparak yaz; genel geçer uyum laflarından kaçın.
+  const prompt = buildSynastryPrompt({
+    p1Name,
+    p2Name,
+    p1Chart: chartToCtx(p1Chart),
+    p2Planets: p2Chart.planets.map(p => ({ name: p.name, sign: p.sign, house: p.house })),
+    interAspects,
+    overlays,
+    composite,
+  });
 
-JSON Şeması:
-{
-  "loveAndAttraction": "Güneş, Ay, Venüs ve Mars etkileşimleri üzerinden romantik çekim...",
-  "communication": "Merkür açılarının aranızdaki konuşma diline etkisi...",
-  "friction": "Uyuşmazlıklar, sürtüşmeler, Satürn/Plüton ego savaşları...",
-  "harmonyGuide": "Aranızdaki uyumu artırmak için pratik tavsiyeler..."
-}
-
-1. Kişi: "${p1Name}", Güneş: "${p1Sign}", Gezegenleri: ${JSON.stringify(p1Planets)}
-2. Kişi: "${p2Name}", Gezegenleri: ${JSON.stringify(p2Planets)}
-  `;
-
-  const parsed = await callGeminiJSON(prompt);
-  if (parsed && parsed.loveAndAttraction && parsed.harmonyGuide) {
-    await saveCachedAnalysis(cacheKey, 'synastry', parsed, MODEL_CHAIN[0]);
-    return parsed as SynastryAnalysisResult;
+  const parsed = await callGeminiValidated(prompt, SynastrySchema);
+  if (parsed) {
+    await saveCachedAnalysis(cacheKey, 'synastry', parsed, MODEL_CHAIN[0], null);
+    return parsed;
   }
 
   return fallbackReport;
 }
+
+// ---------- Yıldızname ----------
 
 export interface YildiznameAnalysisResult {
   ebcedDestiny: string;
@@ -310,7 +362,7 @@ export interface YildiznameAnalysisResult {
 
 function buildYildiznameFallback(name: string, motherName: string, totalEbced: number, sign: string, element: string): YildiznameAnalysisResult {
   const traits = SIGN_TRAITS[sign];
-  const reduced = ((totalEbced - 1) % 9) + 1; // numerological root 1-9
+  const reduced = ((totalEbced - 1) % 9) + 1;
 
   return {
     ebcedDestiny:
@@ -336,44 +388,25 @@ export async function fetchYildiznameAnalysis(
   totalEbced: number,
   sign: string,
   element: string,
-  cacheKey?: string
+  cacheKey?: string,
+  birthMenzilLine?: string
 ): Promise<YildiznameAnalysisResult | string> {
   const cached = await getCachedAnalysis(cacheKey, 'yildizname');
   if (cached) return cached as YildiznameAnalysisResult;
 
   const fallbackReport = buildYildiznameFallback(name, motherName, totalEbced, sign, element);
 
-  const prompt = `
-[SYSTEM INSTRUCTION]
-Sen geleneksel Doğu mistisizmi, Ebced hesabı, yıldıznameler ve Havas ilmi konusunda uzman bir müneccimisin.
-
-[STRICT OUTPUT FORMAT RULES]
-Aşağıdaki anahtarlarla tam olarak bir JSON objesi dönmelisin. ASLA markdown formatında (örneğin \`\`\`json) sarmalama. Doğrudan ham JSON döndür. Bölümlerin içeriğinde paragraf ve **kalın metin** kullanabilirsin.
-Her bölüm EN AZ 2 dolu paragraf (minimum 120 kelime) olmalıdır. Verilen Ebced değerine ve burca özgü SOMUT yorumlar yap.
-
-JSON Şeması:
-{
-  "ebcedDestiny": "Kullanıcının isminin ve anne isminin ebced rezonansı, kader çizgisi...",
-  "elementTemperament": "Yıldız burcu ve elementin mizaç potansiyelleri...",
-  "spiritualObstacles": "Manevi engeller, nazara açıklık durumu, dikkat edilmesi gerekenler...",
-  "protectionEsma": "Nazar ve engelleri aşmak için koruyucu esmalar (adetleriyle), dualar..."
-}
-
-Kullanıcı adı: "${name}"
-Anne adı: "${motherName}"
-Toplam Ebced Değeri: ${totalEbced}
-Yıldızname Burcu: "${sign}"
-Element: "${element}"
-  `;
-
-  const parsed = await callGeminiJSON(prompt);
-  if (parsed && parsed.ebcedDestiny && parsed.protectionEsma) {
-    await saveCachedAnalysis(cacheKey, 'yildizname', parsed, MODEL_CHAIN[0]);
-    return parsed as YildiznameAnalysisResult;
+  const prompt = buildYildiznamePrompt({ name, motherName, totalEbced, sign, element, birthMenzilLine });
+  const parsed = await callGeminiValidated(prompt, YildiznameSchema);
+  if (parsed) {
+    await saveCachedAnalysis(cacheKey, 'yildizname', parsed, MODEL_CHAIN[0], null);
+    return parsed;
   }
 
   return fallbackReport;
 }
+
+// ---------- Daily shadows ----------
 
 export async function fetchDailyShadows(
   name: string,
@@ -389,22 +422,27 @@ export async function fetchDailyShadows(
     `${SIGN_TRAITS[moonSign] ? `Ay'ın ${moonSign} frekansı özellikle ${SIGN_TRAITS[moonSign].shadow} temasını kolektif olarak tetikliyor. ` : ''}` +
     `İçinizdeki direnç noktalarını gözlemleyin; öfkenizi dışa yansıtmak yerine, bu enerjiyi içsel sınırlarınızı belirlemek ve disiplin kazanmak için dönüştürün. ${moonPhase === 'waning' ? 'Küçülen Ay, bırakma çalışmaları için güçlü bir müttefik: bugün bir alışkanlığı, bir kırgınlığı veya bir korkuyu bilinçli olarak serbest bırakın.' : 'Büyüyen Ay, niyet tohumları için verimli toprak: gölgenizin karşıtı olan erdemi (sabır, cesaret, şefkat) bugün bilinçli pratik edin.'}`;
 
+  const { contacts } = computeTransitContacts(birthChart.planets, birthChart.ascendant, birthChart.midheaven);
+  const contactLines = contacts.slice(0, 6).map(c => `- ${c.description}`).join('\n');
+
   const prompt = `
 [SYSTEM INSTRUCTION]
-Sen; geleneksel astroloji, ruhsal gelişim ve karma astrolojisi konusunda uzman bir astrologsun. Kullanıcının günlük gökyüzü transitlerini ve natal haritasındaki gezegen yerleşimlerini karşılaştırarak, bugün yüzleşmesi gereken olası gölge yanlarını ve ruhsal direnç noktalarını analiz et. En az 2 dolu paragraf yaz; somut yerleşimlere atıf yap ve pratik bir dönüştürme önerisiyle bitir.
+Sen; geleneksel astroloji, ruhsal gelişim ve karma astrolojisi konusunda uzman bir astrologsun. Aşağıda kullanıcının natal yerleşimleri ve BUGÜNÜN HESAPLANMIŞ transit temasları verilmiştir. Bugün yüzleşilmesi gereken gölge yanları ve ruhsal direnç noktalarını analiz et. En az 2 dolu paragraf yaz; SADECE verilen yerleşim/temaslara atıf yap ve pratik bir dönüştürme önerisiyle bitir. Sağlık konusunda kesin hüküm verme.
 
 Kullanıcı Adı: "${name}"
-Doğum Haritası Konumları:
-- Natal Mars: ${mars.sign} burcunda, ${mars.house}. evde
-- Natal Satürn: ${saturn.sign} burcunda, ${saturn.house}. evde
-Mevcut Transit Gökyüzü:
-- Transit Ay: ${moonSign} burcunda
-- Ay Fazı: ${moonPhase === 'waxing' ? 'Büyüyen Ay' : 'Küçülen Ay'}
+Natal Mars: ${mars.sign} burcunda, ${mars.house}. evde
+Natal Satürn: ${saturn.sign} burcunda, ${saturn.house}. evde
+Transit Ay: ${moonSign} burcunda — Ay Fazı: ${moonPhase === 'waxing' ? 'Büyüyen Ay' : 'Küçülen Ay'}
+${menzilLine(currentMenzil())}
+BUGÜNÜN TEMASLARI:
+${contactLines || '- Bugün dar orblu majör temas yok.'}
   `;
 
   const text = await callGemini(prompt, false);
   return text || fallback;
 }
+
+// ---------- Full natal analysis ----------
 
 export interface ChartAnalysisResult {
   bigThree: string;
@@ -420,7 +458,7 @@ export interface ChartAnalysisResult {
 export async function fetchFullChartAnalysis(
   name: string,
   birthChart: ComputedChart,
-  aspects: any[],
+  _aspects: any[],
   profileId?: string
 ): Promise<ChartAnalysisResult | string> {
   const cached = await getCachedAnalysis(profileId, 'natal');
@@ -428,37 +466,15 @@ export async function fetchFullChartAnalysis(
 
   const fallbackReport = composeNatalFallback(name, birthChart.planets);
 
-  const prompt = `
-[SYSTEM INSTRUCTION]
-Sen; İsviçre Efemerisi hassasiyetine vakıf, Keldani numerolojisini ve astroloji metodolojilerini birleştiren elit bir Astroloji Profesörüsün. Kullanıcının natal harita verilerini sentezleyerek derin bir mizaç raporu oluşturacaksın.
-
-[STRICT OUTPUT FORMAT RULES]
-Aşağıdaki anahtarlarla tam olarak bir JSON objesi dönmelisin. ASLA markdown formatında (örneğin \`\`\`json) sarmalama. Doğrudan ham JSON döndür. Bölümlerin içeriğinde kendi içinde **kalın** ve paragraf kullanabilirsin.
-Her bölüm EN AZ 2-3 dolu paragraf (minimum 150 kelime) olmalıdır. Verilen SOMUT yerleşimlere (gezegen/burç/ev/açı) isim vererek atıf yap; genel geçer burç yorumu yazma.
-
-JSON Şeması:
-{
-  "bigThree": "Yükselen, Güneş ve Ay konumları ile element dengesinin sentezi...",
-  "mentalAndCommunication": "Merkür konumuna ve açılarına göre zeka, öğrenme...",
-  "loveAndFinance": "Venüs yerleşimi ve açılarına göre ilişkiler...",
-  "willpowerAndStruggle": "Mars konumuna göre motivasyon kaynakları...",
-  "saturnLessons": "Satürn yerleşimine ve açılara göre hayat sınavları...",
-  "projection": "Önümüzdeki 6 aylık süreçte eyleme geçme, yatırım veya risk tarihleri...",
-  "currentRisks": "Kullanıcının bugünlerde hayatında en çok temkinli olması gereken konular...",
-  "longTerm": "Gelecek yıllarda dikkat edilmesi gereken uzun vadeli kozmik riskler..."
-}
-
-Kullanıcının Adı: "${name}"
-Doğum Haritası Gezegenleri: ${JSON.stringify(birthChart.planets)}
-Ev Başlangıçları: ${JSON.stringify(birthChart.houses)}
-Gezegen Açıları: ${JSON.stringify(aspects)}
-  `;
-
-  const parsed = await callGeminiJSON(prompt);
-  if (parsed && parsed.bigThree && parsed.saturnLessons) {
-    await saveCachedAnalysis(profileId, 'natal', parsed, MODEL_CHAIN[0]);
-    return parsed as ChartAnalysisResult;
+  const prompt = buildNatalPrompt({ name, chart: chartToCtx(birthChart) });
+  const parsed = await callGeminiValidated(prompt, NatalSchema);
+  if (parsed) {
+    await saveCachedAnalysis(profileId, 'natal', parsed, MODEL_CHAIN[0], null);
+    return parsed;
   }
 
   return fallbackReport;
 }
+
+// Re-export for callers that need the serializer (e.g. debug screens)
+export { serializeChart };
