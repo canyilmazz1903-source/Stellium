@@ -58,7 +58,10 @@ export default function RootLayout() {
   // 0. Initialize AdMob in the background (never blocks startup on failure)
   useEffect(() => {
     initAds();
+    useAppStore.getState().loadHouseSystem();
   }, []);
+
+  const houseSystem = useAppStore((s) => s.houseSystem);
 
   // 1. Initialize Supabase session on startup
   useEffect(() => {
@@ -99,12 +102,12 @@ export default function RootLayout() {
       const birthDateLocal = new Date(year, month - 1, day, hour, minute);
       const tzOffset = getTimezoneOffset(tzName, birthDateLocal);
 
-      const chart = computeNatalChart(year, month, day, hour, minute, lat, lon, tzOffset);
+      const chart = computeNatalChart(year, month, day, hour, minute, lat, lon, tzOffset, houseSystem);
       useAppStore.getState().setComputedChart(chart);
     } catch (e) {
       console.warn('Error calculating natal chart in RootLayout:', e);
     }
-  }, [profile]);
+  }, [profile, houseSystem]);
 
   // 3. Handle navigation gating
   useEffect(() => {

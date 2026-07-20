@@ -1,5 +1,31 @@
-const RAD = Math.PI / 180;
-const DEG = 180 / Math.PI;
+// Astrology computation facade. Public API is kept stable for the whole app;
+// internally everything now runs on the precision ephemeris (astronomy-engine,
+// VSOP87-class, apparent positions of date) instead of the old simplified
+// Kepler elements (which drifted up to ~0.5° on the Moon — enough to put a
+// cusp-adjacent Moon or Ascendant in the wrong sign).
+//
+// The legacy engine lives in git history (pre-v1.4 astronomy.ts) and its
+// golden replacement is verified by __tests__/ephemeris.test.ts.
+
+import {
+  bodyLongitude,
+  bodySpeed,
+  isRetrograde as ephIsRetrograde,
+  daysSinceJ2000ToDate,
+  meanObliquity,
+  greenwichSiderealDeg,
+  trueLunarNode,
+  meanLunarNode,
+  meanLilith,
+  chironLongitude,
+  sunRiseSet,
+  isSunAboveHorizon,
+} from './ephemeris';
+import { computeHouses, HouseSystem, HOUSE_SYSTEM_LABELS } from './houseSystems';
+import { detectPatterns, DetectedPattern } from './patterns';
+
+export { HOUSE_SYSTEM_LABELS };
+export type { HouseSystem, DetectedPattern };
 
 // Normalize angle to [0, 360)
 export function normalize360(angle: number): number {
@@ -8,14 +34,12 @@ export function normalize360(angle: number): number {
   return a;
 }
 
-// Convert date to Julian Day count since J2000.0 (January 1.5, 2000 UTC)
+// Convert date to day count since J2000.0 (kept as the app-wide time unit)
 export function getJulianDaysSinceJ2000(date: Date): number {
   const y = date.getUTCFullYear();
   const m = date.getUTCMonth() + 1;
   const d = date.getUTCDate();
   const h = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
-
-  // Formula from astronomical algorithms (valid for years 1901-2099)
   const jd = 367 * y - Math.floor(7 * (y + Math.floor((m + 9) / 12)) / 4) + Math.floor(275 * m / 9) + d + h / 24 - 730531.5;
   return jd;
 }
@@ -42,286 +66,40 @@ export function getZodiacSign(longitude: number) {
   return ZODIAC_SIGNS[index];
 }
 
-// Calculate the obliquity of the ecliptic
-function getObliquity(d: number): number {
-  return 23.4393 - 3.563e-7 * d;
-}
-
-// Solve Kepler's Equation: E - e * sin(E) = M
-function solveKepler(M: number, e: number): number {
-  const mRad = M * RAD;
-  let E = mRad; // Initial guess
-  for (let i = 0; i < 15; i++) {
-    const delta = (E - e * Math.sin(E) - mRad) / (1 - e * Math.cos(E));
-    E = E - delta;
-    if (Math.abs(delta) < 1e-6) break;
-  }
-  return E;
-}
-
-// Compute heliocentric positions for a specific day count d
-function getHeliocentricPlanet(planet: string, d: number) {
-  let N = 0, i = 0, w = 0, a = 0, e = 0, M = 0;
-
-  switch (planet) {
-    case 'Mercury':
-      N = 48.3313 + 3.24587e-5 * d;
-      i = 7.0047 + 5.00e-8 * d;
-      w = 29.1241 + 1.01444e-5 * d;
-      a = 0.387098;
-      e = 0.205635 + 5.59e-10 * d;
-      M = 168.6562 + 4.0923344368 * d;
-      break;
-    case 'Venus':
-      N = 76.6799 + 2.46590e-5 * d;
-      i = 3.3946 + 2.75e-8 * d;
-      w = 54.891 + 1.38374e-5 * d;
-      a = 0.72333;
-      e = 0.006773 - 1.302e-9 * d;
-      M = 48.0052 + 1.6021302244 * d;
-      break;
-    case 'Mars':
-      N = 49.5574 + 2.11081e-5 * d;
-      i = 1.8497 - 1.78e-8 * d;
-      w = 286.5016 + 2.92961e-5 * d;
-      a = 1.523688;
-      e = 0.093405 + 2.51e-9 * d;
-      M = 18.6581 + 0.5240207766 * d;
-      break;
-    case 'Jupiter':
-      N = 100.4542 + 2.76854e-5 * d;
-      i = 1.303 - 1.55e-7 * d;
-      w = 273.8777 + 1.64505e-5 * d;
-      a = 5.20256;
-      e = 0.048498 + 4.46e-9 * d;
-      M = 19.895 + 0.0830853001 * d;
-      break;
-    case 'Saturn':
-      N = 113.6655 + 2.3898e-5 * d;
-      i = 2.4886 - 1.08e-7 * d;
-      w = 339.3939 + 2.97661e-5 * d;
-      a = 9.55475;
-      e = 0.054163 - 3.67e-9 * d;
-      M = 316.967 + 0.0334442282 * d;
-      break;
-    case 'Uranus':
-      N = 74.0005 + 1.3978e-5 * d;
-      i = 0.7733 + 1.9e-8 * d;
-      w = 96.6612 + 3.0565e-5 * d;
-      a = 19.18171 - 1.55e-8 * d;
-      e = 0.047318 + 7.45e-9 * d;
-      M = 142.5905 + 0.011725806 * d;
-      break;
-    case 'Neptune':
-      N = 131.7806 + 3.0175e-5 * d;
-      i = 1.77 - 2.55e-7 * d;
-      w = 272.8461 - 6.02e-6 * d;
-      a = 30.05826 + 3.313e-8 * d;
-      e = 0.008606 + 2.15e-9 * d;
-      M = 260.2471 + 0.005995147 * d;
-      break;
-    case 'Pluto':
-      // Analytical Keplerian elements approximation for Pluto
-      N = 110.30347 + 1.3983e-5 * d;
-      i = 17.14175 + 1.1e-8 * d;
-      w = 113.76329 + 3.2847e-5 * d;
-      a = 39.481686 - 8.2e-8 * d;
-      e = 0.248807 + 6.46e-9 * d;
-      M = 14.882 + 0.0039644259 * d;
-      break;
-  }
-
-  N = normalize360(N);
-  w = normalize360(w);
-  M = normalize360(M);
-
-  const E = solveKepler(M, e);
-
-  // Rectangular coordinates in orbital plane
-  const xv = a * (Math.cos(E) - e);
-  const yv = a * Math.sqrt(1 - e * e) * Math.sin(E);
-
-  const v = Math.atan2(yv, xv);
-  const r = Math.sqrt(xv * xv + yv * yv);
-
-  // Heliocentric 3D coordinates
-  const cosN = Math.cos(N * RAD);
-  const sinN = Math.sin(N * RAD);
-  const cosVw = Math.cos((v * DEG + w) * RAD);
-  const sinVw = Math.sin((v * DEG + w) * RAD);
-  const cosi = Math.cos(i * RAD);
-
-  const xh = r * (cosN * cosVw - sinN * sinVw * cosi);
-  const yh = r * (sinN * cosVw + cosN * sinVw * cosi);
-  const zh = r * sinVw * Math.sin(i * RAD);
-
-  return { xh, yh, zh };
-}
-
-// Compute geocentric coordinates for the Sun
-function getGeocentricSun(d: number) {
-  const w = normalize360(282.9404 + 4.70935e-5 * d);
-  const e = 0.016709 - 1.151e-9 * d;
-  const M = normalize360(356.047 + 0.9856002585 * d);
-
-  const E = solveKepler(M, e);
-
-  const xv = Math.cos(E) - e;
-  const yv = Math.sqrt(1 - e * e) * Math.sin(E);
-
-  const v = Math.atan2(yv, xv);
-  const r = Math.sqrt(xv * xv + yv * yv);
-
-  const lon = normalize360(v * DEG + w);
-
-  const xs = r * Math.cos(lon * RAD);
-  const ys = r * Math.sin(lon * RAD);
-
-  return { xs, ys, lon, r };
-}
-
-// Calculate Moon coordinates (Geocentric directly, with Sun perturbations)
-function getGeocentricMoon(d: number) {
-  const N = normalize360(125.1228 - 0.0529538083 * d);
-  const i = 5.1454;
-  const w = normalize360(318.0634 + 0.1643573223 * d);
-  const e = 0.0549;
-  const M = normalize360(115.3654 + 13.0649929509 * d);
-
-  const E = solveKepler(M, e);
-
-  const xv = Math.cos(E) - e;
-  const yv = Math.sqrt(1 - e * e) * Math.sin(E);
-
-  const v = Math.atan2(yv, xv);
-  const r = 60.2666 * Math.sqrt(xv * xv + yv * yv); // Earth radii
-
-  // Unperturbed geocentric ecliptic longitude/latitude
-  const cosN = Math.cos(N * RAD);
-  const sinN = Math.sin(N * RAD);
-  const cosVw = Math.cos((v * DEG + w) * RAD);
-  const sinVw = Math.sin((v * DEG + w) * RAD);
-  const cosi = Math.cos(i * RAD);
-
-  const xecl = r * (cosN * cosVw - sinN * sinVw * cosi);
-  const yecl = r * (sinN * cosVw + cosN * sinVw * cosi);
-  const zecl = r * sinVw * Math.sin(i * RAD);
-
-  let lon = normalize360(Math.atan2(yecl, xecl) * DEG);
-  let lat = Math.atan2(zecl, Math.sqrt(xecl * xecl + yecl * yecl)) * DEG;
-
-  // Perturbations from the Sun (extremely important for the Moon)
-  const Ls = normalize360(282.9404 + 4.70935e-5 * d + 356.047 + 0.9856002585 * d); // Sun mean longitude
-  const Lm = normalize360(N + w + M); // Moon mean longitude
-  const Ms = normalize360(356.047 + 0.9856002585 * d); // Sun mean anomaly
-  const Mm = M; // Moon mean anomaly
-  const D = normalize360(Lm - Ls); // Mean elongation of Moon
-  const F = normalize360(Lm - N); // Moon argument of latitude
-
-  // Apply primary perturbations
-  const dLon = 
-    -1.274 * Math.sin((Mm - 2 * D) * RAD) +
-    0.658 * Math.sin(2 * D * RAD) -
-    0.186 * Math.sin(Ms * RAD) -
-    0.059 * Math.sin((2 * Mm - 2 * D) * RAD) -
-    0.057 * Math.sin((Mm - 2 * D + Ms) * RAD) +
-    0.053 * Math.sin((Mm + 2 * D) * RAD) +
-    0.046 * Math.sin((2 * D - Ms) * RAD) +
-    0.041 * Math.sin((Mm - Ms) * RAD) -
-    0.035 * Math.sin(D * RAD) -
-    0.031 * Math.sin((Mm + Ms) * RAD) -
-    0.015 * Math.sin((2 * F - 2 * D) * RAD) +
-    0.011 * Math.sin((Mm - 4 * D) * RAD);
-
-  const dLat = 
-    -0.173 * Math.sin((F - 2 * D) * RAD) -
-    0.055 * Math.sin((F - 2 * D - Mm) * RAD) -
-    0.046 * Math.sin((F - 2 * D + Mm) * RAD) +
-    0.033 * Math.sin((F + 2 * D) * RAD) +
-    0.017 * Math.sin((2 * Mm + F) * RAD);
-
-  lon = normalize360(lon + dLon);
-  lat = lat + dLat;
-
-  return { lon, lat };
-}
-
-// Calculate geocentric longitude of a planet
+// Apparent geocentric ecliptic longitude of date (precision engine).
 export function getPlanetLongitude(planet: string, d: number): number {
-  if (planet === 'Sun') {
-    return getGeocentricSun(d).lon;
-  }
-  if (planet === 'Moon') {
-    return getGeocentricMoon(d).lon;
-  }
-
-  const { xh, yh } = getHeliocentricPlanet(planet, d);
-  const { xs, ys } = getGeocentricSun(d);
-
-  // Translate to geocentric
-  const xg = xh + xs;
-  const yg = yh + ys;
-
-  // Convert to ecliptic longitude
-  const lon = normalize360(Math.atan2(yg, xg) * DEG);
-  return lon;
+  return bodyLongitude(planet, daysSinceJ2000ToDate(d));
 }
 
-// Check if a planet is retrograde by comparing longitude now vs 0.1 days later
+// Daily motion in deg/day; negative = retrograde.
+export function getPlanetSpeed(planet: string, d: number): number {
+  return bodySpeed(planet, daysSinceJ2000ToDate(d));
+}
+
 export function getIsRetrograde(planet: string, d: number): boolean {
-  if (planet === 'Sun' || planet === 'Moon') {
-    return false; // Sun and Moon are never retrograde
-  }
-  const lon1 = getPlanetLongitude(planet, d - 0.05);
-  const lon2 = getPlanetLongitude(planet, d + 0.05);
-  
-  let diff = lon2 - lon1;
-  // Handle boundary wrapping
-  if (diff > 180) diff -= 360;
-  if (diff < -180) diff += 360;
-
-  return diff < 0;
+  return ephIsRetrograde(planet, daysSinceJ2000ToDate(d));
 }
 
-// House cusps calculation using the Equal House system
+// Legacy Equal-house helper kept for backward compatibility.
 export function getHouseCusps(ramc: number, lat: number, obliquity: number) {
-  // Ascendant Calculation
-  const ramcRad = ramc * RAD;
-  const latRad = lat * RAD;
-  const oblRad = obliquity * RAD;
-
-  const y = Math.cos(ramcRad);
-  const x = -Math.sin(ramcRad) * Math.cos(oblRad) - Math.tan(latRad) * Math.sin(oblRad);
-  
-  const ascendant = normalize360(Math.atan2(y, x) * DEG);
-  
-  // Midheaven (MC) Calculation
-  const mc = normalize360(Math.atan2(Math.sin(ramcRad), Math.cos(ramcRad) * Math.cos(oblRad)) * DEG);
-
-  // In Equal House system, 1st House Cusp is the Ascendant.
-  // Each subsequent cusp is exactly 30 degrees further.
-  const houses: number[] = [];
-  for (let i = 0; i < 12; i++) {
-    houses.push(normalize360(ascendant + i * 30));
-  }
-
-  return { ascendant, midheaven: mc, houses };
+  const res = computeHouses(ramc, lat, obliquity, 'equal');
+  return { ascendant: res.ascendant, midheaven: res.midheaven, houses: res.houses };
 }
 
-// Determine which house a specific longitude falls into
+// Determine which house a longitude falls into (full 12-house wrap-safe scan).
 export function getPlanetHouse(longitude: number, houses: number[]): number {
   const norm = normalize360(longitude);
-  for (let i = 0; i < 11; i++) {
+  for (let i = 0; i < 12; i++) {
     const cuspCurrent = houses[i];
-    const cuspNext = houses[i + 1];
+    const cuspNext = houses[(i + 1) % 12];
     if (cuspNext > cuspCurrent) {
       if (norm >= cuspCurrent && norm < cuspNext) return i + 1;
     } else {
-      // Wraps around 360 degrees boundary
+      // Wraps around the 0° Aries boundary
       if (norm >= cuspCurrent || norm < cuspNext) return i + 1;
     }
   }
-  return 12; // Default to 12th house if not caught in 1-11
+  return 12;
 }
 
 export interface Aspect {
@@ -334,48 +112,66 @@ export interface Aspect {
   isApplying: boolean;
 }
 
-const MAJOR_ASPECTS = [
-  { name: 'Conjunction', turkish: 'Kavuşum', angle: 0, orb: 8 },
-  { name: 'Sextile', turkish: 'Altmışlık', angle: 60, orb: 4 },
+// Aspect catalogue including minors, each with a base orb.
+const ASPECT_DEFS = [
+  { name: 'Conjunction', turkish: 'Kavuşum', angle: 0, orb: 7 },
+  { name: 'SemiSextile', turkish: 'Yarım Altmışlık', angle: 30, orb: 2 },
+  { name: 'SemiSquare', turkish: 'Yarım Kare', angle: 45, orb: 2 },
+  { name: 'Sextile', turkish: 'Altmışlık', angle: 60, orb: 5 },
+  { name: 'Quintile', turkish: 'Beşlik (Quintil)', angle: 72, orb: 1.5 },
   { name: 'Square', turkish: 'Kare', angle: 90, orb: 6 },
   { name: 'Trine', turkish: 'Üçgen', angle: 120, orb: 6 },
-  { name: 'Opposition', turkish: 'Karşıt', angle: 180, orb: 8 }
+  { name: 'Sesquiquadrate', turkish: 'Seskikare', angle: 135, orb: 2 },
+  { name: 'Quincunx', turkish: 'Yüzelli (Quincunx)', angle: 150, orb: 2.5 },
+  { name: 'Opposition', turkish: 'Karşıt', angle: 180, orb: 7 },
 ];
 
-export function calculateAspects(planets: any[], d: number): Aspect[] {
+const LIGHTS = ['Sun', 'Moon'];
+const OUTERS = ['Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'];
+
+// Variable orb: wider for the lights, tighter between slow outer planets.
+export function getOrb(p1: string, p2: string, aspectAngle: number): number {
+  const def = ASPECT_DEFS.find(a => a.angle === aspectAngle);
+  let orb = def ? def.orb : 3;
+  if (LIGHTS.includes(p1) || LIGHTS.includes(p2)) orb += 1.5;
+  if (OUTERS.includes(p1) && OUTERS.includes(p2)) orb = Math.max(1, orb - 1);
+  return orb;
+}
+
+type PlanetLike = { name: string; longitude: number; speed?: number };
+
+export function calculateAspects(planets: PlanetLike[], d: number): Aspect[] {
   const aspects: Aspect[] = [];
-  
+
   for (let i = 0; i < planets.length; i++) {
     for (let j = i + 1; j < planets.length; j++) {
       const p1 = planets[i];
       const p2 = planets[j];
-      
+
       let diff = Math.abs(p1.longitude - p2.longitude);
-      if (diff > 180) {
-        diff = 360 - diff;
-      }
-      
-      for (const aspectDef of MAJOR_ASPECTS) {
-        const orb = Math.abs(diff - aspectDef.angle);
-        if (orb <= aspectDef.orb) {
-          // Check applying/separating
-          // Calculate positions a little bit in the future to see if they get closer to the exact angle
-          const p1FutureLon = getPlanetLongitude(p1.name, d + 0.1);
-          const p2FutureLon = getPlanetLongitude(p2.name, d + 0.1);
-          let futureDiff = Math.abs(p1FutureLon - p2FutureLon);
+      if (diff > 180) diff = 360 - diff;
+
+      for (const def of ASPECT_DEFS) {
+        const orbLimit = getOrb(p1.name, p2.name, def.angle);
+        const orb = Math.abs(diff - def.angle);
+        if (orb <= orbLimit) {
+          // Applying/separating from actual daily speeds (linear extrapolation)
+          const s1 = p1.speed ?? getPlanetSpeed(p1.name, d);
+          const s2 = p2.speed ?? getPlanetSpeed(p2.name, d);
+          const f1 = p1.longitude + s1 * 0.1;
+          const f2 = p2.longitude + s2 * 0.1;
+          let futureDiff = Math.abs(f1 - f2);
           if (futureDiff > 180) futureDiff = 360 - futureDiff;
-          
-          const futureOrb = Math.abs(futureDiff - aspectDef.angle);
-          const isApplying = futureOrb < orb;
-          
+          const isApplying = Math.abs(futureDiff - def.angle) < orb;
+
           aspects.push({
             planet1: p1.name,
             planet2: p2.name,
-            aspectType: aspectDef.name,
-            aspectTypeTurkish: aspectDef.turkish,
+            aspectType: def.name,
+            aspectTypeTurkish: def.turkish,
             orb: Number(orb.toFixed(2)),
-            exactAngle: aspectDef.angle,
-            isApplying
+            exactAngle: def.angle,
+            isApplying,
           });
         }
       }
@@ -384,7 +180,17 @@ export function calculateAspects(planets: any[], d: number): Aspect[] {
   return aspects;
 }
 
-// Main function to compute a full Natal Chart
+export interface ChartPoint {
+  name: string;         // 'NorthNode' | 'SouthNode' | 'Chiron' | 'Lilith' | 'Fortuna'
+  turkish: string;
+  symbol: string;
+  longitude: number;
+  sign: string;
+  house: number;
+  approximate?: boolean; // Chiron carries ±1° model accuracy
+}
+
+// Main natal chart computation.
 export function computeNatalChart(
   year: number,
   month: number,
@@ -393,50 +199,83 @@ export function computeNatalChart(
   minutes: number,
   latitude: number,
   longitude: number,
-  timezoneOffsetHours: number // e.g. +3 for GMT+3
+  timezoneOffsetHours: number, // decimal hours supported (e.g. 5.5 for India)
+  houseSystem: HouseSystem = 'placidus'
 ) {
-  // 1. Calculate UTC Time
-  const date = new Date(Date.UTC(year, month - 1, day, hours, minutes));
-  const utcOffsetMs = timezoneOffsetHours * 60 * 60 * 1000;
-  const utcDate = new Date(date.getTime() - utcOffsetMs);
-
+  // 1. UTC instant of birth
+  const local = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+  const utcDate = new Date(local.getTime() - timezoneOffsetHours * 3600000);
   const d = getJulianDaysSinceJ2000(utcDate);
 
-  // 2. Local Sidereal Time Calculation for Houses
-  // Greenwich Mean Sidereal Time (GMST) at Julian Day d
-  const gmst = normalize360((18.697374558 + 24.06570982441908 * d) * 15);
-  // Local Sidereal Time (LST)
-  const lst = normalize360(gmst + longitude);
+  // 2. Houses from apparent sidereal time + mean obliquity
+  const ramc = normalize360(greenwichSiderealDeg(utcDate) + longitude);
+  const obliquity = meanObliquity(utcDate);
+  const houseRes = computeHouses(ramc, latitude, obliquity, houseSystem);
+  const { ascendant, midheaven, houses } = houseRes;
 
-  const obliquity = getObliquity(d);
-  const { ascendant, midheaven, houses } = getHouseCusps(lst, latitude, obliquity);
-
-  // 3. Compute Positions for all Bodies
+  // 3. Planets with speed + retro from the precision engine
   const planetsList = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'];
-  
   const planets = planetsList.map((name) => {
-    const lon = getPlanetLongitude(name, d);
+    const lon = bodyLongitude(name, utcDate);
+    const speed = bodySpeed(name, utcDate);
     const sign = getZodiacSign(lon);
-    const house = getPlanetHouse(lon, houses);
-    const retrograde = getIsRetrograde(name, d);
-
     return {
       name,
       longitude: lon,
       sign: sign.turkish,
-      house,
-      retrograde
+      house: getPlanetHouse(lon, houses),
+      retrograde: name !== 'Sun' && name !== 'Moon' && speed < 0,
+      speed: Number(speed.toFixed(4)),
     };
   });
 
   const aspects = calculateAspects(planets, d);
+
+  // 4. Sensitive points
+  const sunLon = planets[0].longitude;
+  const moonLon = planets[1].longitude;
+  const isDayBirth = isSunAboveHorizon(utcDate, latitude, longitude);
+
+  const nodeLon = trueLunarNode(utcDate);
+  const southLon = normalize360(nodeLon + 180);
+  const chironLon = chironLongitude(utcDate);
+  const lilithLon = meanLilith(utcDate);
+  // Pars Fortuna: day = ASC + Moon − Sun; night = ASC + Sun − Moon
+  const fortunaLon = normalize360(
+    isDayBirth ? ascendant + moonLon - sunLon : ascendant + sunLon - moonLon
+  );
+
+  const mkPoint = (name: string, turkish: string, symbol: string, lon: number, approximate = false): ChartPoint => ({
+    name, turkish, symbol,
+    longitude: lon,
+    sign: getZodiacSign(lon).turkish,
+    house: getPlanetHouse(lon, houses),
+    approximate,
+  });
+
+  const points: ChartPoint[] = [
+    mkPoint('NorthNode', 'Kuzey Ay Düğümü', '☊', nodeLon),
+    mkPoint('SouthNode', 'Güney Ay Düğümü', '☋', southLon),
+    mkPoint('Chiron', 'Chiron', '⚷', chironLon, true),
+    mkPoint('Lilith', 'Lilith (Kara Ay)', '⚸', lilithLon),
+    mkPoint('Fortuna', 'Şans Noktası', '⊗', fortunaLon),
+  ];
+
+  // 5. Aspect patterns (the app's namesake stellium included)
+  const patterns = detectPatterns(planets);
 
   return {
     planets,
     houses,
     ascendant,
     midheaven,
-    aspects
+    aspects,
+    points,
+    patterns,
+    houseSystem: houseRes.system,
+    polarFallback: houseRes.polarFallback,
+    isDayBirth,
+    meanNode: meanLunarNode(utcDate),
   };
 }
 
@@ -462,74 +301,45 @@ const PLANET_DETAILS: Record<string, { turkish: string; symbol: string; meaning:
   Saturn: { turkish: 'Satürn', symbol: '♄', meaning: 'Disiplin, sınırlar, koruma ve sabır gerektiren işler.' }
 };
 
+// Planetary hours from REAL sunrise/sunset (astronomy-engine horizon search,
+// includes refraction) — this is what makes the esma/zikir windows trustworthy.
 export function calculatePlanetaryHours(
   latitude: number,
   longitude: number,
   date: Date
 ): PlanetaryHour[] {
-  // 1. Calculate Day of the Year
-  const start = new Date(Date.UTC(date.getFullYear(), 0, 0));
-  const diff = date.getTime() - start.getTime() + (start.getTimezoneOffset() - date.getTimezoneOffset()) * 60 * 1000;
-  const oneDay = 1000 * 60 * 60 * 24;
-  const dayOfYear = Math.floor(diff / oneDay);
+  const localMidnight = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
+  const rs = sunRiseSet(latitude, longitude, localMidnight);
 
-  // 2. Solar declination
-  const latRad = latitude * (Math.PI / 180);
-  const solarDecl = 23.45 * Math.sin((360 / 365) * (284 + dayOfYear) * (Math.PI / 180)) * (Math.PI / 180);
+  // Polar / search-failure fallback: symmetric 06-18 approximation
+  let sunriseDate = rs.sunrise ?? new Date(localMidnight.getTime() + 6 * 3600000);
+  let sunsetDate = rs.sunset ?? new Date(localMidnight.getTime() + 18 * 3600000);
+  let nextSunriseDate = rs.nextSunrise ?? new Date(sunriseDate.getTime() + 24 * 3600000);
 
-  // 3. Hour angle (clamped to prevent acos domain error in extreme latitudes)
-  let cosH = -Math.tan(latRad) * Math.tan(solarDecl);
-  cosH = Math.max(-1, Math.min(1, cosH));
-  const H_rad = Math.acos(cosH);
-  const H_hours = H_rad * (12 / Math.PI); // Half day length in hours
+  // Guard pathological ordering
+  if (sunsetDate.getTime() <= sunriseDate.getTime()) {
+    sunsetDate = new Date(sunriseDate.getTime() + 12 * 3600000);
+  }
+  if (nextSunriseDate.getTime() <= sunsetDate.getTime()) {
+    nextSunriseDate = new Date(sunriseDate.getTime() + 24 * 3600000);
+  }
 
-  // 4. Local solar transit (approx noon in UTC)
-  // Local Mean Time of sunrise and sunset
-  let sunriseDecimal = 12 - H_hours;
-  let sunsetDecimal = 12 + H_hours;
+  const dayHourMs = (sunsetDate.getTime() - sunriseDate.getTime()) / 12;
+  const nightHourMs = (nextSunriseDate.getTime() - sunsetDate.getTime()) / 12;
 
-  const localDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  
-  const sunriseDate = new Date(`${localDateStr}T00:00:00`);
-  const sunsetDate = new Date(`${localDateStr}T00:00:00`);
-  const nextSunriseDate = new Date(sunriseDate.getTime() + 24 * 60 * 60 * 1000);
-
-  const sunriseHour = Math.floor(sunriseDecimal);
-  const sunriseMin = Math.floor((sunriseDecimal - sunriseHour) * 60);
-  sunriseDate.setHours(sunriseHour, sunriseMin, 0, 0);
-
-  const sunsetHour = Math.floor(sunsetDecimal);
-  const sunsetMin = Math.floor((sunsetDecimal - sunsetHour) * 60);
-  sunsetDate.setHours(sunsetHour, sunsetMin, 0, 0);
-
-  nextSunriseDate.setHours(sunriseHour, sunriseMin, 0, 0);
-
-  // 5. Calculate day hour duration and night hour duration
-  const dayDurationMs = sunsetDate.getTime() - sunriseDate.getTime();
-  const nightDurationMs = nextSunriseDate.getTime() - sunsetDate.getTime();
-
-  const dayHourMs = dayDurationMs / 12;
-  const nightHourMs = nightDurationMs / 12;
-
-  // 6. Day Rulers sequence (Chaldean Order reversed / descending)
   const CHALDEAN_DESCENDING = ['Saturn', 'Jupiter', 'Mars', 'Sun', 'Venus', 'Mercury', 'Moon'];
-  const DAY_RULERS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']; // Sunday=0, Monday=1, ...
-  
-  const dayOfWeek = date.getDay();
-  const dayRuler = DAY_RULERS[dayOfWeek];
+  const DAY_RULERS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']; // Sunday=0...
+  const dayRuler = DAY_RULERS[date.getDay()];
   const startIndex = CHALDEAN_DESCENDING.indexOf(dayRuler);
 
   const hoursList: PlanetaryHour[] = [];
   const now = new Date();
 
-  // Generate 12 Day Hours
   for (let i = 0; i < 12; i++) {
     const start = new Date(sunriseDate.getTime() + i * dayHourMs);
     const end = new Date(sunriseDate.getTime() + (i + 1) * dayHourMs);
     const planet = CHALDEAN_DESCENDING[(startIndex + i) % 7];
     const details = PLANET_DETAILS[planet] || PLANET_DETAILS['Sun'];
-    const isActive = now >= start && now < end;
-
     hoursList.push({
       hourIndex: i,
       label: `${formatTime(start)} - ${formatTime(end)}`,
@@ -537,20 +347,17 @@ export function calculatePlanetaryHours(
       planetSymbol: details.symbol,
       meaning: details.meaning,
       isNight: false,
-      isActive,
+      isActive: now >= start && now < end,
       startTime: start,
-      endTime: end
+      endTime: end,
     });
   }
 
-  // Generate 12 Night Hours
   for (let i = 0; i < 12; i++) {
     const start = new Date(sunsetDate.getTime() + i * nightHourMs);
     const end = new Date(sunsetDate.getTime() + (i + 1) * nightHourMs);
     const planet = CHALDEAN_DESCENDING[(startIndex + 12 + i) % 7];
     const details = PLANET_DETAILS[planet] || PLANET_DETAILS['Sun'];
-    const isActive = now >= start && now < end;
-
     hoursList.push({
       hourIndex: 12 + i,
       label: `${formatTime(start)} - ${formatTime(end)}`,
@@ -558,9 +365,9 @@ export function calculatePlanetaryHours(
       planetSymbol: details.symbol,
       meaning: details.meaning,
       isNight: true,
-      isActive,
+      isActive: now >= start && now < end,
       startTime: start,
-      endTime: end
+      endTime: end,
     });
   }
 
@@ -571,6 +378,8 @@ function formatTime(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+// ---------- Time zone handling (Turkey historical table + IANA) ----------
+
 function getLastSundayOfMonth(year: number, month: number): number {
   const lastDay = new Date(Date.UTC(year, month + 1, 0));
   const dayOfWeek = lastDay.getUTCDay();
@@ -579,20 +388,20 @@ function getLastSundayOfMonth(year: number, month: number): number {
 
 export function getTurkeyHistoricalOffset(date: Date): number {
   const year = date.getUTCFullYear();
-  
+
   if (year > 2016) {
     return 3;
   }
-  
+
   if (year === 2016) {
     const dstStart = Date.UTC(2016, 2, 27, 1, 0, 0); // March 27, 2016 01:00 UTC
     return (date.getTime() >= dstStart) ? 3 : 2;
   }
-  
+
   if (year >= 1985 && year <= 2015) {
     const lastSundayMarch = getLastSundayOfMonth(year, 2);
     const dstStart = Date.UTC(year, 2, lastSundayMarch, 1, 0, 0);
-    
+
     let lastSundayOctober = getLastSundayOfMonth(year, 9);
     let dstEndMonth = 9;
     let dstEndDay = lastSundayOctober;
@@ -600,9 +409,9 @@ export function getTurkeyHistoricalOffset(date: Date): number {
       dstEndMonth = 10;
       dstEndDay = 8;
     }
-    
+
     const dstEnd = Date.UTC(year, dstEndMonth, dstEndDay, 1, 0, 0);
-    
+
     if (date.getTime() >= dstStart && date.getTime() < dstEnd) {
       return 3;
     } else {
@@ -617,10 +426,11 @@ export function getTurkeyHistoricalOffset(date: Date): number {
     const dstEnd = Date.UTC(year, 9, lastSundayOctober, 1, 0, 0);
     return (date.getTime() >= dstStart && date.getTime() < dstEnd) ? 3 : 2;
   }
-  
+
   return 2;
 }
 
+// Minute-precision offset in decimal hours (H4 fix: India +5.5, Iran +3.5...).
 export function getTimezoneOffset(timezone: string, date: Date): number {
   const cleanTz = timezone ? timezone.trim() : '';
   if (cleanTz === 'Europe/Istanbul' || cleanTz === 'Turkey' || !cleanTz) {
@@ -630,15 +440,11 @@ export function getTimezoneOffset(timezone: string, date: Date): number {
   try {
     const formatter = new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-      second: 'numeric',
+      year: 'numeric', month: 'numeric', day: 'numeric',
+      hour: 'numeric', minute: 'numeric', second: 'numeric',
       hour12: false,
     });
-    
+
     const parts = formatter.formatToParts(date);
     const partValues: Record<string, number> = {};
     for (const part of parts) {
@@ -646,7 +452,7 @@ export function getTimezoneOffset(timezone: string, date: Date): number {
         partValues[part.type] = Number(part.value);
       }
     }
-    
+
     const targetUtc = Date.UTC(
       partValues.year,
       partValues.month - 1,
@@ -656,10 +462,68 @@ export function getTimezoneOffset(timezone: string, date: Date): number {
       partValues.second
     );
 
-    const diffMs = targetUtc - date.getTime();
-    const offset = Math.round(diffMs / (1000 * 60 * 60));
+    const offset = (targetUtc - date.getTime()) / 3600000;
     return isNaN(offset) ? 3 : offset;
   } catch (e) {
     return 3; // Fallback to GMT+3 (Turkey)
   }
+}
+
+// ---------- DST transparency (trust layer) ----------
+
+export interface TimezoneDecision {
+  offsetHours: number;
+  dstActive: boolean;
+  ruleLabel: string;
+  isTurkeyRule: boolean;
+}
+
+// Human-readable explanation of the timezone/DST decision applied to a birth
+// instant — powers the "why is my Ascendant different elsewhere?" trust UI.
+export function explainTimezoneDecision(date: Date, timezone: string): TimezoneDecision {
+  const cleanTz = timezone ? timezone.trim() : '';
+  const isTurkey = cleanTz === 'Europe/Istanbul' || cleanTz === 'Turkey' || !cleanTz;
+
+  if (isTurkey) {
+    const offset = getTurkeyHistoricalOffset(date);
+    const year = date.getUTCFullYear();
+
+    if (year > 2016 || (year === 2016 && offset === 3 && date.getTime() >= Date.UTC(2016, 8, 8))) {
+      return {
+        offsetHours: 3, dstActive: false, isTurkeyRule: true,
+        ruleLabel: 'Türkiye kalıcı GMT+3 dönemi (Eylül 2016 sonrası; yaz saati uygulaması kaldırıldı)',
+      };
+    }
+    if (year >= 1985) {
+      return {
+        offsetHours: offset, dstActive: offset === 3, isTurkeyRule: true,
+        ruleLabel: offset === 3
+          ? 'Türkiye 1985–2016 yaz saati dönemi: Mart son Pazar – Ekim son Pazar arası GMT+3'
+          : 'Türkiye 1985–2016 kış saati: GMT+2 (yaz saati pasif)',
+      };
+    }
+    if (year >= 1973) {
+      return {
+        offsetHours: offset, dstActive: offset === 3, isTurkeyRule: true,
+        ruleLabel: offset === 3
+          ? 'Türkiye 1973–1984 yaz saati dönemi: GMT+3'
+          : 'Türkiye 1973–1984 kış saati: GMT+2',
+      };
+    }
+    return {
+      offsetHours: 2, dstActive: false, isTurkeyRule: true,
+      ruleLabel: '1973 öncesi Türkiye: standart GMT+2 (düzenli yaz saati uygulaması yok)',
+    };
+  }
+
+  const offset = getTimezoneOffset(cleanTz, date);
+  const sign = offset >= 0 ? '+' : '−';
+  const abs = Math.abs(offset);
+  const hh = Math.floor(abs);
+  const mm = Math.round((abs - hh) * 60);
+  const offStr = mm > 0 ? `${sign}${hh}:${String(mm).padStart(2, '0')}` : `${sign}${hh}`;
+  return {
+    offsetHours: offset, dstActive: false, isTurkeyRule: false,
+    ruleLabel: `${cleanTz} bölgesi, IANA saat dilimi veritabanına göre GMT${offStr} (dakika hassasiyetinde)`,
+  };
 }

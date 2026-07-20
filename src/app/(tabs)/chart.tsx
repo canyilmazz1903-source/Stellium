@@ -1115,8 +1115,53 @@ export default function ChartScreen() {
                 })}
               </GlassCard>
 
+              {/* Sensitive points: Nodes, Chiron, Lilith, Fortuna */}
+              {computedChart.points && computedChart.points.length > 0 && (
+                <>
+                  <Text style={styles.techSubTitle}>Özel Noktalar</Text>
+                  <GlassCard style={styles.planetTableCard}>
+                    <View style={styles.tableHeader}>
+                      <Text style={[styles.tableHeaderCell, { flex: 1.5 }]}>Nokta</Text>
+                      <Text style={[styles.tableHeaderCell, { flex: 1.4 }]}>Burç & Derece</Text>
+                      <Text style={[styles.tableHeaderCell, { flex: 0.8, textAlign: 'right' }]}>Ev</Text>
+                    </View>
+                    {computedChart.points.map((pt, idx) => (
+                      <View key={idx} style={[styles.tableRowGrid, idx % 2 === 1 && styles.tableRowGridAlt]}>
+                        <View style={{ flex: 1.5, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Text style={styles.tablePlanetSymbol}>{pt.symbol}</Text>
+                          <Text style={styles.tablePlanetName} numberOfLines={1}>{pt.turkish}{pt.approximate ? ' ~' : ''}</Text>
+                        </View>
+                        <Text style={[styles.tableCellGrid, styles.tablePlanetSign, { flex: 1.4 }]}>
+                          {formatPlanetDegree(pt.longitude, pt.sign)}
+                        </Text>
+                        <Text style={[styles.tableCellGrid, styles.tablePlanetHouse, { flex: 0.8, textAlign: 'right' }]}>
+                          {pt.house}. Ev
+                        </Text>
+                      </View>
+                    ))}
+                    <Text style={styles.tableFootnote}>~ Chiron konumu yaklaşık modelle hesaplanır (±1°).</Text>
+                  </GlassCard>
+                </>
+              )}
+
+              {/* Aspect patterns — the app's namesake */}
+              {computedChart.patterns && computedChart.patterns.length > 0 && (
+                <>
+                  <Text style={styles.techSubTitle}>Açı Kalıpları</Text>
+                  {computedChart.patterns.map((pat, idx) => (
+                    <GlassCard key={idx} style={styles.patternCard}>
+                      <Text style={styles.patternTitle}>✨ {pat.title}</Text>
+                      <Text style={styles.patternMembers}>{pat.members.join(' • ')}</Text>
+                      <Text style={styles.patternDetail}>{pat.detail}</Text>
+                    </GlassCard>
+                  ))}
+                </>
+              )}
+
               {/* House cusp table */}
-              <Text style={styles.techSubTitle}>Ev Başlangıçları (Cusps)</Text>
+              <Text style={styles.techSubTitle}>
+                Ev Başlangıçları ({computedChart.houseSystem === 'placidus' ? 'Placidus' : computedChart.houseSystem === 'whole' ? 'Tam Burç' : 'Eşit Ev'})
+              </Text>
               <GlassCard style={styles.planetTableCard}>
                 <View style={styles.tableHeader}>
                   <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Ev</Text>
@@ -1130,6 +1175,9 @@ export default function ChartScreen() {
                     <Text style={[styles.tableCellGrid, { flex: 1, textAlign: 'right' }]}>{h.degree}</Text>
                   </View>
                 ))}
+                {computedChart.polarFallback && (
+                  <Text style={styles.tableFootnote}>Kutup enlemi nedeniyle Placidus yerine Tam Burç sistemi kullanıldı.</Text>
+                )}
               </GlassCard>
 
               {/* Element Percentages Panel */}
@@ -1878,5 +1926,37 @@ const styles = StyleSheet.create({
     color: '#E6EDF0',
     lineHeight: 20,
     marginTop: 12,
+  },
+  tableFootnote: {
+    fontFamily: 'Inter',
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.35)',
+    marginTop: 8,
+    lineHeight: 14,
+  },
+  patternCard: {
+    marginBottom: 10,
+    padding: 14,
+    borderColor: 'rgba(212, 175, 55, 0.25)',
+    borderWidth: 1,
+  },
+  patternTitle: {
+    fontFamily: 'Inter',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#D4AF37',
+  },
+  patternMembers: {
+    fontFamily: 'Inter',
+    fontSize: 11,
+    color: '#8B949E',
+    marginTop: 3,
+  },
+  patternDetail: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: '#E6EDF0',
+    lineHeight: 18,
+    marginTop: 8,
   },
 });

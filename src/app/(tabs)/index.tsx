@@ -178,7 +178,7 @@ const PLANETARY_HOURS_DEEP_INFO: Record<string, {
 
 export default function HomeScreen() {
   const { profile, isPremium, hasUnlockedDailyShadow, unlockDailyShadow } = useAuthStore();
-  const { computedChart, setComputedChart, dailyHoroscope: horoscope, fetchHoroscope } = useAppStore();
+  const { computedChart, setComputedChart, dailyHoroscope: horoscope, fetchHoroscope, houseSystem } = useAppStore();
   const [paywallVisible, setPaywallVisible] = useState(false);
   // Generic feature paywall: set a title+description to open it from any lock.
   const [featurePaywall, setFeaturePaywall] = useState<{ title: string; description: string } | null>(null);
@@ -528,12 +528,12 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
       const birthDateLocal = new Date(year, month - 1, day, hour, minute);
       const tzOffset = getTimezoneOffset(tzName, birthDateLocal);
 
-      const chart = computeNatalChart(year, month, day, hour, minute, lat, lon, tzOffset);
+      const chart = computeNatalChart(year, month, day, hour, minute, lat, lon, tzOffset, houseSystem);
       setComputedChart(chart);
     } catch (e) {
       console.warn('Error calculating natal chart:', e);
     }
-  }, [profile, setComputedChart]);
+  }, [profile, setComputedChart, houseSystem]);
 
   // 2. Fetch daily horoscope from Gemini
   useEffect(() => {
@@ -549,7 +549,8 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
           profile.name || 'Gezgin',
           sunSign,
           profile.birth_date || '',
-          profile.birth_place || ''
+          profile.birth_place || '',
+          profile.id
         );
       } catch (err) {
         console.warn('Error loading daily horoscope:', err);
@@ -608,11 +609,20 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
             <Text style={styles.dateText}>
               {new Date().toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </Text>
+            {/* The app's namesake: show the user's stellium as a badge of honor */}
+            {computedChart?.patterns?.filter(p => p.type === 'stellium-sign' || p.type === 'stellium-house').slice(0, 1).map((p, i) => (
+              <Pressable key={i} onPress={() => router.push('/chart' as any)} style={styles.stelliumBadge}>
+                <Text style={styles.stelliumBadgeText}>✨ {p.title} — {p.members.length} gezegen</Text>
+              </Pressable>
+            ))}
           </View>
 
           {/* Live Planetary Hours Timeline */}
           <View style={styles.planetarySection}>
-            <Text style={styles.sectionLabel}>⏱️ Canlı Gezegen Saatleri</Text>
+            <View style={styles.planetaryHeaderRow}>
+              <Text style={styles.sectionLabel}>⏱️ Canlı Gezegen Saatleri</Text>
+              <Text style={styles.precisionNote}>gerçek güneş doğuşuna göre</Text>
+            </View>
             <ScrollView ref={planetaryScrollRef} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
               {planetaryHours.map((hour, idx) => (
                 <Pressable 
@@ -1307,6 +1317,34 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#8B949E',
     marginTop: 5,
+  },
+  planetaryHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+  },
+  precisionNote: {
+    fontFamily: 'Inter',
+    fontSize: 9,
+    color: 'rgba(255,255,255,0.35)',
+    fontStyle: 'italic',
+    marginBottom: 10,
+  },
+  stelliumBadge: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(212, 175, 55, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.4)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  stelliumBadgeText: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#D4AF37',
   },
   retroMiniBadge: {
     fontFamily: 'Inter',

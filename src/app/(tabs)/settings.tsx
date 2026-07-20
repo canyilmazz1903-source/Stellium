@@ -11,10 +11,12 @@ import { BlurView } from 'expo-blur';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, Easing } from 'react-native-reanimated';
 import { fetchEliteOffering, isPurchasesConfigured, purchasePackage, restorePurchases } from '@/services/purchases';
 import { isDailyGuidanceEnabled, setDailyGuidanceEnabled } from '@/utils/notifications';
+import { useAppStore } from '@/store/appStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SettingsScreen() {
   const { user, profile, signOut, isPremium, setPremium } = useAuthStore();
+  const { houseSystem, setHouseSystem } = useAppStore();
   const [loading, setLoading] = useState(false);
   const [lastFatalError, setLastFatalError] = useState<string | null>(null);
   const [dailyNotifEnabled, setDailyNotifEnabled] = useState(false);
@@ -524,6 +526,32 @@ export default function SettingsScreen() {
                 )}
               </GlassCard>
 
+              {/* House System Preference */}
+              <GlassCard style={styles.card}>
+                <Text style={styles.cardTitle}>🏠 Ev Sistemi</Text>
+                <Text style={styles.description}>
+                  Doğum haritanızdaki ev hesaplama yöntemi. Placidus, Türkçe astroloji camiasının fiili standardıdır;
+                  Tam Burç klasik teknikler için kullanılır.
+                </Text>
+                <View style={styles.houseSystemRow}>
+                  {([
+                    { key: 'placidus', label: 'Placidus' },
+                    { key: 'whole', label: 'Tam Burç' },
+                    { key: 'equal', label: 'Eşit Ev' },
+                  ] as const).map((opt) => (
+                    <Pressable
+                      key={opt.key}
+                      onPress={() => setHouseSystem(opt.key)}
+                      style={[styles.houseSystemChip, houseSystem === opt.key && styles.houseSystemChipActive]}
+                    >
+                      <Text style={[styles.houseSystemChipText, houseSystem === opt.key && { color: '#0B0F19' }]}>
+                        {opt.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </GlassCard>
+
               {/* Daily Notification Preference */}
               <GlassCard style={styles.card}>
                 <Text style={styles.cardTitle}>🔔 Bildirim Tercihleri</Text>
@@ -803,6 +831,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.5)',
     textDecorationLine: 'underline',
+  },
+  houseSystemRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  houseSystemChip: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+  },
+  houseSystemChipActive: {
+    backgroundColor: '#D4AF37',
+    borderColor: '#D4AF37',
+  },
+  houseSystemChipText: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#F0F6FC',
   },
   notifToggleRow: {
     flexDirection: 'row',
