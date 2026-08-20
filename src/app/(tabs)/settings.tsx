@@ -9,13 +9,12 @@ import CosmicButton from '@/components/ui/CosmicButton';
 import CosmicInput from '@/components/ui/CosmicInput';
 import { BlurView } from 'expo-blur';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, Easing } from 'react-native-reanimated';
-import { fetchEliteOffering, isPurchasesConfigured, purchasePackage, restorePurchases } from '@/services/purchases';
 import { isDailyGuidanceEnabled, setDailyGuidanceEnabled } from '@/utils/notifications';
 import { useAppStore } from '@/store/appStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SettingsScreen() {
-  const { user, profile, signOut, isPremium, setPremium } = useAuthStore();
+  const { user, profile, signOut } = useAuthStore();
   const { houseSystem, setHouseSystem } = useAppStore();
   const [loading, setLoading] = useState(false);
   const [lastFatalError, setLastFatalError] = useState<string | null>(null);
@@ -246,74 +245,6 @@ export default function SettingsScreen() {
 
   const handleCancelEditing = () => {
     setIsEditing(false);
-  };
-
-  const handlePurchase = async () => {
-    setLoading(true);
-    try {
-      if (isPurchasesConfigured()) {
-        const offering = await fetchEliteOffering();
-        const pkg = offering?.availablePackages?.[0];
-        if (!pkg) throw new Error('NO_PACKAGE');
-        const entitled = await purchasePackage(pkg);
-        setLoading(false);
-        if (entitled) {
-          setPremium(true);
-          Alert.alert(
-            'Elite Üyelik Aktif',
-            'Tebrikler! Stellium Elite ailesine başarıyla katıldınız. Tüm kısıtlamalar kaldırıldı.',
-            [{ text: 'Mistisizm Yolculuğuna Başla' }]
-          );
-        }
-      } else {
-        // Demo mode: no RevenueCat product connected yet, so the upgrade is simulated.
-        await new Promise((resolve) => setTimeout(resolve, 1200));
-        setPremium(true);
-        setLoading(false);
-        Alert.alert(
-          'Deneme Modu',
-          'Ödeme altyapısı henüz bağlanmadı; Elite özellikleri deneme amaçlı açıldı. Gerçek abonelik App Store bağlantısı tamamlanınca aktif olacak.',
-          [{ text: 'Devam Et' }]
-        );
-      }
-    } catch (e: any) {
-      setLoading(false);
-      if (e?.userCancelled) return;
-      Alert.alert('Hata', 'Satın alma işlemi tamamlanamadı. Lütfen daha sonra tekrar deneyin.');
-    }
-  };
-
-  const handleRestorePurchases = async () => {
-    if (!isPurchasesConfigured()) {
-      Alert.alert('Kullanılamıyor', 'Satın alma altyapısı henüz bağlanmadı.');
-      return;
-    }
-    setLoading(true);
-    try {
-      const entitled = await restorePurchases();
-      setLoading(false);
-      setPremium(entitled);
-      Alert.alert(
-        entitled ? 'Geri Yüklendi' : 'Abonelik Bulunamadı',
-        entitled
-          ? 'Stellium Elite aboneliğiniz başarıyla geri yüklendi.'
-          : 'Bu hesaba bağlı aktif bir abonelik bulunamadı.'
-      );
-    } catch (e) {
-      setLoading(false);
-      Alert.alert('Hata', 'Satın alımlar geri yüklenemedi. Lütfen daha sonra tekrar deneyin.');
-    }
-  };
-
-  const handleCancelSubscription = () => {
-    Alert.alert(
-      'Abonelik Yönetimi',
-      'Aboneliğinizi dilediğiniz zaman App Store Hesap Ayarları üzerinden yönetebilir veya iptal edebilirsiniz.',
-      [
-        { text: 'Aboneliği Sonlandır', style: 'destructive', onPress: () => setPremium(false) },
-        { text: 'Kapat', style: 'cancel' }
-      ]
-    );
   };
 
   const handleDeleteAccount = () => {
@@ -568,41 +499,14 @@ export default function SettingsScreen() {
                 </Pressable>
               </GlassCard>
 
-              {/* Premium Paywall / Subscription Status Card */}
-              <GlassCard style={[styles.card, isPremium && styles.premiumCard]}>
-                <Text style={[styles.cardTitle, isPremium && styles.premiumTitle]}>
-                  {isPremium ? '🌟 Stellium Elite Üyesi' : 'Stellium Elite\'e Yükselt'}
-                </Text>
-                
+              {/* Ads & support info — the app is fully free */}
+              <GlassCard style={styles.card}>
+                <Text style={styles.cardTitle}>🎬 Stellium Tamamen Ücretsizdir</Text>
                 <Text style={styles.description}>
-                  {isPremium 
-                    ? 'Aboneliğiniz aktif! Gemini destekli göksel transit yorumları, detaylı Yıldızname ve Sinastri gibi tüm Elite özelliklere tam erişim hakkınız bulunmaktadır.'
-                    : 'Günün kozmik ritimlerine ve yıldız hareketlerine dayalı detaylı tahlillere erişin, hayatınızı Ay evrelerine göre optimize edin ve derinlemesine ebced analizleri çıkarın.'
-                  }
+                  Uygulamadaki hiçbir özellik için ödeme yoktur. Yapay zeka raporları gibi gerçek işlem maliyeti taşıyan
+                  birkaç derin özellik, kısa bir ödüllü reklam izleyerek gün boyu açılır — böylece Stellium herkes için
+                  ücretsiz kalabiliyor. Desteğiniz için teşekkürler. 💛
                 </Text>
-
-                {!isPremium ? (
-                  <View style={styles.benefitsList}>
-                    <Text style={styles.benefitItem}>✓ Tamamen Reklamsız Deneyim</Text>
-                    <Text style={styles.benefitItem}>✓ AI Destekli Transit, Sinastri & Yıldızname Raporları</Text>
-                    <Text style={styles.benefitItem}>✓ Günlük Aşk & Kariyer Analizlerinin Tam Metni</Text>
-                    <Text style={styles.benefitItem}>✓ 30 Günlük Bakım Tarihi Projeksiyonları (Otomatik)</Text>
-                    <Text style={styles.benefitItem}>✓ Tam Ay Takvimi + Yeni Ay & Dolunay Tarihleri</Text>
-                    <Text style={styles.benefitItem}>✓ 13 Aylık Retro Takvimi (Tüm Gezegenler)</Text>
-                    <Text style={styles.benefitItem}>✓ Otomatik Gezegen Saati Bildirimleri</Text>
-                    <Text style={styles.benefitItem}>✓ Tüm Gezegen Yerleşimleri & Açı Analizleri</Text>
-                  </View>
-                ) : null}
-
-                <CosmicButton
-                  title={isPremium ? 'Aboneliği Yönet' : 'Stellium Elite\'e Katıl - 99.99 TL / Ay'}
-                  onPress={isPremium ? handleCancelSubscription : handlePurchase}
-                  style={styles.payButton}
-                />
-
-                <Pressable onPress={handleRestorePurchases} style={{ marginTop: 12, alignItems: 'center' }}>
-                  <Text style={styles.restoreLink}>Satın Alımları Geri Yükle</Text>
-                </Pressable>
               </GlassCard>
 
               {/* Account Actions and App Store Compliance */}

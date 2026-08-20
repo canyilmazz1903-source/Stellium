@@ -18,7 +18,8 @@ if (adsAvailable) {
   }
 }
 
-// Elite members never see ads; this renders nothing for them.
+// Renders the home banner. isPremium is permanently false in the ads-only
+// model; the check remains only for component compatibility.
 export default function BannerAdSlot() {
   const isPremium = useAuthStore((s) => s.isPremium);
   if (isPremium || !BannerAd) return null;

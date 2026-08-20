@@ -22,7 +22,9 @@ function resolveUnitId(realIos: string | undefined, realAndroid: string | undefi
 
 // Falls back to Google's public test ad unit IDs until real AdMob ad units are
 // added via .env (EXPO_PUBLIC_ADMOB_BANNER_IOS/ANDROID, _INTERSTITIAL_*, _REWARDED_*),
-// same convention as the Supabase/Gemini/RevenueCat keys.
+// same convention as the Supabase/Gemini keys.
+// ⚠️ PRODUCTION: real unit IDs MUST be set before the store build — shipping
+// Google's test ads to production violates AdMob policy.
 export const BANNER_UNIT_ID = nativeAds
   ? resolveUnitId(process.env.EXPO_PUBLIC_ADMOB_BANNER_IOS, process.env.EXPO_PUBLIC_ADMOB_BANNER_ANDROID, nativeAds.TestIds.BANNER)
   : '';
@@ -45,6 +47,9 @@ export async function initAds() {
   }
 }
 
+// Shows an interstitial. The load-timeout is CANCELLED the moment the ad
+// loads — previously the 8s timer could fire while an ad was on screen and
+// resolve the promise mid-show (bug). Resolves when closed/failed either way.
 export function showInterstitial(): Promise<void> {
   if (!nativeAds) return Promise.resolve();
 
@@ -52,9 +57,11 @@ export function showInterstitial(): Promise<void> {
     try {
       const { InterstitialAd, AdEventType } = nativeAds!;
       let settled = false;
+      let loadTimer: ReturnType<typeof setTimeout> | null = null;
       const finish = () => {
         if (settled) return;
         settled = true;
+        if (loadTimer) clearTimeout(loadTimer);
         unsubLoaded();
         unsubClosed();
         unsubError();
@@ -64,13 +71,17 @@ export function showInterstitial(): Promise<void> {
       const ad = InterstitialAd.createForAdRequest(INTERSTITIAL_UNIT_ID, {
         requestNonPersonalizedAdsOnly: true,
       });
-      const unsubLoaded = ad.addAdEventListener(AdEventType.LOADED, () => ad.show());
+      const unsubLoaded = ad.addAdEventListener(AdEventType.LOADED, () => {
+        // Ad is here: the timeout must no longer be able to cut the show short.
+        if (loadTimer) { clearTimeout(loadTimer); loadTimer = null; }
+        try { ad.show(); } catch { finish(); }
+      });
       const unsubClosed = ad.addAdEventListener(AdEventType.CLOSED, finish);
       const unsubError = ad.addAdEventListener(AdEventType.ERROR, finish);
 
       ad.load();
-      // Safety net in case the ad never loads (no fill, no network, etc.)
-      setTimeout(finish, 8000);
+      // Safety net ONLY for the loading phase (no fill / no network).
+      loadTimer = setTimeout(finish, 10000);
     } catch (e) {
       console.warn('Interstitial ad failed:', e);
       resolve();
@@ -78,40 +89,67 @@ export function showInterstitial(): Promise<void> {
   });
 }
 
-export function showRewarded(onEarned: () => void): Promise<boolean> {
-  if (!nativeAds) return Promise.resolve(false);
+export interface RewardedResult {
+  earned: boolean;   // user watched to completion and earned the reward
+  adShown: boolean;  // an ad actually displayed
+  failed: boolean;   // load/show failed (no fill, network...) — callers may
+                     // choose to grant the unlock anyway (graceful fallback)
+}
+
+// Shows a rewarded ad. Same timeout fix as the interstitial: the load-timeout
+// is cancelled on LOADED, so a slow-loading ad can no longer be resolved as
+// "not earned" while the user is actually watching it.
+export function showRewarded(onEarned?: () => void): Promise<RewardedResult> {
+  if (!nativeAds) return Promise.resolve({ earned: false, adShown: false, failed: true });
 
   return new Promise((resolve) => {
     try {
       const { RewardedAd, AdEventType, RewardedAdEventType } = nativeAds!;
       let earned = false;
+      let adShown = false;
+      let failed = false;
       let settled = false;
+      let loadTimer: ReturnType<typeof setTimeout> | null = null;
       const finish = () => {
         if (settled) return;
         settled = true;
+        if (loadTimer) clearTimeout(loadTimer);
         unsubLoaded();
         unsubEarned();
         unsubClosed();
         unsubError();
-        resolve(earned);
+        resolve({ earned, adShown, failed });
       };
 
       const ad = RewardedAd.createForAdRequest(REWARDED_UNIT_ID, {
         requestNonPersonalizedAdsOnly: true,
       });
-      const unsubLoaded = ad.addAdEventListener(RewardedAdEventType.LOADED, () => ad.show());
+      const unsubLoaded = ad.addAdEventListener(RewardedAdEventType.LOADED, () => {
+        if (loadTimer) { clearTimeout(loadTimer); loadTimer = null; }
+        try {
+          adShown = true;
+          ad.show();
+        } catch {
+          failed = true;
+          finish();
+        }
+      });
       const unsubEarned = ad.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
         earned = true;
-        onEarned();
+        onEarned?.();
       });
       const unsubClosed = ad.addAdEventListener(AdEventType.CLOSED, finish);
-      const unsubError = ad.addAdEventListener(AdEventType.ERROR, finish);
+      const unsubError = ad.addAdEventListener(AdEventType.ERROR, () => {
+        failed = true;
+        finish();
+      });
 
       ad.load();
-      setTimeout(finish, 8000);
+      // Loading-phase safety net only.
+      loadTimer = setTimeout(() => { failed = true; finish(); }, 10000);
     } catch (e) {
       console.warn('Rewarded ad failed:', e);
-      resolve(false);
+      resolve({ earned: false, adShown: false, failed: true });
     }
   });
 }

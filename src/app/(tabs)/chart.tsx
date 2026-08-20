@@ -12,6 +12,8 @@ import { BlurView } from 'expo-blur';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, withDelay, Easing } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { composePlanetInSign, computeElementBalance } from '@/utils/interpretations';
+import RewardGateModal from '@/components/ui/RewardGateModal';
+import { isFeatureUnlocked } from '@/services/adGate';
 
 // Collapsible section wrapper so the chart page reads as an organized index
 // instead of one endless scroll.
@@ -327,7 +329,7 @@ const HOUSE_KEYWORDS: Record<number, string> = {
 
 export default function ChartScreen() {
   const { computedChart } = useAppStore();
-  const { profile, isPremium } = useAuthStore();
+  const { profile } = useAuthStore();
   const { auraColors } = useCosmicCalendarStore();
   const router = useRouter();
 
@@ -637,21 +639,22 @@ export default function ChartScreen() {
     return computeElementBalance(computedChart.planets);
   }, [computedChart]);
 
+  // The comprehensive AI report has real Gemini cost → one rewarded ad
+  // unlocks it for the day (report is cached after generation anyway).
+  const [aiGateVisible, setAiGateVisible] = useState(false);
+
   const handleFetchAIAnalysis = async () => {
-    if (!isPremium) {
-      Alert.alert(
-        'Elite Üyelik Gerekli',
-        'Kapsamlı AI Harita Analizi yalnızca Stellium Elite üyelerimize özeldir. Elite üyelikle doğum haritanızın derin analizini yapabilirsiniz.',
-        [
-          { text: 'Vazgeç', style: 'cancel' },
-          { text: 'Üyeliği İncele', onPress: () => router.push('/settings') }
-        ]
-      );
+    if (!computedChart || !profile) return;
+    const unlocked = await isFeatureUnlocked('chart_ai');
+    if (!unlocked) {
+      setAiGateVisible(true);
       return;
     }
+    runAIAnalysis();
+  };
 
+  const runAIAnalysis = async () => {
     if (!computedChart || !profile) return;
-
     setLoadingAI(true);
     setAiModalVisible(true);
     try {
@@ -1086,68 +1089,46 @@ export default function ChartScreen() {
 
               <ChartSection title="Gezegen Yerleşimleri" emoji="🪐" isOpen={openSection === 1} onToggle={() => toggleSection(1)}>
                 <View style={styles.interpretationsList}>
-                  {/* Placements Cards for other Planets */}
-                  {isPremium ? (
-                    planetPlacements.map((p, idx) => p && (
-                      <GlassCard key={idx} style={styles.interpretationCard}>
-                        <View style={styles.interpHeaderRow}>
-                          <Text style={styles.interpHeaderEmoji}>{p.symbol}</Text>
-                          <View style={styles.interpHeaderDetails}>
-                            <Text style={styles.interpPlacementTitle}>{p.placement} {p.retrograde ? ' ℞' : ''}</Text>
-                            <Text style={styles.interpArchetypeText}>Temsili Karakter: {p.archetype} • {p.degree}</Text>
-                          </View>
+                  {/* Placements Cards for other Planets — free for everyone */}
+                  {planetPlacements.map((p, idx) => p && (
+                    <GlassCard key={idx} style={styles.interpretationCard}>
+                      <View style={styles.interpHeaderRow}>
+                        <Text style={styles.interpHeaderEmoji}>{p.symbol}</Text>
+                        <View style={styles.interpHeaderDetails}>
+                          <Text style={styles.interpPlacementTitle}>{p.placement} {p.retrograde ? ' ℞' : ''}</Text>
+                          <Text style={styles.interpArchetypeText}>Temsili Karakter: {p.archetype} • {p.degree}</Text>
                         </View>
-                        <Text style={styles.interpBodyText}>{p.description}</Text>
-                      </GlassCard>
-                    ))
-                  ) : (
-                    <GlassCard style={styles.lockedPlacementsCard}>
-                      <Ionicons name="lock-closed" size={20} color="#ffffff" style={{ marginBottom: 8 }} />
-                      <Text style={styles.lockedText}>
-                        Merkür, Venüs, Mars ve diğer gezegen konumlarının derinlemesine analizleri Stellium Elite üyelerine özeldir.
-                      </Text>
-                      <Pressable onPress={() => router.push('/settings')} style={styles.unlockInlineBtn}>
-                        <Text style={styles.unlockInlineText}>Tüm Gezegen Analizlerini Aç →</Text>
-                      </Pressable>
+                      </View>
+                      <Text style={styles.interpBodyText}>{p.description}</Text>
                     </GlassCard>
-                  )}
+                  ))}
                 </View>
               </ChartSection>
 
               {/* Natal Aspects Calculation Section */}
               <ChartSection title="Açı İlişkileri (Aspects)" emoji="📐" isOpen={openSection === 2} onToggle={() => toggleSection(2)}>
               <GlassCard style={styles.aspectsCard}>
-                {isPremium ? (
-                  aspects.length > 0 ? (
-                    <View style={styles.aspectsList}>
-                      {aspects.map((aspect, idx) => (
-                        <View key={idx} style={styles.aspectItem}>
-                          <View style={styles.aspectRow}>
-                            <View style={styles.aspectLeft}>
-                              <Text style={[styles.aspectSymbol, { color: aspect.color }]}>{aspect.symbol}</Text>
-                              <Text style={styles.aspectText}>
-                                {aspect.p1Name} <Text style={{ color: aspect.color }}>{aspect.label}</Text> {aspect.p2Name}
-                              </Text>
-                            </View>
-                            <Text style={styles.aspectDiff}>({aspect.diff}°)</Text>
+                {aspects.length > 0 ? (
+                  <View style={styles.aspectsList}>
+                    {aspects.map((aspect, idx) => (
+                      <View key={idx} style={styles.aspectItem}>
+                        <View style={styles.aspectRow}>
+                          <View style={styles.aspectLeft}>
+                            <Text style={[styles.aspectSymbol, { color: aspect.color }]}>{aspect.symbol}</Text>
+                            <Text style={styles.aspectText}>
+                              {aspect.p1Name} <Text style={{ color: aspect.color }}>{aspect.label}</Text> {aspect.p2Name}
+                            </Text>
                           </View>
-                          <Text style={styles.aspectDescriptionText}>
-                            {getAspectDescription(aspect.p1Name, aspect.p2Name, aspect.aspectType || aspect.type)}
-                          </Text>
+                          <Text style={styles.aspectDiff}>({aspect.diff}°)</Text>
                         </View>
-                      ))}
-                    </View>
-                  ) : (
-                    <Text style={styles.noAspectsText}>Haritanızda majör açı ilişkisi bulunmuyor.</Text>
-                  )
-                ) : (
-                  <View style={styles.lockedContainer}>
-                    <Ionicons name="lock-closed" size={20} color="#ffffff" style={{ marginBottom: 6 }} />
-                    <Text style={styles.lockedText}>Açı İlişkileri Stellium Elite Üyelerine Özeldir.</Text>
-                    <Pressable onPress={() => router.push('/settings')} style={styles.unlockInlineBtn}>
-                      <Text style={styles.unlockInlineText}>Elite Üyeliğe Geç →</Text>
-                    </Pressable>
+                        <Text style={styles.aspectDescriptionText}>
+                          {getAspectDescription(aspect.p1Name, aspect.p2Name, aspect.aspectType || aspect.type)}
+                        </Text>
+                      </View>
+                    ))}
                   </View>
+                ) : (
+                  <Text style={styles.noAspectsText}>Haritanızda majör açı ilişkisi bulunmuyor.</Text>
                 )}
               </GlassCard>
               </ChartSection>
@@ -1304,6 +1285,16 @@ export default function ChartScreen() {
             </GlassCard>
           )}
         </ScrollView>
+
+        {/* Rewarded gate for the comprehensive AI analysis */}
+        <RewardGateModal
+          visible={aiGateVisible}
+          onClose={() => setAiGateVisible(false)}
+          feature="chart_ai"
+          title="Kapsamlı Harita Analizi"
+          description="Yapay zeka, tüm gezegen yerleşimlerinizi, açılarınızı ve kalıplarınızı sentezleyerek size özel uzun bir rapor yazar. Bu analiz gerçek AI maliyeti taşıdığı için kısa bir reklamla bugünlük açılır."
+          onUnlocked={runAIAnalysis}
+        />
 
         {/* Hesap Detayı & DST transparency modal */}
         <Modal

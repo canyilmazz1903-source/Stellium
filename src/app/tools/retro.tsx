@@ -1,14 +1,15 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, SafeAreaView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import GlassCard from '@/components/glass/GlassCard';
-import PaywallAdModal from '@/components/ui/PaywallAdModal';
-import { useAuthStore } from '@/store/authStore';
+import RewardGateModal from '@/components/ui/RewardGateModal';
+import { isFeatureUnlocked } from '@/services/adGate';
 import { computeRetroPeriods, formatTurkishDate, RETRO_MEANINGS } from '@/utils/cosmicTools';
 
 export default function RetroCalendarScreen() {
-  const { isPremium } = useAuthStore();
-  const [paywallVisible, setPaywallVisible] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+  const [gateVisible, setGateVisible] = useState(false);
+  useEffect(() => { isFeatureUnlocked('retro_full').then(setUnlocked); }, []);
   const periods = useMemo(() => computeRetroPeriods(400), []);
   const activeOnes = periods.filter(p => p.isActive);
   const upcoming = periods.filter(p => !p.isActive);
@@ -50,18 +51,18 @@ export default function RetroCalendarScreen() {
           )}
 
           <Text style={styles.sectionTitle}>📅 Yaklaşan Retro Dönemleri</Text>
-          {!isPremium ? (
-            // Free tier sees only the live status above; forward planning
-            // (upcoming windows with dates) is the Elite value.
+          {!unlocked ? (
+            // Live status above is free; the 13-month forward calendar opens
+            // for the day with one rewarded ad.
             <GlassCard style={[styles.card, styles.lockedCard]}>
-              <Ionicons name="lock-closed" size={22} color="#D4AF37" style={{ marginBottom: 8 }} />
-              <Text style={styles.lockedTitle}>Önümüzdeki 13 ayın retro tarihleri Elite üyelere özel</Text>
+              <Ionicons name="play-circle" size={24} color="#D4AF37" style={{ marginBottom: 8 }} />
+              <Text style={styles.lockedTitle}>Önümüzdeki 13 ayın retro tarihleri</Text>
               <Text style={styles.lockedDesc}>
-                {upcoming.length} yaklaşan retro penceresi hesaplandı. Hangi gezegenin ne zaman retroya gireceğini önceden bilerek
+                {upcoming.length} yaklaşan retro penceresi hesaplandı. Kısa bir reklam izleyerek tam takvimi bugünlük açın;
                 imza, seyahat ve yatırım planlarınızı kozmik takvime göre yapın.
               </Text>
-              <Pressable onPress={() => setPaywallVisible(true)} style={styles.unlockBtn}>
-                <Text style={styles.unlockBtnText}>Retro Takvimini Aç →</Text>
+              <Pressable onPress={() => setGateVisible(true)} style={styles.unlockBtn}>
+                <Text style={styles.unlockBtnText}>🎬 Reklam İzle, Takvimi Aç</Text>
               </Pressable>
             </GlassCard>
           ) : upcoming.length === 0 ? (
@@ -94,12 +95,13 @@ export default function RetroCalendarScreen() {
         </ScrollView>
       </SafeAreaView>
 
-      <PaywallAdModal
-        visible={paywallVisible}
-        onClose={() => setPaywallVisible(false)}
-        onSuccess={() => {}}
-        title="Retro Takvimi — Elite"
-        description="Tüm gezegenlerin önümüzdeki 13 aylık retro başlangıç ve bitiş tarihlerine erişin, hayatınızı gökyüzüne göre önceden planlayın. Elite üyelikte ayrıca hiç reklam görmezsiniz."
+      <RewardGateModal
+        visible={gateVisible}
+        onClose={() => setGateVisible(false)}
+        feature="retro_full"
+        title="Retro Takvimi"
+        description="Tüm gezegenlerin önümüzdeki 13 aylık retro başlangıç ve bitiş tarihleri. Kısa bir reklam, takvimi gün boyu açar."
+        onUnlocked={() => setUnlocked(true)}
       />
     </View>
   );

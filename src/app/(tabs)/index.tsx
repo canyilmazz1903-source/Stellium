@@ -10,9 +10,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, withDelay, Easing } from 'react-native-reanimated';
 import { useCosmicCalendarStore } from '@/store/cosmicCalendarStore';
-import PaywallAdModal from '@/components/ui/PaywallAdModal';
+import RewardGateModal from '@/components/ui/RewardGateModal';
 import BannerAdSlot from '@/components/ads/BannerAdSlot';
 import { showInterstitial } from '@/services/ads';
+import { GatedFeature, isFeatureUnlocked } from '@/services/adGate';
 import { schedulePlanetaryHourNotifications } from '@/utils/notifications';
 import { getDailyCard } from '@/utils/cosmicTools';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -177,26 +178,28 @@ const PLANETARY_HOURS_DEEP_INFO: Record<string, {
 };
 
 export default function HomeScreen() {
-  const { profile, isPremium, hasUnlockedDailyShadow, unlockDailyShadow } = useAuthStore();
+  const { profile } = useAuthStore();
   const { computedChart, setComputedChart, dailyHoroscope: horoscope, fetchHoroscope, houseSystem } = useAppStore();
-  const [paywallVisible, setPaywallVisible] = useState(false);
-  // Generic feature paywall: set a title+description to open it from any lock.
-  const [featurePaywall, setFeaturePaywall] = useState<{ title: string; description: string } | null>(null);
+  // Rewarded-ad gate: one modal serves every gated feature.
+  const [gate, setGate] = useState<{
+    feature: GatedFeature;
+    title: string;
+    description: string;
+    onUnlocked: () => void;
+  } | null>(null);
   const [loadingHoroscope, setLoadingHoroscope] = useState(false);
   const router = useRouter();
   const interstitialShownRef = useRef(false);
   const modalCloseCountRef = useRef(0);
 
-  // Shows a single interstitial per session for free users, the second time
-  // they close a detail modal, so ads never interrupt Elite subscribers.
+  // Shows a single interstitial per session, the second time a detail modal
+  // closes — frequent enough to earn, rare enough not to annoy.
   const handleCloseDetailModal = () => {
     setModalVisible(false);
-    if (!isPremium) {
-      modalCloseCountRef.current += 1;
-      if (modalCloseCountRef.current === 2 && !interstitialShownRef.current) {
-        interstitialShownRef.current = true;
-        showInterstitial();
-      }
+    modalCloseCountRef.current += 1;
+    if (modalCloseCountRef.current === 2 && !interstitialShownRef.current) {
+      interstitialShownRef.current = true;
+      showInterstitial();
     }
   };
 
@@ -323,16 +326,6 @@ export default function HomeScreen() {
   }, []);
 
   const togglePreference = async (planetName: string) => {
-    // Automatic planetary-hour notifications are an Elite perk; free users
-    // can always check the live hours strip manually in the app.
-    if (!isPremium) {
-      setPlanetaryModalVisible(false);
-      setFeaturePaywall({
-        title: 'Otomatik Gezegen Saati Bildirimleri',
-        description: 'Seçtiğiniz gezegenlerin saati başladığında otomatik bildirim almak Stellium Elite üyelerine özeldir. Elite olmadan gezegen saatlerini uygulamadaki canlı şeritten manuel takip edebilirsiniz.',
-      });
-      return;
-    }
     const updated = {
       ...notifPreferences,
       [planetName]: !notifPreferences[planetName]
@@ -356,11 +349,10 @@ export default function HomeScreen() {
     const lon = profile?.longitude || 28.9784;
     const hours = calculatePlanetaryHours(lat, lon, new Date());
     setPlanetaryHours(hours);
-    // Auto-scheduling planetary hour notifications is an Elite perk.
-    if (hours.length > 0 && isPremium) {
+    if (hours.length > 0) {
       schedulePlanetaryHourNotifications(hours);
     }
-  }, [profile, isPremium]);
+  }, [profile]);
 
   useEffect(() => {
     if (planetaryHours.length > 0) {
@@ -420,20 +412,33 @@ export default function HomeScreen() {
 
   const retroCount = useMemo(() => currentSky.filter(p => p.retro).length, [currentSky]);
 
-  const handlePremiumNavigation = (route: string) => {
-    if (isPremium) {
-      router.push(route as any);
-    } else {
-      setFeaturePaywall({
-        title: 'Elite Kozmik Servisler',
-        description: 'Yapay zeka destekli Transit, Sinastri ve Yıldızname raporları Stellium Elite üyelerine özeldir. Elite ile tüm derin analizler açılır ve hiç reklam görmezsiniz.',
-      });
-    }
+  // AI-heavy service screens unlock for the day with one rewarded ad.
+  const handleGatedNavigation = (route: string, feature: GatedFeature, title: string, description: string) => {
+    isFeatureUnlocked(feature).then((unlocked) => {
+      if (unlocked) {
+        router.push(route as any);
+      } else {
+        setGate({ feature, title, description, onUnlocked: () => router.push(route as any) });
+      }
+    });
   };
 
+  const [shadowUnlocked, setShadowUnlocked] = useState(false);
+  useEffect(() => {
+    isFeatureUnlocked('shadow').then(setShadowUnlocked);
+  }, []);
+
   const openDetailModal = (type: 'moon' | 'identity' | 'general' | 'love' | 'career' | 'shadow') => {
-    if (type === 'shadow' && !isPremium && !hasUnlockedDailyShadow) {
-      setPaywallVisible(true);
+    if (type === 'shadow' && !shadowUnlocked) {
+      setGate({
+        feature: 'shadow',
+        title: 'Zihinsel Gölgeler & Ritüel',
+        description: 'Günlük gölge analiziniz, gökyüzünün bugünkü temaslarına göre kişisel hazırlanır. Kısa bir reklam izleyerek bugünlük açabilirsiniz.',
+        onUnlocked: () => {
+          setShadowUnlocked(true);
+          setTimeout(() => openDetailModalRef.current('shadow'), 250);
+        },
+      });
       return;
     }
     if (type === 'moon') {
@@ -485,6 +490,11 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
     setModalVisible(true);
   };
 
+  // Latest-instance ref so the reward-gate callback reopens with fresh state
+  // (the closure captured at gate time would still see shadowUnlocked=false).
+  const openDetailModalRef = useRef(openDetailModal);
+  openDetailModalRef.current = openDetailModal;
+
   const openDailyCard = () => {
     const card = getDailyCard(profile?.name || 'Kozmik Ruh');
     setSelectedModalContent({
@@ -498,11 +508,8 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
 
   const openCareDetailModal = (title: string, advice: string, projections?: any[]) => {
     let projectionText = '';
-    if (isPremium && projections && projections.length > 0) {
+    if (projections && projections.length > 0) {
       projectionText = '\n\n🔮 En Uyumlu Gelecek Tarihler:\n' + projections.map(p => `• ${p.formattedRange} (${p.label})`).join('\n');
-    } else if (!isPremium) {
-      // Free tier sees today's rating; the 30-day auto-planning is the upsell.
-      projectionText = '\n\n🔒 30 günlük "en uygun tarih" pencereleri Stellium Elite üyeleri için otomatik hesaplanır. Elite olmayan üyeler günlük değerleri her gün manuel kontrol edebilir.';
     }
     setSelectedModalContent({
       title: title,
@@ -672,7 +679,6 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
               <Text style={styles.dualCardEmoji}>✦</Text>
               <Text style={styles.dualCardLabel}>Kozmik Kimlik</Text>
               <Text style={styles.dualCardValue}>{userSunSign} Burcu</Text>
-              {isPremium && <Text style={styles.eliteMicroBadge}>Elite</Text>}
             </Pressable>
           </View>
 
@@ -737,9 +743,7 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
                       <Text style={styles.careGridTitle} numberOfLines={1}>{item.title}</Text>
                       <Text style={styles.careGridLabel} numberOfLines={1}>{rating.label}</Text>
                       <Text style={styles.careGridDate} numberOfLines={1}>
-                        {isPremium
-                          ? (nextBest ? `📅 ${nextBest.formattedRange}` : 'Uygun pencere yaklaşıyor')
-                          : '🔒 En iyi tarihler: Elite'}
+                        {nextBest ? `📅 ${nextBest.formattedRange}` : 'Uygun pencere yaklaşıyor'}
                       </Text>
                     </Pressable>
                   );
@@ -751,12 +755,12 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
                 <View style={styles.careItemHeader}>
                   <Text style={styles.careItemTitle}>🌓 Zihinsel Gölgeler & Ritüel</Text>
                   <View style={styles.starsContainer}>
-                    {isPremium || hasUnlockedDailyShadow ? (
+                    {shadowUnlocked ? (
                       <Text style={styles.careLabelText}>Erişime Açık</Text>
                     ) : (
                       <>
-                        <Ionicons name="lock-closed" size={13} color="#D4AF37" style={{ marginRight: 2 }} />
-                        <Text style={styles.careLabelText}>Stellium Elite</Text>
+                        <Text style={{ fontSize: 12, marginRight: 3 }}>🎬</Text>
+                        <Text style={styles.careLabelText}>Reklamla Aç</Text>
                       </>
                     )}
                   </View>
@@ -806,57 +810,69 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
               </View>
             </Pressable>
 
-            <Pressable style={styles.serviceCard} onPress={() => router.push('/tools/timeline' as any)}>
+            <Pressable style={styles.serviceCard} onPress={() => handleGatedNavigation(
+              '/tools/timeline', 'timeline', 'Kozmik Zamanlama',
+              'Seçim astrolojisi motoru, tutulma takvimi, profeksiyon ve firdaria panelleri yoğun hesap gücü kullanır. Kısa bir reklamla bugünlük açılır.'
+            )}>
               <View style={styles.serviceIconWrap}>
                 <Text style={styles.serviceIcon}>🧭</Text>
               </View>
               <View style={styles.serviceInfo}>
                 <View style={styles.serviceNameRow}>
                   <Text style={styles.serviceCardTitle}>Kozmik Zamanlama</Text>
-                  {!isPremium && <Text style={styles.lockIcon}>🔒</Text>}
+                  <Text style={styles.lockIcon}>🎬</Text>
                 </View>
                 <Text style={styles.serviceDescription} numberOfLines={2}>Niyetinize en uygun günler, tutulmalar, profeksiyon & firdaria.</Text>
               </View>
             </Pressable>
           </View>
 
-          {/* Elite Services Section */}
-          <Text style={styles.sectionTitle}>Elite Kozmik Servisler</Text>
+          {/* AI Services Section (rewarded-ad gated: real AI cost) */}
+          <Text style={styles.sectionTitle}>Derin Analiz Servisleri</Text>
           <View style={styles.servicesGrid}>
-            <Pressable style={styles.serviceCard} onPress={() => handlePremiumNavigation('/premium/transit')}>
+            <Pressable style={styles.serviceCard} onPress={() => handleGatedNavigation(
+              '/premium/transit', 'transit', 'Transit Analizi',
+              'Yapay zeka, bugünün gerçek gökyüzünü natal haritanızla karşılaştırıp size özel bir rapor yazar. Bu analiz gerçek AI maliyeti taşıdığı için kısa bir reklamla bugünlük açılır.'
+            )}>
               <View style={styles.serviceIconWrap}>
                 <Text style={styles.serviceIcon}>🌌</Text>
               </View>
               <View style={styles.serviceInfo}>
                 <View style={styles.serviceNameRow}>
                   <Text style={styles.serviceCardTitle}>Transit Analizi</Text>
-                  {!isPremium && <Text style={styles.lockIcon}>🔒</Text>}
+                  <Text style={styles.lockIcon}>🎬</Text>
                 </View>
                 <Text style={styles.serviceDescription} numberOfLines={2}>Gökyüzünün güncel hareketlerinin haritanıza yansımaları.</Text>
               </View>
             </Pressable>
 
-            <Pressable style={styles.serviceCard} onPress={() => handlePremiumNavigation('/premium/synastry')}>
+            <Pressable style={styles.serviceCard} onPress={() => handleGatedNavigation(
+              '/premium/synastry', 'synastry', 'Sinastri Analizi',
+              'İki haritanın tüm açı matrisi hesaplanır ve yapay zeka ilişki dinamiklerinizi yorumlar. Gerçek AI maliyeti nedeniyle kısa bir reklamla bugünlük açılır.'
+            )}>
               <View style={styles.serviceIconWrap}>
                 <Text style={styles.serviceIcon}>💞</Text>
               </View>
               <View style={styles.serviceInfo}>
                 <View style={styles.serviceNameRow}>
                   <Text style={styles.serviceCardTitle}>Sinastri Analizi</Text>
-                  {!isPremium && <Text style={styles.lockIcon}>🔒</Text>}
+                  <Text style={styles.lockIcon}>🎬</Text>
                 </View>
                 <Text style={styles.serviceDescription} numberOfLines={2}>İki haritanın karşılaştırmalı ilişki uyum analizi.</Text>
               </View>
             </Pressable>
 
-            <Pressable style={styles.serviceCard} onPress={() => handlePremiumNavigation('/premium/yildizname')}>
+            <Pressable style={styles.serviceCard} onPress={() => handleGatedNavigation(
+              '/premium/yildizname', 'yildizname', 'Yıldızname Raporu',
+              'Ebced hesabınız ve doğum menzilinizle kişisel yıldızname raporunuz yapay zeka tarafından yazılır. Gerçek AI maliyeti nedeniyle kısa bir reklamla bugünlük açılır.'
+            )}>
               <View style={styles.serviceIconWrap}>
                 <Text style={styles.serviceIcon}>📜</Text>
               </View>
               <View style={styles.serviceInfo}>
                 <View style={styles.serviceNameRow}>
                   <Text style={styles.serviceCardTitle}>Yıldızname Raporu</Text>
-                  {!isPremium && <Text style={styles.lockIcon}>🔒</Text>}
+                  <Text style={styles.lockIcon}>🎬</Text>
                 </View>
                 <Text style={styles.serviceDescription} numberOfLines={2}>Ebced hesabı ve mizaç elementleriyle mistik rehber.</Text>
               </View>
@@ -878,31 +894,19 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
                 </View>
               </Pressable>
 
-              {/* Love & career deep-dives are the Elite hook: free tier gets
-                  a one-line teaser, full text behind the paywall. */}
-              <Pressable onPress={() => isPremium ? openDetailModal('love') : setFeaturePaywall({
-                title: 'Aşk & İlişki Analizi',
-                description: 'Venüs ve Mars enerjilerinize göre hazırlanan günlük derin ilişki analiziniz Stellium Elite üyelerine özeldir. Elite ile tüm günlük bölümler tam metin açılır ve hiç reklam görmezsiniz.',
-              })}>
+              <Pressable onPress={() => openDetailModal('love')}>
                 <View style={styles.forecastCard}>
-                  <Text style={styles.forecastHeader}>💞 Yansımalar & İlişki {!isPremium && '🔒'}</Text>
-                  <Text style={styles.forecastText} numberOfLines={isPremium ? 3 : 1}>{horoscope.love}</Text>
-                  <Text style={styles.detailLink}>
-                    {isPremium ? 'Detaylı Analiz için Dokunun →' : 'Devamını Elite ile Okuyun →'}
-                  </Text>
+                  <Text style={styles.forecastHeader}>💞 Yansımalar & İlişki</Text>
+                  <Text style={styles.forecastText} numberOfLines={3}>{horoscope.love}</Text>
+                  <Text style={styles.detailLink}>Detaylı Analiz için Dokunun →</Text>
                 </View>
               </Pressable>
 
-              <Pressable onPress={() => isPremium ? openDetailModal('career') : setFeaturePaywall({
-                title: 'Kariyer & Bereket Analizi',
-                description: 'Jüpiter ve Satürn geçişlerinize göre hazırlanan günlük kariyer ve bolluk analiziniz Stellium Elite üyelerine özeldir. Elite ile tüm günlük bölümler tam metin açılır ve hiç reklam görmezsiniz.',
-              })}>
+              <Pressable onPress={() => openDetailModal('career')}>
                 <View style={styles.forecastCard}>
-                  <Text style={styles.forecastHeader}>💼 Kariyer & Bereket {!isPremium && '🔒'}</Text>
-                  <Text style={styles.forecastText} numberOfLines={isPremium ? 3 : 1}>{horoscope.career}</Text>
-                  <Text style={styles.detailLink}>
-                    {isPremium ? 'Detaylı Analiz için Dokunun →' : 'Devamını Elite ile Okuyun →'}
-                  </Text>
+                  <Text style={styles.forecastHeader}>💼 Kariyer & Bereket</Text>
+                  <Text style={styles.forecastText} numberOfLines={3}>{horoscope.career}</Text>
+                  <Text style={styles.detailLink}>Detaylı Analiz için Dokunun →</Text>
                 </View>
               </Pressable>
             </View>
@@ -1123,23 +1127,16 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
         </View>
       </Modal>
 
-      <PaywallAdModal
-        visible={!!featurePaywall}
-        onClose={() => setFeaturePaywall(null)}
-        title={featurePaywall?.title}
-        description={featurePaywall?.description}
-        onSuccess={() => setFeaturePaywall(null)}
-      />
-
-      <PaywallAdModal
-        visible={paywallVisible}
-        onClose={() => setPaywallVisible(false)}
-        title="Zihinsel Gölgeler"
-        description="Günlük gölge analizinizi görmek için bir reklam izleyerek ücretsiz açabilir veya Stellium Elite'e geçerek tüm kilitleri kaldırabilirsiniz."
-        allowAdUnlock
-        onAdUnlock={unlockDailyShadow}
-        onSuccess={() => {
-          Alert.alert("Başarılı", "Günlük gölge analizi kilidi açıldı!");
+      <RewardGateModal
+        visible={!!gate}
+        onClose={() => setGate(null)}
+        feature={gate?.feature || 'shadow'}
+        title={gate?.title || ''}
+        description={gate?.description || ''}
+        onUnlocked={() => {
+          const cb = gate?.onUnlocked;
+          setGate(null);
+          cb?.();
         }}
       />
       </SafeAreaView>

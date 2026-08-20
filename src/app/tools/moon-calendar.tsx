@@ -1,9 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, SafeAreaView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import GlassCard from '@/components/glass/GlassCard';
-import PaywallAdModal from '@/components/ui/PaywallAdModal';
-import { useAuthStore } from '@/store/authStore';
+import RewardGateModal from '@/components/ui/RewardGateModal';
+import { isFeatureUnlocked } from '@/services/adGate';
 import { computeMoonCalendar, MOON_SIGN_GUIDANCE } from '@/utils/cosmicTools';
 import { getJulianDaysSinceJ2000, getPlanetLongitude } from '@/utils/astronomy';
 import { menzilFromLongitude, menzilGuidance } from '@/utils/menazil';
@@ -14,13 +14,14 @@ const MONTHS_TR = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Ey
 const FREE_VISIBLE_DAYS = 7;
 
 export default function MoonCalendarScreen() {
-  const { isPremium } = useAuthStore();
-  const [paywallVisible, setPaywallVisible] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+  const [gateVisible, setGateVisible] = useState(false);
+  useEffect(() => { isFeatureUnlocked('moon_full').then(setUnlocked); }, []);
   const fullCalendar = useMemo(() => computeMoonCalendar(30), []);
   const [expandedIdx, setExpandedIdx] = useState<number | null>(0);
 
-  // Free tier: one week visible (check back daily); Elite: full month.
-  const calendar = isPremium ? fullCalendar : fullCalendar.slice(0, FREE_VISIBLE_DAYS);
+  // First week is free; one rewarded ad opens the full month for the day.
+  const calendar = unlocked ? fullCalendar : fullCalendar.slice(0, FREE_VISIBLE_DAYS);
   const keyEvents = fullCalendar.filter(d => d.isNewMoon || d.isFullMoon);
 
   return (
@@ -28,7 +29,7 @@ export default function MoonCalendarScreen() {
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           {keyEvents.length > 0 && (
-            isPremium ? (
+            unlocked ? (
               <View style={styles.eventsRow}>
                 {keyEvents.map((d, i) => (
                   <View key={i} style={[styles.eventBadge, d.isFullMoon ? styles.fullMoonBadge : styles.newMoonBadge]}>
@@ -41,19 +42,19 @@ export default function MoonCalendarScreen() {
                 ))}
               </View>
             ) : (
-              <Pressable onPress={() => setPaywallVisible(true)} style={styles.eventsRow}>
+              <Pressable onPress={() => setGateVisible(true)} style={styles.eventsRow}>
                 {keyEvents.map((d, i) => (
                   <View key={i} style={[styles.eventBadge, d.isFullMoon ? styles.fullMoonBadge : styles.newMoonBadge]}>
                     <Text style={styles.eventBadgeSymbol}>{d.isFullMoon ? '🌕' : '🌑'}</Text>
                     <Text style={styles.eventBadgeTitle}>{d.isFullMoon ? 'Dolunay' : 'Yeni Ay'}</Text>
-                    <Text style={styles.eventBadgeDate}>🔒 Tarihi Elite ile gör</Text>
+                    <Text style={styles.eventBadgeDate}>🎬 Tarihi görmek için aç</Text>
                   </View>
                 ))}
               </Pressable>
             )
           )}
 
-          <Text style={styles.sectionTitle}>{isPremium ? 'Önümüzdeki 30 Gün' : 'Önümüzdeki 7 Gün'}</Text>
+          <Text style={styles.sectionTitle}>{unlocked ? 'Önümüzdeki 30 Gün' : 'Önümüzdeki 7 Gün'}</Text>
           {calendar.map((d, idx) => {
             const isExpanded = expandedIdx === idx;
             const isEvent = d.isNewMoon || d.isFullMoon;
@@ -98,16 +99,16 @@ export default function MoonCalendarScreen() {
             );
           })}
 
-          {!isPremium && (
+          {!unlocked && (
             <GlassCard style={styles.lockedCard}>
-              <Ionicons name="lock-closed" size={22} color="#D4AF37" style={{ marginBottom: 8 }} />
-              <Text style={styles.lockedTitle}>Ayın kalan {30 - FREE_VISIBLE_DAYS} günü Elite üyelere özel</Text>
+              <Ionicons name="play-circle" size={24} color="#D4AF37" style={{ marginBottom: 8 }} />
+              <Text style={styles.lockedTitle}>Ayın kalan {30 - FREE_VISIBLE_DAYS} günü + Yeni Ay/Dolunay tarihleri</Text>
               <Text style={styles.lockedDesc}>
-                Yeni Ay & Dolunay tarihlerini, tüm burç geçişlerini ve 30 günlük Ay rehberliğini tek bakışta görün —
-                her gün tek tek kontrol etmek zorunda kalmayın.
+                Kısa bir reklam izleyerek 30 günlük tam takvimi, tüm burç geçişlerini ve kesin Yeni Ay & Dolunay tarihlerini
+                bugünlük açın.
               </Text>
-              <Pressable onPress={() => setPaywallVisible(true)} style={styles.unlockBtn}>
-                <Text style={styles.unlockBtnText}>Tüm Takvimi Aç →</Text>
+              <Pressable onPress={() => setGateVisible(true)} style={styles.unlockBtn}>
+                <Text style={styles.unlockBtnText}>🎬 Reklam İzle, Takvimi Aç</Text>
               </Pressable>
             </GlassCard>
           )}
@@ -118,12 +119,13 @@ export default function MoonCalendarScreen() {
         </ScrollView>
       </SafeAreaView>
 
-      <PaywallAdModal
-        visible={paywallVisible}
-        onClose={() => setPaywallVisible(false)}
-        onSuccess={() => {}}
-        title="Ay Takvimi — Elite"
-        description="30 günlük Ay evreleri, tüm burç geçişleri ve kesin Yeni Ay & Dolunay tarihleri Stellium Elite ile otomatik önünüzde. Elite üyelikte ayrıca hiç reklam görmezsiniz."
+      <RewardGateModal
+        visible={gateVisible}
+        onClose={() => setGateVisible(false)}
+        feature="moon_full"
+        title="Ay Takvimi — Tam Görünüm"
+        description="30 günlük Ay evreleri, tüm burç geçişleri ve kesin Yeni Ay & Dolunay tarihleri. Kısa bir reklam, takvimi gün boyu açar."
+        onUnlocked={() => setUnlocked(true)}
       />
     </View>
   );

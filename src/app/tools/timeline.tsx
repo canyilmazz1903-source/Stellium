@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, SafeAreaView, Pressable, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import GlassCard from '@/components/glass/GlassCard';
-import PaywallAdModal from '@/components/ui/PaywallAdModal';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
 import { getTimezoneOffset } from '@/utils/astronomy';
@@ -29,9 +28,8 @@ const INTENTS: { key: ElectionalIntent; label: string; emoji: string }[] = [
 ];
 
 export default function TimelineScreen() {
-  const { profile, isPremium } = useAuthStore();
+  const { profile } = useAuthStore();
   const { computedChart } = useAppStore();
-  const [paywallVisible, setPaywallVisible] = useState(false);
   const [intent, setIntent] = useState<ElectionalIntent>('başlangıç');
   const [electional, setElectional] = useState<ElectionalWindow[] | null>(null);
   const [electionalLoading, setElectionalLoading] = useState(false);
@@ -51,7 +49,7 @@ export default function TimelineScreen() {
   }, [profile]);
 
   const predictions = useMemo(() => {
-    if (!isPremium || !birthUtc || !computedChart) return null;
+    if (!birthUtc || !computedChart) return null;
     try {
       const prog = computeProgressions(birthUtc, computedChart.houses);
       const prof = computeProfection(birthUtc, computedChart.ascendant);
@@ -72,7 +70,7 @@ export default function TimelineScreen() {
       console.warn('Prediction computation failed:', e);
       return null;
     }
-  }, [isPremium, birthUtc, computedChart, profile]);
+  }, [birthUtc, computedChart, profile]);
 
   const runElectional = () => {
     setElectionalLoading(true);
@@ -87,35 +85,6 @@ export default function TimelineScreen() {
       }
     }, 50);
   };
-
-  if (!isPremium) {
-    return (
-      <View style={styles.wrapper}>
-        <SafeAreaView style={styles.container}>
-          <ScrollView contentContainerStyle={styles.scroll}>
-            <GlassCard style={styles.lockedCard}>
-              <Ionicons name="lock-closed" size={26} color="#D4AF37" style={{ marginBottom: 10 }} />
-              <Text style={styles.lockedTitle}>Kozmik Zamanlama & Öngörü Paneli</Text>
-              <Text style={styles.lockedDesc}>
-                Niyetinize göre en uygun tarihleri bulan seçim astrolojisi motoru, tutulma takvimi, yıllık profeksiyon,
-                firdaria dönemleri, progres Ay ve Güneş Dönüşü haritanız — hepsi gerçek astronomik hesapla, Stellium Elite'e özel.
-              </Text>
-              <Pressable onPress={() => setPaywallVisible(true)} style={styles.unlockBtn}>
-                <Text style={styles.unlockBtnText}>Elite ile Aç →</Text>
-              </Pressable>
-            </GlassCard>
-          </ScrollView>
-        </SafeAreaView>
-        <PaywallAdModal
-          visible={paywallVisible}
-          onClose={() => setPaywallVisible(false)}
-          onSuccess={() => {}}
-          title="Kozmik Zamanlama — Elite"
-          description="Seçim astrolojisi motoru, tutulma takvimi, profeksiyon, firdaria ve Güneş Dönüşü analizi Stellium Elite üyelerine özeldir. Elite üyelikte ayrıca hiç reklam görmezsiniz."
-        />
-      </View>
-    );
-  }
 
   return (
     <View style={styles.wrapper}>
