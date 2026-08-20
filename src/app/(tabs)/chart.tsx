@@ -13,6 +13,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, wit
 import { useRouter } from 'expo-router';
 import { composePlanetInSign, computeElementBalance } from '@/utils/interpretations';
 import RewardGateModal from '@/components/ui/RewardGateModal';
+import MarkdownText from '@/components/ui/MarkdownText';
 import { isFeatureUnlocked } from '@/services/adGate';
 
 // Collapsible section wrapper so the chart page reads as an organized index
@@ -1042,7 +1043,7 @@ export default function ChartScreen() {
                         <Text style={styles.interpArchetypeText}>Temsili Karakter: {interpretations.sun.archetype}</Text>
                       </View>
                     </View>
-                    <Text style={styles.interpBodyText}>{interpretations.sun.ego}</Text>
+                    <MarkdownText style={styles.interpBodyText}>{interpretations.sun.ego}</MarkdownText>
                     <View style={styles.interpAdviceBox}>
                       <Text style={styles.interpAdviceTitle}>🔑 Gelişim & Yaşam Önerisi</Text>
                       <Text style={styles.interpAdviceText}>{interpretations.sun.advice}</Text>
@@ -1058,7 +1059,7 @@ export default function ChartScreen() {
                         <Text style={styles.interpArchetypeText}>Temsili Karakter: {interpretations.moon.archetype}</Text>
                       </View>
                     </View>
-                    <Text style={styles.interpBodyText}>{interpretations.moon.shadow}</Text>
+                    <MarkdownText style={styles.interpBodyText}>{interpretations.moon.shadow}</MarkdownText>
                     <View style={styles.interpAdviceBox}>
                       <Text style={styles.interpAdviceTitle}>🔑 Duygusal Denge & Huzur Önerisi</Text>
                       <Text style={styles.interpAdviceText}>{interpretations.moon.advice}</Text>
@@ -1076,7 +1077,7 @@ export default function ChartScreen() {
                         <Text style={styles.interpArchetypeText}>Temsili Karakter: {interpretations.asc.archetype}</Text>
                       </View>
                     </View>
-                    <Text style={styles.interpBodyText}>{interpretations.asc.persona}</Text>
+                    <MarkdownText style={styles.interpBodyText}>{interpretations.asc.persona}</MarkdownText>
                     <View style={styles.interpAdviceBox}>
                       <Text style={styles.interpAdviceTitle}>🔑 Sosyal İlişkiler Önerisi</Text>
                       <Text style={styles.interpAdviceText}>{interpretations.asc.advice}</Text>
@@ -1099,7 +1100,7 @@ export default function ChartScreen() {
                           <Text style={styles.interpArchetypeText}>Temsili Karakter: {p.archetype} • {p.degree}</Text>
                         </View>
                       </View>
-                      <Text style={styles.interpBodyText}>{p.description}</Text>
+                      <MarkdownText style={styles.interpBodyText}>{p.description}</MarkdownText>
                     </GlassCard>
                   ))}
                 </View>
@@ -1209,7 +1210,7 @@ export default function ChartScreen() {
                     <GlassCard key={idx} style={styles.patternCard}>
                       <Text style={styles.patternTitle}>✨ {pat.title}</Text>
                       <Text style={styles.patternMembers}>{pat.members.join(' • ')}</Text>
-                      <Text style={styles.patternDetail}>{pat.detail}</Text>
+                      <MarkdownText style={styles.patternDetail}>{pat.detail}</MarkdownText>
                     </GlassCard>
                   ))}
                 </>
@@ -1272,7 +1273,7 @@ export default function ChartScreen() {
                   </View>
                 )}
                 {balanceInfo && (
-                  <Text style={styles.balanceNarrative}>{balanceInfo.narrative}</Text>
+                  <MarkdownText style={styles.balanceNarrative}>{balanceInfo.narrative}</MarkdownText>
                 )}
               </GlassCard>
               </ChartSection>
@@ -1415,37 +1416,37 @@ export default function ChartScreen() {
                         {activeTab === 'bigThree' && (
                           <View style={styles.reportSection}>
                             <Text style={styles.reportSectionTitle}>🪐 Yükselen, Güneş ve Ay Sentezi</Text>
-                            <Text style={styles.modalReportText}>{aiReport.bigThree}</Text>
+                            <MarkdownText style={styles.modalReportText}>{aiReport.bigThree}</MarkdownText>
                           </View>
                         )}
                         {activeTab === 'mental' && (
                           <View style={styles.reportSection}>
                             <Text style={styles.reportSectionTitle}>🧠 Zihinsel Kapasite ve İletişim</Text>
-                            <Text style={styles.modalReportText}>{aiReport.mentalAndCommunication}</Text>
+                            <MarkdownText style={styles.modalReportText}>{aiReport.mentalAndCommunication}</MarkdownText>
                             
                             <Text style={styles.reportSectionTitle}>🔥 İrade Gücü ve Mücadele</Text>
-                            <Text style={styles.modalReportText}>{aiReport.willpowerAndStruggle}</Text>
+                            <MarkdownText style={styles.modalReportText}>{aiReport.willpowerAndStruggle}</MarkdownText>
                           </View>
                         )}
                         {activeTab === 'love' && (
                           <View style={styles.reportSection}>
                             <Text style={styles.reportSectionTitle}>❤️ Sevgi Dili ve Finansal Bereket</Text>
-                            <Text style={styles.modalReportText}>{aiReport.loveAndFinance}</Text>
+                            <MarkdownText style={styles.modalReportText}>{aiReport.loveAndFinance}</MarkdownText>
                           </View>
                         )}
                         {activeTab === 'lessons' && (
                           <View style={styles.reportSection}>
                             <Text style={styles.reportSectionTitle}>⚠️ Satürn Dersleri ve Sınavlar</Text>
-                            <Text style={styles.modalReportText}>{aiReport.saturnLessons}</Text>
+                            <MarkdownText style={styles.modalReportText}>{aiReport.saturnLessons}</MarkdownText>
                             
                             <Text style={styles.reportSectionTitle}>🚨 Güncel Riskler</Text>
-                            <Text style={styles.modalReportText}>{aiReport.currentRisks}</Text>
+                            <MarkdownText style={styles.modalReportText}>{aiReport.currentRisks}</MarkdownText>
 
                             <Text style={styles.reportSectionTitle}>🗓️ Yakın Dönem Projeksiyonu</Text>
-                            <Text style={styles.modalReportText}>{aiReport.projection}</Text>
+                            <MarkdownText style={styles.modalReportText}>{aiReport.projection}</MarkdownText>
 
                             <Text style={styles.reportSectionTitle}>🔮 Uzun Vadeli Strateji</Text>
-                            <Text style={styles.modalReportText}>{aiReport.longTerm}</Text>
+                            <MarkdownText style={styles.modalReportText}>{aiReport.longTerm}</MarkdownText>
                           </View>
                         )}
                       </ScrollView>
@@ -1453,7 +1454,7 @@ export default function ChartScreen() {
                   ) : (
                     <ScrollView contentContainerStyle={styles.modalScrollContent} showsVerticalScrollIndicator={false}>
                       {aiReport ? (
-                        <Text style={styles.modalReportText}>{typeof aiReport === 'string' ? aiReport : 'Hata'}</Text>
+                        <MarkdownText style={styles.modalReportText}>{typeof aiReport === 'string' ? aiReport : 'Hata'}</MarkdownText>
                       ) : (
                         <Text style={styles.modalReportText}>Analiz yüklenemedi. Lütfen tekrar deneyin.</Text>
                       )}

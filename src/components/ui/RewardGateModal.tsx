@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, Modal, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { GatedFeature, unlockFeatureWithAd } from '@/services/adGate';
 
 const GOLD = '#D4AF37';
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface RewardGateModalProps {
   visible: boolean;
@@ -26,6 +28,8 @@ export default function RewardGateModal({
   onUnlocked,
 }: RewardGateModalProps) {
   const [loading, setLoading] = useState(false);
+  const btnScale = useSharedValue(1);
+  const btnAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: btnScale.value }] }));
 
   const handleWatch = async () => {
     setLoading(true);
@@ -75,10 +79,15 @@ export default function RewardGateModal({
               </View>
             ) : (
               <View style={styles.actions}>
-                <Pressable onPress={handleWatch} style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.85 }]}>
+                <AnimatedPressable
+                  onPress={handleWatch}
+                  onPressIn={() => { btnScale.value = withSpring(0.96, { damping: 15, stiffness: 400 }); }}
+                  onPressOut={() => { btnScale.value = withSpring(1, { damping: 12, stiffness: 300 }); }}
+                  style={[styles.primaryBtn, btnAnimatedStyle]}
+                >
                   <Ionicons name="play" size={16} color="#0B0F19" style={{ marginRight: 6 }} />
                   <Text style={styles.primaryBtnText}>Reklam İzle, Bugünlük Aç</Text>
-                </Pressable>
+                </AnimatedPressable>
                 <Text style={styles.footerText}>
                   Stellium tamamen ücretsizdir. Tek bir kısa reklam, bu özelliği gün boyu açar — yarın yeni bir gün, yeni bir reklam.
                 </Text>
@@ -170,15 +179,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: GOLD,
-    height: 48,
-    borderRadius: 14,
+    height: 52,
+    borderRadius: 16,
     width: '100%',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
+    shadowColor: GOLD,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
   primaryBtnText: {
     fontFamily: 'InterBold',
     color: '#0B0F19',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
+    letterSpacing: 0.3,
   },
   footerText: {
     fontFamily: 'Inter',

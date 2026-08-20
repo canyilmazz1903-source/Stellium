@@ -8,6 +8,7 @@ import type { MenzilInfo } from '@/data/menazilData';
 import { fetchYildiznameAnalysis, YildiznameAnalysisResult } from '@/api/gemini';
 import GlassCard from '@/components/glass/GlassCard';
 import CosmicInput from '@/components/ui/CosmicInput';
+import MarkdownText from '@/components/ui/MarkdownText';
 import CosmicButton from '@/components/ui/CosmicButton';
 
 // Traditional Eastern/Arabic Zodiac Signs mapping for Yıldızname
@@ -209,21 +210,21 @@ export default function YildiznameScreen() {
 
                     <View style={styles.reportSection}>
                       {activeTab === 'ebcedDestiny' && (
-                        <Text style={styles.reportText}>{analysisReport.ebcedDestiny}</Text>
+                        <MarkdownText style={styles.reportText}>{analysisReport.ebcedDestiny}</MarkdownText>
                       )}
                       {activeTab === 'elementTemperament' && (
-                        <Text style={styles.reportText}>{analysisReport.elementTemperament}</Text>
+                        <MarkdownText style={styles.reportText}>{analysisReport.elementTemperament}</MarkdownText>
                       )}
                       {activeTab === 'spiritualObstacles' && (
-                        <Text style={styles.reportText}>{analysisReport.spiritualObstacles}</Text>
+                        <MarkdownText style={styles.reportText}>{analysisReport.spiritualObstacles}</MarkdownText>
                       )}
                       {activeTab === 'protectionEsma' && (
-                        <Text style={styles.reportText}>{analysisReport.protectionEsma}</Text>
+                        <MarkdownText style={styles.reportText}>{analysisReport.protectionEsma}</MarkdownText>
                       )}
                     </View>
                   </View>
                 ) : (
-                  <Text style={styles.reportText}>{typeof analysisReport === 'string' ? analysisReport : 'Rapor yüklenemedi.'}</Text>
+                  <MarkdownText style={styles.reportText}>{typeof analysisReport === 'string' ? analysisReport : 'Rapor yüklenemedi.'}</MarkdownText>
                 )}
               </GlassCard>
 

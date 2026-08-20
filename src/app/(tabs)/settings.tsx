@@ -12,6 +12,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, Eas
 import { isDailyGuidanceEnabled, setDailyGuidanceEnabled } from '@/utils/notifications';
 import { useAppStore } from '@/store/appStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { explainTimezoneDecision } from '@/utils/astronomy';
 
 export default function SettingsScreen() {
   const { user, profile, signOut } = useAuthStore();
@@ -109,6 +110,24 @@ export default function SettingsScreen() {
       return dateStr;
     }
   };
+
+  // Trust layer: explain which official DST rule was applied to the birth
+  // instant, so the user understands why the same clock time can yield a
+  // different chart than a calculator that ignores Turkey's historical
+  // yaz saati (DST) changes.
+  const tzNote = React.useMemo(() => {
+    if (!profile?.birth_date || !profile?.birth_time) return null;
+    try {
+      const [y, m, dd] = profile.birth_date.split('-').map(Number);
+      const [h, min] = profile.birth_time.split(':').map(Number);
+      const local = new Date(y, m - 1, dd, h, min);
+      const decision = explainTimezoneDecision(local, profile.timezone || 'Europe/Istanbul');
+      const offsetStr = `GMT${decision.offsetHours >= 0 ? '+' : ''}${decision.offsetHours % 1 === 0 ? decision.offsetHours : decision.offsetHours.toFixed(1)}`;
+      return { decision, offsetStr };
+    } catch {
+      return null;
+    }
+  }, [profile]);
 
   const startEditing = () => {
     setName(profile?.name || '');
@@ -374,6 +393,22 @@ export default function SettingsScreen() {
                         {formatBirthDate(profile?.birth_date)} | {profile?.birth_time || '-'}
                       </Text>
                     </View>
+
+                    {tzNote && (
+                      <View style={styles.tzNoteBox}>
+                        <Text style={styles.tzNoteTitle}>
+                          🕐 {tzNote.offsetStr}{tzNote.decision.isTurkeyRule ? `, yaz saati: ${tzNote.decision.dstActive ? 'aktif' : 'pasif'}` : ''}
+                        </Text>
+                        <Text style={styles.tzNoteText}>{tzNote.decision.ruleLabel}.</Text>
+                        {tzNote.decision.isTurkeyRule && (
+                          <Text style={styles.tzNoteText}>
+                            Türkiye, 1973–2016 arasında yaz saatini birden çok kez değiştirdi ve Eylül 2016'dan beri kalıcı olarak GMT+3'te sabitlendi.
+                            Bu geçmişi hesaba katmayan hesaplayıcılar aynı saat için yanlış GMT değeri kullanabilir ve farklı bir yükselen/harita üretebilir.
+                            Stellium, doğum anınıza uygulanan resmî saat kuralını otomatik olarak tespit eder — bu yüzden girdiğiniz saat, başka bir yerde gördüğünüzden farklı görünebilir.
+                          </Text>
+                        )}
+                      </View>
+                    )}
                   </>
                 ) : (
                   <View style={styles.editForm}>
@@ -715,6 +750,29 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     fontSize: 14,
     color: '#F0F6FC',
+  },
+  tzNoteBox: {
+    marginTop: 4,
+    marginBottom: 4,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(212, 175, 55, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.2)',
+  },
+  tzNoteTitle: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#D4AF37',
+    marginBottom: 4,
+  },
+  tzNoteText: {
+    fontFamily: 'Inter',
+    fontSize: 11.5,
+    color: '#8B949E',
+    lineHeight: 17,
+    marginTop: 4,
   },
   description: {
     fontFamily: 'Inter',

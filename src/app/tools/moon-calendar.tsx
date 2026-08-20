@@ -107,7 +107,10 @@ export default function MoonCalendarScreen() {
                 Kısa bir reklam izleyerek 30 günlük tam takvimi, tüm burç geçişlerini ve kesin Yeni Ay & Dolunay tarihlerini
                 bugünlük açın.
               </Text>
-              <Pressable onPress={() => setGateVisible(true)} style={styles.unlockBtn}>
+              <Pressable
+                onPress={() => setGateVisible(true)}
+                style={({ pressed }) => [styles.unlockBtn, pressed && styles.unlockBtnPressed]}
+              >
                 <Text style={styles.unlockBtnText}>🎬 Reklam İzle, Takvimi Aç</Text>
               </Pressable>
             </GlassCard>
@@ -297,6 +300,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 20,
     paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#D4AF37',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  unlockBtnPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.97 }],
   },
   unlockBtnText: {
     fontFamily: 'Inter',

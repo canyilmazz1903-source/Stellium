@@ -16,6 +16,7 @@ import { showInterstitial } from '@/services/ads';
 import { GatedFeature, isFeatureUnlocked } from '@/services/adGate';
 import { schedulePlanetaryHourNotifications } from '@/utils/notifications';
 import { getDailyCard } from '@/utils/cosmicTools';
+import MarkdownText from '@/components/ui/MarkdownText';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Determine Moon phase name and symbol based on Sun and Moon elongations
@@ -940,12 +941,12 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
             <View style={styles.modalDivider} />
             
             <ScrollView contentContainerStyle={styles.modalScroll} showsVerticalScrollIndicator={false}>
-              <Text style={styles.modalText}>{selectedModalContent?.content}</Text>
-              
+              <MarkdownText style={styles.modalText}>{selectedModalContent?.content}</MarkdownText>
+
               {selectedModalContent?.advice && (
                 <View style={styles.adviceContainer}>
                   <Text style={styles.adviceTitle}>🔮 Günlük Ritüel & Zikir Önerisi</Text>
-                  <Text style={styles.adviceText}>{selectedModalContent.advice}</Text>
+                  <MarkdownText style={styles.adviceText}>{selectedModalContent.advice}</MarkdownText>
                 </View>
               )}
             </ScrollView>
@@ -960,7 +961,7 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
         animationType="fade"
         onRequestClose={() => setPlanetaryModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, styles.planetaryModalOverlay]}>
           <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} />
           <View style={styles.planetaryModalContainer}>
             <View style={styles.planetaryModalHeader}>
@@ -1781,6 +1782,9 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#D4AF37',
     fontWeight: '500',
+  },
+  planetaryModalOverlay: {
+    justifyContent: 'flex-end',
   },
   planetaryModalContainer: {
     backgroundColor: '#0F1420',

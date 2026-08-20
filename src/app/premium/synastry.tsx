@@ -8,6 +8,7 @@ import { fetchSynastryAnalysis, SynastryAnalysisResult } from '@/api/gemini';
 import { searchLocation, getTimezoneForCoordinates, LocationSuggestion } from '@/api/location';
 import GlassCard from '@/components/glass/GlassCard';
 import CosmicInput from '@/components/ui/CosmicInput';
+import MarkdownText from '@/components/ui/MarkdownText';
 import CosmicButton from '@/components/ui/CosmicButton';
 
 interface SynastryAspect {
@@ -415,21 +416,21 @@ export default function SynastryScreen() {
 
                     <View style={styles.reportSection}>
                       {activeTab === 'loveAndAttraction' && (
-                        <Text style={styles.reportText}>{analysisReport.loveAndAttraction}</Text>
+                        <MarkdownText style={styles.reportText}>{analysisReport.loveAndAttraction}</MarkdownText>
                       )}
                       {activeTab === 'communication' && (
-                        <Text style={styles.reportText}>{analysisReport.communication}</Text>
+                        <MarkdownText style={styles.reportText}>{analysisReport.communication}</MarkdownText>
                       )}
                       {activeTab === 'friction' && (
-                        <Text style={styles.reportText}>{analysisReport.friction}</Text>
+                        <MarkdownText style={styles.reportText}>{analysisReport.friction}</MarkdownText>
                       )}
                       {activeTab === 'harmonyGuide' && (
-                        <Text style={styles.reportText}>{analysisReport.harmonyGuide}</Text>
+                        <MarkdownText style={styles.reportText}>{analysisReport.harmonyGuide}</MarkdownText>
                       )}
                     </View>
                   </View>
                 ) : (
-                  <Text style={styles.reportText}>{typeof analysisReport === 'string' ? analysisReport : 'Rapor yüklenemedi.'}</Text>
+                  <MarkdownText style={styles.reportText}>{typeof analysisReport === 'string' ? analysisReport : 'Rapor yüklenemedi.'}</MarkdownText>
                 )}
               </GlassCard>
 

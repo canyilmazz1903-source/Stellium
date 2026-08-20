@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/appStore';
 import { getJulianDaysSinceJ2000, getPlanetLongitude, getZodiacSign } from '@/utils/astronomy';
 import { fetchTransitAnalysis, TransitAnalysisResult } from '@/api/gemini';
 import GlassCard from '@/components/glass/GlassCard';
+import MarkdownText from '@/components/ui/MarkdownText';
 
 const PLANET_TR: Record<string, string> = {
   Sun: 'Güneş',
@@ -196,21 +197,21 @@ export default function TransitScreen() {
 
               <View style={styles.reportSection}>
                 {activeTab === 'potentials' && (
-                  <Text style={styles.reportText}>{report.potentials}</Text>
+                  <MarkdownText style={styles.reportText}>{report.potentials}</MarkdownText>
                 )}
                 {activeTab === 'houseReflections' && (
-                  <Text style={styles.reportText}>{report.houseReflections}</Text>
+                  <MarkdownText style={styles.reportText}>{report.houseReflections}</MarkdownText>
                 )}
                 {activeTab === 'risks' && (
-                  <Text style={styles.reportText}>{report.risks}</Text>
+                  <MarkdownText style={styles.reportText}>{report.risks}</MarkdownText>
                 )}
                 {activeTab === 'opportunities' && (
-                  <Text style={styles.reportText}>{report.opportunities}</Text>
+                  <MarkdownText style={styles.reportText}>{report.opportunities}</MarkdownText>
                 )}
               </View>
             </View>
           ) : (
-            <Text style={styles.reportText}>{typeof report === 'string' ? report : 'Hata oluştu'}</Text>
+            <MarkdownText style={styles.reportText}>{typeof report === 'string' ? report : 'Hata oluştu'}</MarkdownText>
           )}
         </GlassCard>
 
