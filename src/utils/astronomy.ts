@@ -338,11 +338,26 @@ export function calculatePlanetaryHours(
   longitude: number,
   date: Date
 ): PlanetaryHour[] {
-  const localMidnight = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
-  const rs = sunRiseSet(latitude, longitude, localMidnight);
+  const now = new Date();
+
+  // Planetary "days" run sunrise-to-sunrise, not midnight-to-midnight. If the
+  // current moment is still before today's sunrise, it belongs to the
+  // previous planetary day's night hours — anchor the whole calculation to
+  // yesterday instead, otherwise the generated night segment (today's sunset
+  // -> tomorrow's sunrise) never covers "now" and nothing is ever isActive.
+  let anchorDate = date;
+  let localMidnight = new Date(anchorDate.getFullYear(), anchorDate.getMonth(), anchorDate.getDate(), 0, 0, 0);
+  let rs = sunRiseSet(latitude, longitude, localMidnight);
+  let sunriseDate = rs.sunrise ?? new Date(localMidnight.getTime() + 6 * 3600000);
+
+  if (now < sunriseDate) {
+    anchorDate = new Date(anchorDate.getTime() - 24 * 3600000);
+    localMidnight = new Date(anchorDate.getFullYear(), anchorDate.getMonth(), anchorDate.getDate(), 0, 0, 0);
+    rs = sunRiseSet(latitude, longitude, localMidnight);
+    sunriseDate = rs.sunrise ?? new Date(localMidnight.getTime() + 6 * 3600000);
+  }
 
   // Polar / search-failure fallback: symmetric 06-18 approximation
-  let sunriseDate = rs.sunrise ?? new Date(localMidnight.getTime() + 6 * 3600000);
   let sunsetDate = rs.sunset ?? new Date(localMidnight.getTime() + 18 * 3600000);
   let nextSunriseDate = rs.nextSunrise ?? new Date(sunriseDate.getTime() + 24 * 3600000);
 
@@ -359,11 +374,10 @@ export function calculatePlanetaryHours(
 
   const CHALDEAN_DESCENDING = ['Saturn', 'Jupiter', 'Mars', 'Sun', 'Venus', 'Mercury', 'Moon'];
   const DAY_RULERS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn']; // Sunday=0...
-  const dayRuler = DAY_RULERS[date.getDay()];
+  const dayRuler = DAY_RULERS[anchorDate.getDay()];
   const startIndex = CHALDEAN_DESCENDING.indexOf(dayRuler);
 
   const hoursList: PlanetaryHour[] = [];
-  const now = new Date();
 
   for (let i = 0; i < 12; i++) {
     const start = new Date(sunriseDate.getTime() + i * dayHourMs);
