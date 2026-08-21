@@ -863,21 +863,6 @@ Bugün Güneş burcunuzun güçlü yanlarını (Ateş ise cesaret ve hareket; To
               </View>
             </Pressable>
 
-            <Pressable style={styles.serviceCard} onPress={() => handleGatedNavigation(
-              '/premium/yildizname', 'yildizname', 'Yıldızname Raporu',
-              'Ebced hesabınız ve doğum menzilinizle kişisel yıldızname raporunuz yapay zeka tarafından yazılır. Gerçek AI maliyeti nedeniyle kısa bir reklamla bugünlük açılır.'
-            )}>
-              <View style={styles.serviceIconWrap}>
-                <Text style={styles.serviceIcon}>📜</Text>
-              </View>
-              <View style={styles.serviceInfo}>
-                <View style={styles.serviceNameRow}>
-                  <Text style={styles.serviceCardTitle}>Yıldızname Raporu</Text>
-                  <Text style={styles.lockIcon}>🎬</Text>
-                </View>
-                <Text style={styles.serviceDescription} numberOfLines={2}>Ebced hesabı ve mizaç elementleriyle mistik rehber.</Text>
-              </View>
-            </Pressable>
           </View>
 
           {/* Gemini Daily Forecast Section */}

@@ -1,18 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, ScrollView, SafeAreaView, Keyboard, Vibration, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
 import CosmicInput from '@/components/ui/CosmicInput';
 import CosmicButton from '@/components/ui/CosmicButton';
 import GlassCard from '@/components/glass/GlassCard';
+import RewardGateModal from '@/components/ui/RewardGateModal';
 import { computePersonalEbced } from '@/utils/ebced';
+import { isFeatureUnlocked } from '@/services/adGate';
 import { BlurView } from 'expo-blur';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, withRepeat, Easing } from 'react-native-reanimated';
 
 export default function EsmaScreen() {
+  const router = useRouter();
   const [inputText, setInputText] = useState('');
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [zikirCount, setZikirCount] = useState(0);
   const [targetEsma, setTargetEsma] = useState<any>(null);
+  const [yildiznameGateVisible, setYildiznameGateVisible] = useState(false);
+
+  const openYildizname = () => {
+    isFeatureUnlocked('yildizname').then((unlocked) => {
+      if (unlocked) {
+        router.push('/premium/yildizname' as any);
+      } else {
+        setYildiznameGateVisible(true);
+      }
+    });
+  };
 
   const handleCalculate = () => {
     if (!inputText.trim()) return;
@@ -117,6 +132,20 @@ export default function EsmaScreen() {
           <Text style={styles.title}>Ebced & Esma Saatleri</Text>
           <Text style={styles.subtitle}>İsimlerin Sayısal Rezonansı ve Zikir Saatleri</Text>
         </View>
+
+        {/* Yıldızname Raporu (Ebced'e dayalı AI raporu, bu menüye taşındı) */}
+        <Pressable style={styles.yildiznameCard} onPress={openYildizname}>
+          <View style={styles.serviceIconWrap}>
+            <Text style={styles.serviceIcon}>📜</Text>
+          </View>
+          <View style={styles.serviceInfo}>
+            <View style={styles.serviceNameRow}>
+              <Text style={styles.serviceCardTitle}>Yıldızname Raporu</Text>
+              <Text style={styles.lockIcon}>🎬</Text>
+            </View>
+            <Text style={styles.serviceDescription} numberOfLines={2}>Ebced hesabı ve mizaç elementleriyle mistik rehber.</Text>
+          </View>
+        </Pressable>
 
         {/* Input Card */}
         <GlassCard style={styles.inputCard}>
@@ -266,7 +295,19 @@ export default function EsmaScreen() {
           </View>
         ) : null}
       </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+
+      <RewardGateModal
+        visible={yildiznameGateVisible}
+        onClose={() => setYildiznameGateVisible(false)}
+        feature="yildizname"
+        title="Yıldızname Raporu"
+        description="Ebced hesabınız ve doğum menzilinizle kişisel yıldızname raporunuz yapay zeka tarafından yazılır. Gerçek AI maliyeti nedeniyle kısa bir reklamla bugünlük açılır."
+        onUnlocked={() => {
+          setYildiznameGateVisible(false);
+          router.push('/premium/yildizname' as any);
+        }}
+      />
   </View>
   );
 }
@@ -309,6 +350,54 @@ const styles = StyleSheet.create({
   },
   inputCard: {
     marginBottom: 24,
+  },
+  yildiznameCard: {
+    backgroundColor: '#161B22',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.12)',
+    borderRadius: 14,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  serviceIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: 'rgba(212, 175, 55, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  serviceIcon: {
+    fontSize: 22,
+  },
+  serviceInfo: {
+    flex: 1,
+  },
+  serviceNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  serviceCardTitle: {
+    fontFamily: 'Cinzel',
+    fontSize: 14,
+    color: '#D4AF37',
+    fontWeight: '700',
+    flex: 1,
+  },
+  lockIcon: {
+    fontSize: 13,
+    color: '#8B949E',
+    marginLeft: 6,
+  },
+  serviceDescription: {
+    fontFamily: 'Inter',
+    fontSize: 12,
+    color: '#8B949E',
+    lineHeight: 16,
   },
   resultsContainer: {
     gap: 20,

@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   lockedDesc: {
     fontFamily: 'Inter',
     fontSize: 12,
-    color: '#8B949E',
+    color: '#C9D1D9',
     textAlign: 'center',
     lineHeight: 18,
     marginBottom: 14,
