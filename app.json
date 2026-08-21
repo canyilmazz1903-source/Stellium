@@ -2,7 +2,7 @@
   "expo": {
     "name": "Stellium",
     "slug": "Stellium",
-    "version": "1.5.2",
+    "version": "1.5.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "stellium",
@@ -10,7 +10,7 @@
     "ios": {
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.stellium.app",
-      "buildNumber": "46",
+      "buildNumber": "47",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -20,7 +20,7 @@
     },
     "android": {
       "package": "com.stellium.app",
-      "versionCode": 46,
+      "versionCode": 47,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

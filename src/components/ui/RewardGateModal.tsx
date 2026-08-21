@@ -184,17 +184,11 @@ const styles = StyleSheet.create({
     width: '100%',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.35)',
-    shadowColor: GOLD,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
   },
   primaryBtnText: {
     fontFamily: 'InterBold',
     color: '#0B0F19',
     fontSize: 15,
-    fontWeight: '700',
     letterSpacing: 0.3,
   },
   footerText: {

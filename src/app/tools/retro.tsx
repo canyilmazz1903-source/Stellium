@@ -66,7 +66,10 @@ export default function RetroCalendarScreen() {
                 onPress={() => setGateVisible(true)}
                 style={({ pressed }) => [styles.unlockBtn, pressed && styles.unlockBtnPressed]}
               >
-                <Text style={styles.unlockBtnText}>🎬 Reklam İzle, Takvimi Aç</Text>
+                <Text style={styles.unlockBtnText}>
+                  <Text style={styles.unlockBtnEmoji}>🎬 </Text>
+                  Reklam İzle, Takvimi Aç
+                </Text>
               </Pressable>
             </GlassCard>
           ) : upcoming.length === 0 ? (
@@ -225,23 +228,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#D4AF37',
     borderRadius: 12,
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    shadowColor: '#D4AF37',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 5,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
   },
   unlockBtnPressed: {
     opacity: 0.85,
     transform: [{ scale: 0.97 }],
   },
   unlockBtnText: {
-    fontFamily: 'Inter',
+    fontFamily: 'InterBold',
     fontSize: 13,
-    fontWeight: '700',
     color: '#0B0F19',
+    textAlign: 'center',
+  },
+  unlockBtnEmoji: {
+    fontFamily: 'Inter',
   },
 });
