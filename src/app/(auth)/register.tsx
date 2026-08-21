@@ -177,48 +177,47 @@ export default function RegisterScreen() {
         throw new Error(signUpError.message);
       }
 
-      if (data.user) {
-        // 2. Insert Profile Data into profiles table
-        const { error: profileError } = await supabase.from('profiles').insert({
-          id: data.user.id,
-          name: name.trim(),
-          birth_date: dateString,
-          birth_time: timeString,
-          birth_place: birthPlace,
-          latitude,
-          longitude,
-          timezone: timezone || 'Europe/Istanbul'
-        });
-
-        if (profileError) {
-          // If user session is active, it means the insert failed for other reasons.
-          // If session is null, email confirmation is active and RLS blocked this insert.
-          if (data.session) {
-            throw new Error(`Profil kaydı oluşturulurken hata: ${profileError.message}`);
-          } else {
-            // Friendly message about email confirmation
-            Alert.alert(
-              "Doğrulama Gerekli",
-              "Kayıt işlemi tamamlandı! Hesabınızı aktifleştirmek için lütfen e-postanıza gönderilen doğrulama bağlantısına tıklayın. Ardından giriş yapabilirsiniz.",
-              [{ text: "Tamam", onPress: () => router.replace('/(auth)/login') }]
-            );
-            setLoading(false);
-            return;
-          }
-        }
-        
-        if (data.session) {
-          Alert.alert(
-            "Başarılı",
-            "Kayıt başarıyla tamamlandı!",
-            [{ text: "Tamam" }]
-          );
-        }
-      } else {
+      if (!data.user) {
         throw new Error('Kayıt başarısız oldu, kullanıcı oluşturulamadı.');
+      }
+
+      // 2. Insert Profile Data into profiles table
+      const { error: profileError } = await supabase.from('profiles').insert({
+        id: data.user.id,
+        name: name.trim(),
+        birth_date: dateString,
+        birth_time: timeString,
+        birth_place: birthPlace,
+        latitude,
+        longitude,
+        timezone: timezone || 'Europe/Istanbul'
+      });
+
+      // A profile-insert error only means something is actually wrong if we have
+      // an active session (authenticated write). Without a session (email
+      // confirmation pending), RLS blocking the insert is expected, not fatal —
+      // the trigger/insert can be retried after confirmation on first login.
+      if (profileError && data.session) {
+        throw new Error(`Profil kaydı oluşturulurken hata: ${profileError.message}`);
+      }
+
+      if (data.session) {
+        Alert.alert(
+          "Başarılı",
+          "Kayıt başarıyla tamamlandı!",
+          [{ text: "Tamam" }]
+        );
+      } else {
+        // No active session yet — email confirmation is required before login.
+        Alert.alert(
+          "Doğrulama Gerekli",
+          "Kayıt işlemi tamamlandı! Hesabınızı aktifleştirmek için lütfen e-postanıza gönderilen doğrulama bağlantısına tıklayın. Ardından giriş yapabilirsiniz.",
+          [{ text: "Tamam", onPress: () => router.replace('/(auth)/login') }]
+        );
       }
     } catch (err: any) {
       setError(err.message || 'Kayıt sırasında bir hata oluştu.');
+    } finally {
       setLoading(false);
     }
   };
